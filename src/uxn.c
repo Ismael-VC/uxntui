@@ -113,11 +113,3 @@ uxn_boot(Uxn *u, Uint8 *ram)
 	u->dpg = (Uint8*)(ram + 0x10200);
 	return 1;
 }
-
-Device *
-uxn_port(Uxn *u, Uint8 id)
-{
-	Device *d = &u->dev[id];
-	d->u = u;
-	return d;
-}

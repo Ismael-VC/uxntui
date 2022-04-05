@@ -80,8 +80,8 @@ uxn11_deo(Uxn *u, Uint8 addr, Uint8 v)
 	case 0x00: system_deo(u, d->dat, p); break;
 	case 0x10: console_deo(d->dat, p); break;
 	case 0x20: screen_deo(u->ram, d->dat, p); break;
-	case 0xa0: file_deo(0, d, p); break;
-	case 0xb0: file_deo(1, d, p); break;
+	case 0xa0: file_deo(0, u->ram, d, p); break;
+	case 0xb0: file_deo(1, u->ram, d, p); break;
 	}
 }
 
@@ -176,24 +176,6 @@ start(Uxn *u, char *rom)
 	fprintf(stderr, "Loaded %s\n", rom);
 	u->dei = uxn11_dei;
 	u->deo = uxn11_deo;
-
-	/* system   */ uxn_port(u, 0x0);
-	/* console  */ uxn_port(u, 0x1);
-	/* screen   */ uxn_port(u, 0x2);
-	/* empty    */ uxn_port(u, 0x3);
-	/* empty    */ uxn_port(u, 0x4);
-	/* empty    */ uxn_port(u, 0x5);
-	/* empty    */ uxn_port(u, 0x6);
-	/* empty    */ uxn_port(u, 0x7);
-	/* control  */ uxn_port(u, 0x8);
-	/* mouse    */ uxn_port(u, 0x9);
-	/* file0    */ uxn_port(u, 0xa);
-	/* file1    */ uxn_port(u, 0xb);
-	/* datetime */ uxn_port(u, 0xc);
-	/* empty    */ uxn_port(u, 0xd);
-	/* reserved */ uxn_port(u, 0xe);
-	/* reserved */ uxn_port(u, 0xf);
-
 	screen_resize(&uxn_screen, WIDTH, HEIGHT);
 	if(!uxn_eval(u, PAGE_PROGRAM))
 		return error("Boot", "Failed to start rom.");
