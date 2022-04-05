@@ -7,7 +7,6 @@ then
 	clang-format -i src/devices/*
 fi
 
-
 echo "Cleaning.."
 rm -f ./bin/*
 
