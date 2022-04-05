@@ -33,10 +33,10 @@ error(char *msg, const char *err)
 }
 
 void
-system_deo_special(Device *d, Uint8 port)
+system_deo_special(Uint8 *d, Uint8 port)
 {
 	if(port > 0x7 && port < 0xe)
-		screen_palette(&uxn_screen, &d->dat[0x8]);
+		screen_palette(&uxn_screen, &d[0x8]);
 }
 
 static int
@@ -79,7 +79,7 @@ uxn11_deo(Uxn *u, Uint8 addr, Uint8 v)
 	Device *d = &u->dev[addr >> 4];
 	d->dat[p] = v;
 	switch(addr & 0xf0) {
-	case 0x00: system_deo(d, p); break;
+	case 0x00: system_deo(u, d->dat, p); break;
 	case 0x10: console_deo(d->dat, p); break;
 	case 0x20: screen_deo(u->ram, d->dat, p); break;
 	case 0xa0: file_deo(d, p); break;
@@ -192,7 +192,7 @@ start(Uxn *u, char *rom)
 	u->dei = uxn11_dei;
 	u->deo = uxn11_deo;
 
-	/* system   */ uxn_port(u, 0x0, nil_dei, system_deo);
+	/* system   */ uxn_port(u, 0x0, nil_dei, nil_deo);
 	/* console  */ uxn_port(u, 0x1, nil_dei, nil_deo);
 	/* screen   */ devscreen = uxn_port(u, 0x2, nil_dei, nil_deo);
 	/* empty    */ uxn_port(u, 0x3, nil_dei, nil_deo);
