@@ -63,6 +63,8 @@ uxn11_dei(struct Uxn *u, Uint8 addr)
 	Device *d = &u->dev[addr >> 4];
 	switch(addr & 0xf0) {
 	case 0x20: return screen_dei(d->dat, p); break;
+	case 0x80: return u->dpg[0x80 + p]; break;
+	case 0x90: return u->dpg[0x90 + p]; break;
 	case 0xa0: return file_dei(0, d->dat, p); break;
 	case 0xb0: return file_dei(1, d->dat, p); break;
 	case 0xc0: return datetime_dei(d->dat, p); break;
@@ -80,6 +82,8 @@ uxn11_deo(Uxn *u, Uint8 addr, Uint8 v)
 	case 0x00: system_deo(u, d->dat, p); break;
 	case 0x10: console_deo(d->dat, p); break;
 	case 0x20: screen_deo(u->ram, d->dat, p); break;
+	case 0x80: u->dpg[0x80 + p] = v; break;
+	case 0x90: u->dpg[0x90 + p] = v; break;
 	case 0xa0: file_deo(0, u->ram, d, p); break;
 	case 0xb0: file_deo(1, u->ram, d, p); break;
 	}
@@ -142,26 +146,26 @@ processEvent(Uxn *u)
 		KeySym sym;
 		char buf[7];
 		XLookupString((XKeyPressedEvent *)&ev, buf, 7, &sym, 0);
-		controller_down(u, u->dev[0x8].dat, get_button(sym));
-		controller_key(u, u->dev[0x8].dat, sym < 0x80 ? sym : buf[0]);
+		controller_down(u, &u->dpg[0x80], get_button(sym));
+		controller_key(u, &u->dpg[0x80], sym < 0x80 ? sym : buf[0]);
 	} break;
 	case KeyRelease: {
 		KeySym sym;
 		char buf[7];
 		XLookupString((XKeyPressedEvent *)&ev, buf, 7, &sym, 0);
-		controller_up(u, u->dev[0x8].dat, get_button(sym));
+		controller_up(u, &u->dpg[0x80], get_button(sym));
 	} break;
 	case ButtonPress: {
 		XButtonPressedEvent *e = (XButtonPressedEvent *)&ev;
-		mouse_down(u, u->dev[0x9].dat, 0x1 << (e->button - 1));
+		mouse_down(u, &u->dpg[0x90], 0x1 << (e->button - 1));
 	} break;
 	case ButtonRelease: {
 		XButtonPressedEvent *e = (XButtonPressedEvent *)&ev;
-		mouse_up(u, u->dev[0x9].dat, 0x1 << (e->button - 1));
+		mouse_up(u, &u->dpg[0x90], 0x1 << (e->button - 1));
 	} break;
 	case MotionNotify: {
 		XMotionEvent *e = (XMotionEvent *)&ev;
-		mouse_pos(u, u->dev[0x9].dat, e->x, e->y);
+		mouse_pos(u, &u->dpg[0x90], e->x, e->y);
 	} break;
 	}
 }
