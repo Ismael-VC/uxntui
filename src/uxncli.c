@@ -24,50 +24,54 @@ error(char *msg, const char *err)
 	return 0;
 }
 
-void
-system_deo_special(Uint8 *d, Uint8 port)
+static int
+console_input(Uxn *u, char c)
 {
-	(void)d;
-	(void)port;
+	Uint8 *d = &u->dev[0x10];
+	d[0x02] = c;
+	return uxn_eval(u, GETVEC(d));
 }
 
 static void
-console_deo(Device *d, Uint8 port)
+console_deo(Uint8 *d, Uint8 port)
 {
 	FILE *fd = port == 0x8 ? stdout : port == 0x9 ? stderr
 												  : 0;
 	if(fd) {
-		fputc(d->dat[port], fd);
+		fputc(d[port], fd);
 		fflush(fd);
 	}
 }
 
 static Uint8
-nil_dei(Device *d, Uint8 port)
+uxn11_dei(struct Uxn *u, Uint8 addr)
 {
-	return d->dat[port];
+	Uint8 p = addr & 0x0f, d = addr & 0xf0;
+	switch(d) {
+	case 0xa0: return file_dei(0, &u->dev[d], p);
+	case 0xb0: return file_dei(1, &u->dev[d], p);
+	case 0xc0: return datetime_dei(&u->dev[d], p);
+	}
+	return u->dev[addr];
 }
 
 static void
-nil_deo(Device *d, Uint8 port)
+uxn11_deo(Uxn *u, Uint8 addr, Uint8 v)
 {
-	(void)d;
-	(void)port;
-}
-
-static int
-console_input(Uxn *u, char c)
-{
-	Device *d = &u->dev[1];
-	d->dat[0x2] = c;
-	return uxn_eval(u, GETVECTOR(d));
+	Uint8 p = addr & 0x0f, d = addr & 0xf0;
+	u->dev[addr] = v;
+	switch(d) {
+	case 0x00: system_deo(u, &u->dev[d], p); break;
+	case 0x10: console_deo(&u->dev[d], p); break;
+	case 0xa0: file_deo(0, u->ram, &u->dev[d], p); break;
+	case 0xb0: file_deo(1, u->ram, &u->dev[d], p); break;
+	}
 }
 
 static void
 run(Uxn *u)
 {
-	Device *d = &u->dev[0];
-	while(!d->dat[0xf]) {
+	while(!u->dev[0x0f]) {
 		int c = fgetc(stdin);
 		if(c != EOF)
 			console_input(u, (Uint8)c);
@@ -85,22 +89,8 @@ start(Uxn *u)
 {
 	if(!uxn_boot(u, (Uint8 *)calloc(0x10200, sizeof(Uint8))))
 		return error("Boot", "Failed");
-	/* system   */ uxn_port(u, 0x0, nil_dei, system_deo);
-	/* console  */ uxn_port(u, 0x1, nil_dei, console_deo);
-	/* empty    */ uxn_port(u, 0x2, nil_dei, nil_deo);
-	/* empty    */ uxn_port(u, 0x3, nil_dei, nil_deo);
-	/* empty    */ uxn_port(u, 0x4, nil_dei, nil_deo);
-	/* empty    */ uxn_port(u, 0x5, nil_dei, nil_deo);
-	/* empty    */ uxn_port(u, 0x6, nil_dei, nil_deo);
-	/* empty    */ uxn_port(u, 0x7, nil_dei, nil_deo);
-	/* empty    */ uxn_port(u, 0x8, nil_dei, nil_deo);
-	/* empty    */ uxn_port(u, 0x9, nil_dei, nil_deo);
-	/* file0    */ uxn_port(u, 0xa, file_dei, file_deo);
-	/* file1    */ uxn_port(u, 0xb, file_dei, file_deo);
-	/* datetime */ uxn_port(u, 0xc, datetime_dei, nil_deo);
-	/* empty    */ uxn_port(u, 0xd, nil_dei, nil_deo);
-	/* empty    */ uxn_port(u, 0xe, nil_dei, nil_deo);
-	/* empty    */ uxn_port(u, 0xf, nil_dei, nil_deo);
+	u->dei = uxn11_dei;
+	u->deo = uxn11_deo;
 	return 1;
 }
 
@@ -115,7 +105,7 @@ main(int argc, char **argv)
 		return error("Start", "Failed");
 	if(!load_rom(&u, argv[1]))
 		return error("Load", "Failed");
-	fprintf(stderr, "Loaded %s\n", argv[1]);
+	fprintf(stderr, ">> Loaded %s\n", argv[1]);
 	if(!uxn_eval(&u, PAGE_PROGRAM))
 		return error("Init", "Failed");
 	for(i = 2; i < argc; i++) {

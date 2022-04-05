@@ -30,13 +30,6 @@ error(char *msg, const char *err)
 	return 0;
 }
 
-void
-system_deo_special(Uint8 *d, Uint8 port)
-{
-	if(port > 0x7 && port < 0xe)
-		screen_palette(&uxn_screen, &d[0x8]);
-}
-
 static int
 console_input(Uxn *u, char c)
 {
@@ -61,10 +54,10 @@ uxn11_dei(struct Uxn *u, Uint8 addr)
 {
 	Uint8 p = addr & 0x0f, d = addr & 0xf0;
 	switch(d) {
-	case 0x20: return screen_dei(&u->dev[d], p); break;
-	case 0xa0: return file_dei(0, &u->dev[d], p); break;
-	case 0xb0: return file_dei(1, &u->dev[d], p); break;
-	case 0xc0: return datetime_dei(&u->dev[d], p); break;
+	case 0x20: return screen_dei(&u->dev[d], p);
+	case 0xa0: return file_dei(0, &u->dev[d], p);
+	case 0xb0: return file_dei(1, &u->dev[d], p);
+	case 0xc0: return datetime_dei(&u->dev[d], p);
 	}
 	return u->dev[addr];
 }
@@ -75,7 +68,11 @@ uxn11_deo(Uxn *u, Uint8 addr, Uint8 v)
 	Uint8 p = addr & 0x0f, d = addr & 0xf0;
 	u->dev[addr] = v;
 	switch(d) {
-	case 0x00: system_deo(u, &u->dev[d], p); break;
+	case 0x00:
+		system_deo(u, &u->dev[d], p);
+		if(p > 0x7 && p < 0xe)
+			screen_palette(&uxn_screen, &u->dev[0x8]);
+		break;
 	case 0x10: console_deo(&u->dev[d], p); break;
 	case 0x20: screen_deo(u->ram, &u->dev[d], p); break;
 	case 0xa0: file_deo(0, u->ram, &u->dev[d], p); break;
@@ -171,7 +168,7 @@ start(Uxn *u, char *rom)
 		return error("Boot", "Failed");
 	if(!load_rom(u, rom))
 		return error("Load", "Failed");
-	fprintf(stderr, "Loaded %s\n", rom);
+	fprintf(stderr, ">> Loaded %s\n", rom);
 	u->dei = uxn11_dei;
 	u->deo = uxn11_deo;
 	screen_resize(&uxn_screen, WIDTH, HEIGHT);

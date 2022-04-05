@@ -58,6 +58,5 @@ system_deo(Uxn *u, Uint8 *d, Uint8 port)
 	case 0x2: u->wst = (Stack *)(u->ram + (d[port] ? (d[port] * 0x100) : 0x10000)); break;
 	case 0x3: u->rst = (Stack *)(u->ram + (d[port] ? (d[port] * 0x100) : 0x10100)); break;
 	case 0xe: system_inspect(u); break;
-	default: system_deo_special(d, port);
 	}
 }
