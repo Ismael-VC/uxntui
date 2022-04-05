@@ -151,18 +151,12 @@ file_delete(UxnFile *c)
 	return unlink(c->current_filename);
 }
 
-static UxnFile *
-file_instance(Device *d)
-{
-	return &uxn_file[d - &d->u->dev[DEV_FILE0]];
-}
-
 /* IO */
 
 void
-file_deo(Device *d, Uint8 port)
+file_deo(Uint8 id, Device *d, Uint8 port)
 {
-	UxnFile *c = file_instance(d);
+	UxnFile *c = &uxn_file[id];
 	Uint16 addr, len, res;
 	switch(port) {
 	case 0x5:
@@ -202,18 +196,18 @@ file_deo(Device *d, Uint8 port)
 }
 
 Uint8
-file_dei(Device *d, Uint8 port)
+file_dei(Uint8 id, Uint8 *d, Uint8 port)
 {
-	UxnFile *c = file_instance(d);
+	UxnFile *c = &uxn_file[id];
 	Uint16 res;
 	switch(port) {
 	case 0xc:
 	case 0xd:
-		res = file_read(c, &d->dat[port], 1);
-		DEVPOKE16(0x2, res);
+		res = file_read(c, &d[port], 1);
+		POKDEV(0x2, res);
 		break;
 	}
-	return d->dat[port];
+	return d[port];
 }
 
 /* Boot */

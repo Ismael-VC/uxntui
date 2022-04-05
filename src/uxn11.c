@@ -42,9 +42,9 @@ system_deo_special(Uint8 *d, Uint8 port)
 static int
 console_input(Uxn *u, char c)
 {
-	Device *d = &u->dev[1];
-	d->dat[0x2] = c;
-	return uxn_eval(u, GETVEC(d->dat));
+	Uint8 *d = u->dev[1].dat;
+	d[0x2] = c;
+	return uxn_eval(u, GETVEC(d));
 }
 
 static void
@@ -65,8 +65,8 @@ uxn11_dei(struct Uxn *u, Uint8 addr)
 	Device *d = &u->dev[addr >> 4];
 	switch(addr & 0xf0) {
 	case 0x20: return screen_dei(d->dat, p); break;
-	case 0xa0: return file_dei(d, p); break;
-	case 0xb0: return file_dei(d, p); break;
+	case 0xa0: return file_dei(0, d->dat, p); break;
+	case 0xb0: return file_dei(1, d->dat, p); break;
 	case 0xc0: return datetime_dei(d->dat, p); break;
 	}
 	return d->dat[p];
@@ -82,8 +82,8 @@ uxn11_deo(Uxn *u, Uint8 addr, Uint8 v)
 	case 0x00: system_deo(u, d->dat, p); break;
 	case 0x10: console_deo(d->dat, p); break;
 	case 0x20: screen_deo(u->ram, d->dat, p); break;
-	case 0xa0: file_deo(d, p); break;
-	case 0xb0: file_deo(d, p); break;
+	case 0xa0: file_deo(0, d, p); break;
+	case 0xb0: file_deo(1, d, p); break;
 	}
 }
 
@@ -126,7 +126,7 @@ get_button(KeySym sym)
 }
 
 static void
-processEvent(void)
+processEvent(Uxn *u)
 {
 	XEvent ev;
 	XNextEvent(display, &ev);
@@ -144,26 +144,26 @@ processEvent(void)
 		KeySym sym;
 		char buf[7];
 		XLookupString((XKeyPressedEvent *)&ev, buf, 7, &sym, 0);
-		controller_down(devctrl->u, devctrl->dat, get_button(sym));
-		controller_key(devctrl->u, devctrl->dat, sym < 0x80 ? sym : buf[0]);
+		controller_down(u, devctrl->dat, get_button(sym));
+		controller_key(u, devctrl->dat, sym < 0x80 ? sym : buf[0]);
 	} break;
 	case KeyRelease: {
 		KeySym sym;
 		char buf[7];
 		XLookupString((XKeyPressedEvent *)&ev, buf, 7, &sym, 0);
-		controller_up(devctrl->u, devctrl->dat, get_button(sym));
+		controller_up(u, devctrl->dat, get_button(sym));
 	} break;
 	case ButtonPress: {
 		XButtonPressedEvent *e = (XButtonPressedEvent *)&ev;
-		mouse_down(devmouse->u, devmouse->dat, 0x1 << (e->button - 1));
+		mouse_down(u, devmouse->dat, 0x1 << (e->button - 1));
 	} break;
 	case ButtonRelease: {
 		XButtonPressedEvent *e = (XButtonPressedEvent *)&ev;
-		mouse_up(devmouse->u, devmouse->dat, 0x1 << (e->button - 1));
+		mouse_up(u, devmouse->dat, 0x1 << (e->button - 1));
 	} break;
 	case MotionNotify: {
 		XMotionEvent *e = (XMotionEvent *)&ev;
-		mouse_pos(devmouse->u, devmouse->dat, e->x, e->y);
+		mouse_pos(u, devmouse->dat, e->x, e->y);
 	} break;
 	}
 }
@@ -184,7 +184,7 @@ nil_deo(Device *d, Uint8 port)
 static int
 start(Uxn *u, char *rom)
 {
-	if(!uxn_boot(u, (Uint8 *)calloc(0x10200, sizeof(Uint8))))
+	if(!uxn_boot(u, (Uint8 *)calloc(0x10300, sizeof(Uint8))))
 		return error("Boot", "Failed");
 	if(!load_rom(u, rom))
 		return error("Load", "Failed");
@@ -202,8 +202,8 @@ start(Uxn *u, char *rom)
 	/* empty    */ uxn_port(u, 0x7, nil_dei, nil_deo);
 	/* control  */ devctrl = uxn_port(u, 0x8, nil_dei, nil_deo);
 	/* mouse    */ devmouse = uxn_port(u, 0x9, nil_dei, nil_deo);
-	/* file0    */ uxn_port(u, 0xa, file_dei, file_deo);
-	/* file1    */ uxn_port(u, 0xb, file_dei, file_deo);
+	/* file0    */ uxn_port(u, 0xa, nil_dei, nil_deo);
+	/* file1    */ uxn_port(u, 0xb, nil_dei, nil_deo);
 	/* datetime */ uxn_port(u, 0xc, nil_dei, nil_deo);
 	/* empty    */ uxn_port(u, 0xd, nil_dei, nil_deo);
 	/* reserved */ uxn_port(u, 0xe, nil_dei, nil_deo);
@@ -262,7 +262,7 @@ main(int argc, char **argv)
 		if(poll(fds, 2, 1000) <= 0)
 			continue;
 		while(XPending(display))
-			processEvent();
+			processEvent(&u);
 		if(poll(&fds[1], 1, 0)) {
 			read(fds[1].fd, expirations, 8);    /* Indicate we handled the timer */
 			uxn_eval(&u, GETVECTOR(devscreen)); /* Call the vector once, even if the timer fired multiple times */

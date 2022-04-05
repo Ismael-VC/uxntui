@@ -110,6 +110,7 @@ uxn_boot(Uxn *u, Uint8 *ram)
 	u->ram = ram;
 	u->wst = (Stack*)(ram + 0x10000);
 	u->rst = (Stack*)(ram + 0x10100);
+	u->dpg = (Uint8*)(ram + 0x10200);
 	return 1;
 }
 
