@@ -59,17 +59,14 @@ console_deo(Uint8 *d, Uint8 port)
 static Uint8
 uxn11_dei(struct Uxn *u, Uint8 addr)
 {
-	Uint8 p = addr & 0x0f;
-	Device *d = &u->dev[addr >> 4];
+	Uint8 p = addr & 0x0f, *d = &u->dpg[addr >> 4];
 	switch(addr & 0xf0) {
-	case 0x20: return screen_dei(d->dat, p); break;
-	case 0x80: return u->dpg[0x80 + p]; break;
-	case 0x90: return u->dpg[0x90 + p]; break;
-	case 0xa0: return file_dei(0, d->dat, p); break;
-	case 0xb0: return file_dei(1, d->dat, p); break;
-	case 0xc0: return datetime_dei(d->dat, p); break;
+	case 0x20: return screen_dei(d, p); break;
+	case 0xa0: return file_dei(0, d, p); break;
+	case 0xb0: return file_dei(1, d, p); break;
+	case 0xc0: return datetime_dei(d, p); break;
 	}
-	return d->dat[p];
+	return u->dpg[addr];
 }
 
 static void

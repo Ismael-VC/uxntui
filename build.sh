@@ -23,4 +23,4 @@ fi
 echo "Done."
 
 # echo "Running.."
-bin/uxn11 ~/roms/left.rom README.md
+bin/uxn11 ~/roms/catclock.rom README.md
