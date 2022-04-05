@@ -25,6 +25,7 @@ typedef unsigned int Uint32;
 
 #define GETVEC(d) ((d)[0] << 8 | (d)[1])
 #define POKDEV(x, y) { d[(x)] = (y) >> 8; d[(x) + 1] = (y); }
+#define PEKDEV(o, x) { (o) = (d[(x)] << 8) + d[(x) + 1]; }
 
 /* clang-format on */
 

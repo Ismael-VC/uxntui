@@ -64,7 +64,7 @@ uxn11_dei(struct Uxn *u, Uint8 addr)
 	Uint8 p = addr & 0x0f;
 	Device *d = &u->dev[addr >> 4];
 	switch(addr & 0xf0) {
-	case 0x20: return screen_dei(d, p); break;
+	case 0x20: return screen_dei(d->dat, p); break;
 	case 0xa0: return file_dei(d, p); break;
 	case 0xb0: return file_dei(d, p); break;
 	case 0xc0: return datetime_dei(d->dat, p); break;
@@ -81,7 +81,7 @@ uxn11_deo(Uxn *u, Uint8 addr, Uint8 v)
 	switch(addr & 0xf0) {
 	case 0x00: system_deo(d, p); break;
 	case 0x10: console_deo(d, p); break;
-	case 0x20: screen_deo(d, p); break;
+	case 0x20: screen_deo(u->ram, d->dat, p); break;
 	case 0xa0: file_deo(d, p); break;
 	case 0xb0: file_deo(d, p); break;
 	}
@@ -194,7 +194,7 @@ start(Uxn *u, char *rom)
 
 	/* system   */ uxn_port(u, 0x0, nil_dei, system_deo);
 	/* console  */ uxn_port(u, 0x1, nil_dei, console_deo);
-	/* screen   */ devscreen = uxn_port(u, 0x2, screen_dei, screen_deo);
+	/* screen   */ devscreen = uxn_port(u, 0x2, nil_dei, nil_deo);
 	/* empty    */ uxn_port(u, 0x3, nil_dei, nil_deo);
 	/* empty    */ uxn_port(u, 0x4, nil_dei, nil_deo);
 	/* empty    */ uxn_port(u, 0x5, nil_dei, nil_deo);
