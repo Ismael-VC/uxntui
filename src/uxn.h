@@ -36,8 +36,6 @@ typedef struct {
 typedef struct Device {
 	struct Uxn *u;
 	Uint8 dat[16];
-	Uint8 (*dei)(struct Device *d, Uint8);
-	void (*deo)(struct Device *d, Uint8);
 } Device;
 
 typedef struct Uxn {
@@ -51,4 +49,4 @@ typedef struct Uxn {
 int uxn_boot(Uxn *u, Uint8 *ram);
 int uxn_eval(Uxn *u, Uint16 pc);
 int uxn_halt(Uxn *u, Uint8 error, Uint16 addr);
-Device *uxn_port(Uxn *u, Uint8 id, Uint8 (*deifn)(Device *, Uint8), void (*deofn)(Device *, Uint8));
+Device *uxn_port(Uxn *u, Uint8 id);

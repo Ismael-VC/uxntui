@@ -166,19 +166,6 @@ processEvent(Uxn *u)
 	}
 }
 
-static Uint8
-nil_dei(Device *d, Uint8 port)
-{
-	return d->dat[port];
-}
-
-static void
-nil_deo(Device *d, Uint8 port)
-{
-	(void)d;
-	(void)port;
-}
-
 static int
 start(Uxn *u, char *rom)
 {
@@ -190,22 +177,22 @@ start(Uxn *u, char *rom)
 	u->dei = uxn11_dei;
 	u->deo = uxn11_deo;
 
-	/* system   */ uxn_port(u, 0x0, nil_dei, nil_deo);
-	/* console  */ uxn_port(u, 0x1, nil_dei, nil_deo);
-	/* screen   */ uxn_port(u, 0x2, nil_dei, nil_deo);
-	/* empty    */ uxn_port(u, 0x3, nil_dei, nil_deo);
-	/* empty    */ uxn_port(u, 0x4, nil_dei, nil_deo);
-	/* empty    */ uxn_port(u, 0x5, nil_dei, nil_deo);
-	/* empty    */ uxn_port(u, 0x6, nil_dei, nil_deo);
-	/* empty    */ uxn_port(u, 0x7, nil_dei, nil_deo);
-	/* control  */ uxn_port(u, 0x8, nil_dei, nil_deo);
-	/* mouse    */ uxn_port(u, 0x9, nil_dei, nil_deo);
-	/* file0    */ uxn_port(u, 0xa, nil_dei, nil_deo);
-	/* file1    */ uxn_port(u, 0xb, nil_dei, nil_deo);
-	/* datetime */ uxn_port(u, 0xc, nil_dei, nil_deo);
-	/* empty    */ uxn_port(u, 0xd, nil_dei, nil_deo);
-	/* reserved */ uxn_port(u, 0xe, nil_dei, nil_deo);
-	/* reserved */ uxn_port(u, 0xf, nil_dei, nil_deo);
+	/* system   */ uxn_port(u, 0x0);
+	/* console  */ uxn_port(u, 0x1);
+	/* screen   */ uxn_port(u, 0x2);
+	/* empty    */ uxn_port(u, 0x3);
+	/* empty    */ uxn_port(u, 0x4);
+	/* empty    */ uxn_port(u, 0x5);
+	/* empty    */ uxn_port(u, 0x6);
+	/* empty    */ uxn_port(u, 0x7);
+	/* control  */ uxn_port(u, 0x8);
+	/* mouse    */ uxn_port(u, 0x9);
+	/* file0    */ uxn_port(u, 0xa);
+	/* file1    */ uxn_port(u, 0xb);
+	/* datetime */ uxn_port(u, 0xc);
+	/* empty    */ uxn_port(u, 0xd);
+	/* reserved */ uxn_port(u, 0xe);
+	/* reserved */ uxn_port(u, 0xf);
 
 	screen_resize(&uxn_screen, WIDTH, HEIGHT);
 	if(!uxn_eval(u, PAGE_PROGRAM))
