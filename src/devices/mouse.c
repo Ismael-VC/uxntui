@@ -14,33 +14,33 @@ WITH REGARD TO THIS SOFTWARE.
 */
 
 void
-mouse_down(Device *d, Uint8 mask)
+mouse_down(Uxn *u, Uint8 *d, Uint8 mask)
 {
-	d->dat[6] |= mask;
-	uxn_eval(d->u, GETVECTOR(d));
+	d[6] |= mask;
+	uxn_eval(u, GETVEC(d));
 }
 
 void
-mouse_up(Device *d, Uint8 mask)
+mouse_up(Uxn *u, Uint8 *d, Uint8 mask)
 {
-	d->dat[6] &= (~mask);
-	uxn_eval(d->u, GETVECTOR(d));
+	d[6] &= (~mask);
+	uxn_eval(u, GETVEC(d));
 }
 
 void
-mouse_pos(Device *d, Uint16 x, Uint16 y)
+mouse_pos(Uxn *u, Uint8 *d, Uint16 x, Uint16 y)
 {
-	DEVPOKE16(0x2, x);
-	DEVPOKE16(0x4, y);
-	uxn_eval(d->u, GETVECTOR(d));
+	POKDEV(0x2, x);
+	POKDEV(0x4, y);
+	uxn_eval(u, GETVEC(d));
 }
 
 void
-mouse_scroll(Device *d, Uint16 x, Uint16 y)
+mouse_scroll(Uxn *u, Uint8 *d, Uint16 x, Uint16 y)
 {
-	DEVPOKE16(0xa, x);
-	DEVPOKE16(0xc, -y);
-	uxn_eval(d->u, GETVECTOR(d));
-	DEVPOKE16(0xa, 0);
-	DEVPOKE16(0xc, 0);
+	POKDEV(0xa, x);
+	POKDEV(0xc, -y);
+	uxn_eval(u, GETVEC(d));
+	POKDEV(0xa, 0);
+	POKDEV(0xc, 0);
 }

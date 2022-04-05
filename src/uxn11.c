@@ -155,15 +155,15 @@ processEvent(void)
 	} break;
 	case ButtonPress: {
 		XButtonPressedEvent *e = (XButtonPressedEvent *)&ev;
-		mouse_down(devmouse, 0x1 << (e->button - 1));
+		mouse_down(devmouse->u, devmouse->dat, 0x1 << (e->button - 1));
 	} break;
 	case ButtonRelease: {
 		XButtonPressedEvent *e = (XButtonPressedEvent *)&ev;
-		mouse_up(devmouse, 0x1 << (e->button - 1));
+		mouse_up(devmouse->u, devmouse->dat, 0x1 << (e->button - 1));
 	} break;
 	case MotionNotify: {
 		XMotionEvent *e = (XMotionEvent *)&ev;
-		mouse_pos(devmouse, e->x, e->y);
+		mouse_pos(devmouse->u, devmouse->dat, e->x, e->y);
 	} break;
 	}
 }

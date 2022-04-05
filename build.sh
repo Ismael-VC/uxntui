@@ -1,6 +1,7 @@
 #!/bin/sh -e
 
 clang-format -i src/uxn11.c
+clang-format -i src/devices/*
 
 echo "Cleaning.."
 rm -f ./bin/*
