@@ -32,7 +32,7 @@ uxn_eval(Uxn *u, Uint16 pc)
 	unsigned int a, b, c, j, k, bs, instr, errcode;
 	Uint8 kptr, *sp;
 	Stack *src, *dst;
-	if(!pc || u->dev[0].dat[0xf]) return 0;
+	if(!pc || u->dev[0x0f]) return 0;
 	while((instr = u->ram[pc++])) {
 		/* Return Mode */
 		if(instr & 0x40) {
@@ -108,8 +108,8 @@ uxn_boot(Uxn *u, Uint8 *ram)
 	for(i = 0; i < sizeof(*u); i++)
 		cptr[i] = 0x00;
 	u->ram = ram;
-	u->wst = (Stack*)(ram + 0x10000);
-	u->rst = (Stack*)(ram + 0x10100);
-	u->dpg = (Uint8*)(ram + 0x10200);
+	u->wst = (Stack *)(ram + 0x10000);
+	u->rst = (Stack *)(ram + 0x10100);
+	u->dev = (Uint8 *)(ram + 0x10200);
 	return 1;
 }

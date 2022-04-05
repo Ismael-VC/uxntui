@@ -1,4 +1,4 @@
-# Uxn
+# Uxn11
 
 An emulator for the [Uxn stack-machine](https://wiki.xxiivv.com/site/uxn.html), written in ANSI C. 
 

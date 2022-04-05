@@ -40,8 +40,8 @@ system_deo_special(Uint8 *d, Uint8 port)
 static int
 console_input(Uxn *u, char c)
 {
-	Uint8 *d = u->dev[1].dat;
-	d[0x2] = c;
+	Uint8 *d = &u->dev[0x10];
+	d[0x02] = c;
 	return uxn_eval(u, GETVEC(d));
 }
 
@@ -59,33 +59,27 @@ console_deo(Uint8 *d, Uint8 port)
 static Uint8
 uxn11_dei(struct Uxn *u, Uint8 addr)
 {
-	Uint8 p = addr & 0x0f;
-	Device *d = &u->dev[addr >> 4];
-	switch(addr & 0xf0) {
-	case 0x20: return screen_dei(d->dat, p); break;
-	case 0x80: return u->dpg[0x80 + p]; break;
-	case 0x90: return u->dpg[0x90 + p]; break;
-	case 0xa0: return file_dei(0, d->dat, p); break;
-	case 0xb0: return file_dei(1, d->dat, p); break;
-	case 0xc0: return datetime_dei(d->dat, p); break;
+	Uint8 p = addr & 0x0f, d = addr & 0xf0;
+	switch(d) {
+	case 0x20: return screen_dei(&u->dev[d], p); break;
+	case 0xa0: return file_dei(0, &u->dev[d], p); break;
+	case 0xb0: return file_dei(1, &u->dev[d], p); break;
+	case 0xc0: return datetime_dei(&u->dev[d], p); break;
 	}
-	return d->dat[p];
+	return u->dev[addr];
 }
 
 static void
 uxn11_deo(Uxn *u, Uint8 addr, Uint8 v)
 {
-	Uint8 p = addr & 0x0f;
-	Device *d = &u->dev[addr >> 4];
-	d->dat[p] = v;
-	switch(addr & 0xf0) {
-	case 0x00: system_deo(u, d->dat, p); break;
-	case 0x10: console_deo(d->dat, p); break;
-	case 0x20: screen_deo(u->ram, d->dat, p); break;
-	case 0x80: u->dpg[0x80 + p] = v; break;
-	case 0x90: u->dpg[0x90 + p] = v; break;
-	case 0xa0: file_deo(0, u->ram, d, p); break;
-	case 0xb0: file_deo(1, u->ram, d, p); break;
+	Uint8 p = addr & 0x0f, d = addr & 0xf0;
+	u->dev[addr] = v;
+	switch(d) {
+	case 0x00: system_deo(u, &u->dev[d], p); break;
+	case 0x10: console_deo(&u->dev[d], p); break;
+	case 0x20: screen_deo(u->ram, &u->dev[d], p); break;
+	case 0xa0: file_deo(0, u->ram, &u->dev[d], p); break;
+	case 0xb0: file_deo(1, u->ram, &u->dev[d], p); break;
 	}
 }
 
@@ -146,26 +140,26 @@ processEvent(Uxn *u)
 		KeySym sym;
 		char buf[7];
 		XLookupString((XKeyPressedEvent *)&ev, buf, 7, &sym, 0);
-		controller_down(u, &u->dpg[0x80], get_button(sym));
-		controller_key(u, &u->dpg[0x80], sym < 0x80 ? sym : buf[0]);
+		controller_down(u, &u->dev[0x80], get_button(sym));
+		controller_key(u, &u->dev[0x80], sym < 0x80 ? sym : buf[0]);
 	} break;
 	case KeyRelease: {
 		KeySym sym;
 		char buf[7];
 		XLookupString((XKeyPressedEvent *)&ev, buf, 7, &sym, 0);
-		controller_up(u, &u->dpg[0x80], get_button(sym));
+		controller_up(u, &u->dev[0x80], get_button(sym));
 	} break;
 	case ButtonPress: {
 		XButtonPressedEvent *e = (XButtonPressedEvent *)&ev;
-		mouse_down(u, &u->dpg[0x90], 0x1 << (e->button - 1));
+		mouse_down(u, &u->dev[0x90], 0x1 << (e->button - 1));
 	} break;
 	case ButtonRelease: {
 		XButtonPressedEvent *e = (XButtonPressedEvent *)&ev;
-		mouse_up(u, &u->dpg[0x90], 0x1 << (e->button - 1));
+		mouse_up(u, &u->dev[0x90], 0x1 << (e->button - 1));
 	} break;
 	case MotionNotify: {
 		XMotionEvent *e = (XMotionEvent *)&ev;
-		mouse_pos(u, &u->dpg[0x90], e->x, e->y);
+		mouse_pos(u, &u->dev[0x90], e->x, e->y);
 	} break;
 	}
 }
@@ -235,8 +229,8 @@ main(int argc, char **argv)
 		while(XPending(display))
 			processEvent(&u);
 		if(poll(&fds[1], 1, 0)) {
-			read(fds[1].fd, expirations, 8);      /* Indicate we handled the timer */
-			uxn_eval(&u, GETVEC(u.dev[0x2].dat)); /* Call the vector once, even if the timer fired multiple times */
+			read(fds[1].fd, expirations, 8);    /* Indicate we handled the timer */
+			uxn_eval(&u, GETVEC(&u.dev[0x20])); /* Call the vector once, even if the timer fired multiple times */
 		}
 		if(uxn_screen.fg.changed || uxn_screen.bg.changed)
 			redraw();

@@ -1,7 +1,12 @@
 #!/bin/sh -e
 
-clang-format -i src/uxn11.c
-clang-format -i src/devices/*
+if [ "${1}" = '--format' ];
+then
+	echo "Formatting.."
+	clang-format -i src/uxn11.c
+	clang-format -i src/devices/*
+fi
+
 
 echo "Cleaning.."
 rm -f ./bin/*
@@ -9,7 +14,7 @@ rm -f ./bin/*
 echo "Building.."
 mkdir -p bin
 
-if [ "${1}" = '--install' ]; 
+if [ "${1}" = '--install' ];
 then
 	echo "Installing.."
 	gcc src/uxn.c src/devices/system.c src/devices/screen.c src/devices/controller.c src/devices/mouse.c src/devices/file.c src/devices/datetime.c src/uxn11.c -D_POSIX_C_SOURCE=199309L -DNDEBUG -Os -g0 -s -o bin/uxn11 -lX11

@@ -25,7 +25,7 @@ error(char *msg, const char *err)
 }
 
 void
-system_deo_special(Device *d, Uint8 port)
+system_deo_special(Uint8 *d, Uint8 port)
 {
 	(void)d;
 	(void)port;

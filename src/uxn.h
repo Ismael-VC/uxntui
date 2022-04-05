@@ -19,10 +19,6 @@ typedef unsigned int Uint32;
 
 /* clang-format off */
 
-#define DEVPEEK16(o, x) { (o) = (d->dat[(x)] << 8) + d->dat[(x) + 1]; }
-#define DEVPOKE16(x, y) { d->dat[(x)] = (y) >> 8; d->dat[(x) + 1] = (y); }
-#define GETVECTOR(d) ((d)->dat[0] << 8 | (d)->dat[1])
-
 #define GETVEC(d) ((d)[0] << 8 | (d)[1])
 #define POKDEV(x, y) { d[(x)] = (y) >> 8; d[(x) + 1] = (y); }
 #define PEKDEV(o, x) { (o) = (d[(x)] << 8) + d[(x) + 1]; }
@@ -30,19 +26,14 @@ typedef unsigned int Uint32;
 /* clang-format on */
 
 typedef struct {
-	Uint8 dat[255],ptr;
+	Uint8 dat[255], ptr;
 } Stack;
 
-typedef struct Device {
-	Uint8 dat[16];
-} Device;
-
 typedef struct Uxn {
-	Uint8 *ram, *dpg;
+	Uint8 *ram, *dev;
 	Stack *wst, *rst;
 	Uint8 (*dei)(struct Uxn *u, Uint8 address);
 	void (*deo)(struct Uxn *u, Uint8 address, Uint8 value);
-	Device dev[16];
 } Uxn;
 
 int uxn_boot(Uxn *u, Uint8 *ram);
