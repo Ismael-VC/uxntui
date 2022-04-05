@@ -44,16 +44,16 @@ console_input(Uxn *u, char c)
 {
 	Device *d = &u->dev[1];
 	d->dat[0x2] = c;
-	return uxn_eval(u, GETVECTOR(d));
+	return uxn_eval(u, GETVEC(d->dat));
 }
 
 static void
-console_deo(Device *d, Uint8 port)
+console_deo(Uint8 *d, Uint8 port)
 {
 	FILE *fd = port == 0x8 ? stdout : port == 0x9 ? stderr
 												  : 0;
 	if(fd) {
-		fputc(d->dat[port], fd);
+		fputc(d[port], fd);
 		fflush(fd);
 	}
 }
@@ -80,7 +80,7 @@ uxn11_deo(Uxn *u, Uint8 addr, Uint8 v)
 	d->dat[p] = v;
 	switch(addr & 0xf0) {
 	case 0x00: system_deo(d, p); break;
-	case 0x10: console_deo(d, p); break;
+	case 0x10: console_deo(d->dat, p); break;
 	case 0x20: screen_deo(u->ram, d->dat, p); break;
 	case 0xa0: file_deo(d, p); break;
 	case 0xb0: file_deo(d, p); break;
@@ -193,7 +193,7 @@ start(Uxn *u, char *rom)
 	u->deo = uxn11_deo;
 
 	/* system   */ uxn_port(u, 0x0, nil_dei, system_deo);
-	/* console  */ uxn_port(u, 0x1, nil_dei, console_deo);
+	/* console  */ uxn_port(u, 0x1, nil_dei, nil_deo);
 	/* screen   */ devscreen = uxn_port(u, 0x2, nil_dei, nil_deo);
 	/* empty    */ uxn_port(u, 0x3, nil_dei, nil_deo);
 	/* empty    */ uxn_port(u, 0x4, nil_dei, nil_deo);
