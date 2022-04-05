@@ -64,10 +64,10 @@ uxn11_dei(struct Uxn *u, Uint8 addr)
 	Uint8 p = addr & 0x0f;
 	Device *d = &u->dev[addr >> 4];
 	switch(addr & 0xf0) {
-	case 0x20: screen_dei(d, p); break;
-	case 0xa0: file_dei(d, p); break;
-	case 0xb0: file_dei(d, p); break;
-	case 0xc0: datetime_dei(d, p); break;
+	case 0x20: return screen_dei(d, p); break;
+	case 0xa0: return file_dei(d, p); break;
+	case 0xb0: return file_dei(d, p); break;
+	case 0xc0: return datetime_dei(d->dat, p); break;
 	}
 	return d->dat[p];
 }
@@ -204,7 +204,7 @@ start(Uxn *u, char *rom)
 	/* mouse    */ devmouse = uxn_port(u, 0x9, nil_dei, nil_deo);
 	/* file0    */ uxn_port(u, 0xa, file_dei, file_deo);
 	/* file1    */ uxn_port(u, 0xb, file_dei, file_deo);
-	/* datetime */ uxn_port(u, 0xc, datetime_dei, nil_deo);
+	/* datetime */ uxn_port(u, 0xc, nil_dei, nil_deo);
 	/* empty    */ uxn_port(u, 0xd, nil_dei, nil_deo);
 	/* reserved */ uxn_port(u, 0xe, nil_dei, nil_deo);
 	/* reserved */ uxn_port(u, 0xf, nil_dei, nil_deo);
