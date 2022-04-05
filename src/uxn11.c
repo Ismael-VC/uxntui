@@ -20,8 +20,6 @@ static Display *display;
 static Visual *visual;
 static Window window;
 
-static Device *devscreen, *devctrl, *devmouse;
-
 #define WIDTH (64 * 8)
 #define HEIGHT (40 * 8)
 
@@ -144,26 +142,26 @@ processEvent(Uxn *u)
 		KeySym sym;
 		char buf[7];
 		XLookupString((XKeyPressedEvent *)&ev, buf, 7, &sym, 0);
-		controller_down(u, devctrl->dat, get_button(sym));
-		controller_key(u, devctrl->dat, sym < 0x80 ? sym : buf[0]);
+		controller_down(u, u->dev[0x8].dat, get_button(sym));
+		controller_key(u, u->dev[0x8].dat, sym < 0x80 ? sym : buf[0]);
 	} break;
 	case KeyRelease: {
 		KeySym sym;
 		char buf[7];
 		XLookupString((XKeyPressedEvent *)&ev, buf, 7, &sym, 0);
-		controller_up(u, devctrl->dat, get_button(sym));
+		controller_up(u, u->dev[0x8].dat, get_button(sym));
 	} break;
 	case ButtonPress: {
 		XButtonPressedEvent *e = (XButtonPressedEvent *)&ev;
-		mouse_down(u, devmouse->dat, 0x1 << (e->button - 1));
+		mouse_down(u, u->dev[0x9].dat, 0x1 << (e->button - 1));
 	} break;
 	case ButtonRelease: {
 		XButtonPressedEvent *e = (XButtonPressedEvent *)&ev;
-		mouse_up(u, devmouse->dat, 0x1 << (e->button - 1));
+		mouse_up(u, u->dev[0x9].dat, 0x1 << (e->button - 1));
 	} break;
 	case MotionNotify: {
 		XMotionEvent *e = (XMotionEvent *)&ev;
-		mouse_pos(u, devmouse->dat, e->x, e->y);
+		mouse_pos(u, u->dev[0x9].dat, e->x, e->y);
 	} break;
 	}
 }
@@ -194,14 +192,14 @@ start(Uxn *u, char *rom)
 
 	/* system   */ uxn_port(u, 0x0, nil_dei, nil_deo);
 	/* console  */ uxn_port(u, 0x1, nil_dei, nil_deo);
-	/* screen   */ devscreen = uxn_port(u, 0x2, nil_dei, nil_deo);
+	/* screen   */ uxn_port(u, 0x2, nil_dei, nil_deo);
 	/* empty    */ uxn_port(u, 0x3, nil_dei, nil_deo);
 	/* empty    */ uxn_port(u, 0x4, nil_dei, nil_deo);
 	/* empty    */ uxn_port(u, 0x5, nil_dei, nil_deo);
 	/* empty    */ uxn_port(u, 0x6, nil_dei, nil_deo);
 	/* empty    */ uxn_port(u, 0x7, nil_dei, nil_deo);
-	/* control  */ devctrl = uxn_port(u, 0x8, nil_dei, nil_deo);
-	/* mouse    */ devmouse = uxn_port(u, 0x9, nil_dei, nil_deo);
+	/* control  */ uxn_port(u, 0x8, nil_dei, nil_deo);
+	/* mouse    */ uxn_port(u, 0x9, nil_dei, nil_deo);
 	/* file0    */ uxn_port(u, 0xa, nil_dei, nil_deo);
 	/* file1    */ uxn_port(u, 0xb, nil_dei, nil_deo);
 	/* datetime */ uxn_port(u, 0xc, nil_dei, nil_deo);
@@ -264,8 +262,8 @@ main(int argc, char **argv)
 		while(XPending(display))
 			processEvent(&u);
 		if(poll(&fds[1], 1, 0)) {
-			read(fds[1].fd, expirations, 8);    /* Indicate we handled the timer */
-			uxn_eval(&u, GETVECTOR(devscreen)); /* Call the vector once, even if the timer fired multiple times */
+			read(fds[1].fd, expirations, 8);      /* Indicate we handled the timer */
+			uxn_eval(&u, GETVEC(u.dev[0x2].dat)); /* Call the vector once, even if the timer fired multiple times */
 		}
 		if(uxn_screen.fg.changed || uxn_screen.bg.changed)
 			redraw();
