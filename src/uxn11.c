@@ -144,14 +144,14 @@ processEvent(void)
 		KeySym sym;
 		char buf[7];
 		XLookupString((XKeyPressedEvent *)&ev, buf, 7, &sym, 0);
-		controller_down(devctrl, get_button(sym));
-		controller_key(devctrl, sym < 0x80 ? sym : buf[0]);
+		controller_down(devctrl->u, devctrl->dat, get_button(sym));
+		controller_key(devctrl->u, devctrl->dat, sym < 0x80 ? sym : buf[0]);
 	} break;
 	case KeyRelease: {
 		KeySym sym;
 		char buf[7];
 		XLookupString((XKeyPressedEvent *)&ev, buf, 7, &sym, 0);
-		controller_up(devctrl, get_button(sym));
+		controller_up(devctrl->u, devctrl->dat, get_button(sym));
 	} break;
 	case ButtonPress: {
 		XButtonPressedEvent *e = (XButtonPressedEvent *)&ev;

@@ -14,39 +14,39 @@ WITH REGARD TO THIS SOFTWARE.
 */
 
 void
-controller_down(Device *d, Uint8 mask)
+controller_down(Uxn *u, Uint8 *d, Uint8 mask)
 {
 	if(mask) {
-		d->dat[2] |= mask;
-		uxn_eval(d->u, GETVECTOR(d));
+		d[2] |= mask;
+		uxn_eval(u, GETVEC(d));
 	}
 }
 
 void
-controller_up(Device *d, Uint8 mask)
+controller_up(Uxn *u, Uint8 *d, Uint8 mask)
 {
 	if(mask) {
-		d->dat[2] &= (~mask);
-		uxn_eval(d->u, GETVECTOR(d));
+		d[2] &= (~mask);
+		uxn_eval(u, GETVEC(d));
 	}
 }
 
 void
-controller_key(Device *d, Uint8 key)
+controller_key(Uxn *u, Uint8 *d, Uint8 key)
 {
 	if(key) {
-		d->dat[3] = key;
-		uxn_eval(d->u, GETVECTOR(d));
-		d->dat[3] = 0x00;
+		d[3] = key;
+		uxn_eval(u, GETVEC(d));
+		d[3] = 0x00;
 	}
 }
 
 void
-controller_special(Device *d, Uint8 key)
+controller_special(Uxn *u, Uint8 *d, Uint8 key)
 {
 	if(key) {
-		d->dat[4] = key;
-		uxn_eval(d->u, GETVECTOR(d));
-		d->dat[4] = 0x00;
+		d[4] = key;
+		uxn_eval(u, GETVEC(d));
+		d[4] = 0x00;
 	}
 }

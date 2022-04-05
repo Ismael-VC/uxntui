@@ -22,4 +22,4 @@ fi
 echo "Done."
 
 # echo "Running.."
-bin/uxn11 ~/roms/catclock.rom
+bin/uxn11 ~/roms/left.rom

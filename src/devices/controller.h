@@ -10,7 +10,7 @@ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
 WITH REGARD TO THIS SOFTWARE.
 */
 
-void controller_down(Device *d, Uint8 mask);
-void controller_up(Device *d, Uint8 mask);
-void controller_key(Device *d, Uint8 key);
-void controller_special(Device *d, Uint8 key);
+void controller_down(Uxn *u, Uint8 *d, Uint8 mask);
+void controller_up(Uxn *u, Uint8 *d, Uint8 mask);
+void controller_key(Uxn *u, Uint8 *d, Uint8 key);
+void controller_special(Uxn *u, Uint8 *d, Uint8 key);
