@@ -148,7 +148,12 @@ processEvent(Uxn *u)
 	} break;
 	case ButtonPress: {
 		XButtonPressedEvent *e = (XButtonPressedEvent *)&ev;
-		mouse_down(u, &u->dev[0x90], 0x1 << (e->button - 1));
+		if(e->button == 4)
+			mouse_scroll(u, &u->dev[0x90], 0, 1);
+		else if(e->button == 5)
+			mouse_scroll(u, &u->dev[0x90], 0, -1);
+		else
+			mouse_down(u, &u->dev[0x90], 0x1 << (e->button - 1));
 	} break;
 	case ButtonRelease: {
 		XButtonPressedEvent *e = (XButtonPressedEvent *)&ev;

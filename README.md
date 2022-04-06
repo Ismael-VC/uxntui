@@ -37,12 +37,12 @@ cc src/devices/datetime.c src/devices/system.c src/devices/file.c src/uxn.c -DND
 ## Devices
 
 - `00` system
-- `10` console(partial)
+- `10` console
 - `20` screen
 - `30` audio(missing)
 - `70` midi(missing)
 - `80` controller
-- `90` mouse(partial)
+- `90` mouse
 - `a0` file
 - `c0` datetime
 
