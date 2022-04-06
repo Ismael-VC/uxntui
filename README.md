@@ -25,7 +25,7 @@ The stack mapping is 254 bytes of data, a byte for the pointer and a byte for an
 All you need is X11.
 
 ```sh
-gcc src/uxn.c src/devices/system.c src/devices/screen.c src/devices/controller.c src/devices/mouse.c src/devices/file.c src/devices/datetime.c src/uxn11.c -D_POSIX_C_SOURCE=199309L -DNDEBUG -Os -g0 -s -o bin/uxn11 -lX11
+gcc -DNDEBUG -Og -g0 -s src/uxn.c src/devices/system.c src/devices/screen.c src/devices/controller.c src/devices/mouse.c src/devices/file.c src/devices/datetime.c src/uxn11.c -o bin/uxn11 -lX11
 ```
 
 ### Terminal
@@ -33,13 +33,15 @@ gcc src/uxn.c src/devices/system.c src/devices/screen.c src/devices/controller.c
 If you wish to build the emulator without graphics mode:
 
 ```sh
-cc src/devices/datetime.c src/devices/system.c src/devices/file.c src/uxn.c -DNDEBUG -Os -g0 -s src/uxncli.c -o bin/uxncli
+gcc -DNDEBUG -Og -g0 -s src/uxn.c src/devices/system.c src/devices/file.c src/devices/datetime.c src/uxncli.c -o bin/uxncli
 ```
 
-## Run
+## Usage
+
+The first parameter is the rom file, the subsequent arguments will be accessible to the rom, via the [Console vector](https://wiki.xxiivv.com/site/varvara.html#console).
 
 ```sh
-bin/uxnemu bin/polycat.rom
+bin/uxnemu bin/polycat.rom arg1 arg2
 ```
 
 ## Devices
