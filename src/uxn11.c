@@ -24,7 +24,7 @@ static Window window;
 #define HEIGHT (40 * 8)
 
 static int
-error(char *msg, const char *err)
+emu_error(char *msg, const char *err)
 {
 	fprintf(stderr, "Error %s: %s\n", msg, err);
 	return 0;
@@ -50,7 +50,7 @@ console_deo(Uint8 *d, Uint8 port)
 }
 
 static Uint8
-uxn11_dei(struct Uxn *u, Uint8 addr)
+emu_dei(struct Uxn *u, Uint8 addr)
 {
 	Uint8 p = addr & 0x0f, d = addr & 0xf0;
 	switch(d) {
@@ -63,7 +63,7 @@ uxn11_dei(struct Uxn *u, Uint8 addr)
 }
 
 static void
-uxn11_deo(Uxn *u, Uint8 addr, Uint8 v)
+emu_deo(Uxn *u, Uint8 addr, Uint8 v)
 {
 	Uint8 p = addr & 0x0f, d = addr & 0xf0;
 	u->dev[addr] = v;
@@ -81,7 +81,7 @@ uxn11_deo(Uxn *u, Uint8 addr, Uint8 v)
 }
 
 static void
-redraw(void)
+emu_redraw(void)
 {
 	screen_redraw(&uxn_screen, uxn_screen.pixels);
 	XPutImage(display, window, DefaultGC(display, 0), ximage, 0, 0, 0, 0, uxn_screen.width, uxn_screen.height);
@@ -119,13 +119,13 @@ get_button(KeySym sym)
 }
 
 static void
-processEvent(Uxn *u)
+emu_event(Uxn *u)
 {
 	XEvent ev;
 	XNextEvent(display, &ev);
 	switch(ev.type) {
 	case Expose:
-		redraw();
+		emu_redraw();
 		break;
 	case ClientMessage: {
 		XDestroyImage(ximage);
@@ -167,22 +167,6 @@ processEvent(Uxn *u)
 }
 
 static int
-start(Uxn *u, char *rom)
-{
-	if(!uxn_boot(u, (Uint8 *)calloc(0x10300, sizeof(Uint8))))
-		return error("Boot", "Failed");
-	if(!load_rom(u, rom))
-		return error("Load", "Failed");
-	fprintf(stderr, ">> Loaded %s\n", rom);
-	u->dei = uxn11_dei;
-	u->deo = uxn11_deo;
-	screen_resize(&uxn_screen, WIDTH, HEIGHT);
-	if(!uxn_eval(u, PAGE_PROGRAM))
-		return error("Boot", "Failed to start rom.");
-	return 1;
-}
-
-static int
 init(void)
 {
 	Atom wmDelete;
@@ -190,7 +174,7 @@ init(void)
 	visual = DefaultVisual(display, 0);
 	window = XCreateSimpleWindow(display, RootWindow(display, 0), 0, 0, uxn_screen.width, uxn_screen.height, 1, 0, 0);
 	if(visual->class != TrueColor)
-		return error("Init", "True-color visual failed");
+		return emu_error("Init", "True-color visual failed");
 	XSelectInput(display, window, ButtonPressMask | ButtonReleaseMask | PointerMotionMask | ExposureMask | KeyPressMask | KeyReleaseMask);
 	wmDelete = XInternAtom(display, "WM_DELETE_WINDOW", True);
 	XSetWMProtocols(display, window, &wmDelete, 1);
@@ -209,11 +193,20 @@ main(int argc, char **argv)
 	struct pollfd fds[2];
 	static const struct itimerspec screen_tspec = {{0, 16666666}, {0, 16666666}};
 	if(argc < 2)
-		return error("Usage", "uxncli game.rom args");
-	if(!start(&u, argv[1]))
-		return error("Start", "Failed");
+		return emu_error("Usage", "uxncli game.rom args");
+	/* start sequence */
+	if(!uxn_boot(&u, (Uint8 *)calloc(0x10300, sizeof(Uint8))))
+		return emu_error("Boot", "Failed");
+	if(!load_rom(&u, argv[1]))
+		return emu_error("Load", "Failed");
+	fprintf(stderr, "Loaded %s\n", argv[1]);
+	u.dei = emu_dei;
+	u.deo = emu_deo;
+	screen_resize(&uxn_screen, WIDTH, HEIGHT);
+	if(!uxn_eval(&u, PAGE_PROGRAM))
+		return emu_error("Boot", "Failed to start rom.");
 	if(!init())
-		return error("Init", "Failed");
+		return emu_error("Init", "Failed");
 	/* console vector */
 	for(i = 2; i < argc; i++) {
 		char *p = argv[i];
@@ -229,13 +222,13 @@ main(int argc, char **argv)
 		if(poll(fds, 2, 1000) <= 0)
 			continue;
 		while(XPending(display))
-			processEvent(&u);
+			emu_event(&u);
 		if(poll(&fds[1], 1, 0)) {
 			read(fds[1].fd, expirations, 8);    /* Indicate we handled the timer */
 			uxn_eval(&u, GETVEC(&u.dev[0x20])); /* Call the vector once, even if the timer fired multiple times */
 		}
 		if(uxn_screen.fg.changed || uxn_screen.bg.changed)
-			redraw();
+			emu_redraw();
 	}
 	XDestroyImage(ximage);
 	return 0;
