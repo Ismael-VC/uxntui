@@ -41,8 +41,8 @@ console_input(Uxn *u, char c)
 static void
 console_deo(Uint8 *d, Uint8 port)
 {
-	FILE *fd = port == 0x8 ? stdout : port == 0x9 ? stderr
-												  : 0;
+	FILE *fd = port == 0x8 ? stdout : port == 0x9 ? stderr :
+                                                    0;
 	if(fd) {
 		fputc(d[port], fd);
 		fflush(fd);
@@ -85,6 +85,23 @@ emu_redraw(void)
 {
 	screen_redraw(&uxn_screen, uxn_screen.pixels);
 	XPutImage(display, window, DefaultGC(display, 0), ximage, 0, 0, 0, 0, uxn_screen.width, uxn_screen.height);
+}
+
+static int
+emu_start(Uxn *u, char *rom)
+{
+	free(u->ram);
+	if(!uxn_boot(u, (Uint8 *)calloc(0x10300, sizeof(Uint8))))
+		return emu_error("Boot", "Failed");
+	if(!load_rom(u, rom))
+		return emu_error("Load", "Failed");
+	fprintf(stderr, "Loaded %s\n", rom);
+	u->dei = emu_dei;
+	u->deo = emu_deo;
+	screen_resize(&uxn_screen, WIDTH, HEIGHT);
+	if(!uxn_eval(u, PAGE_PROGRAM))
+		return emu_error("Boot", "Failed to start rom.");
+	return 1;
 }
 
 static void
@@ -137,6 +154,10 @@ emu_event(Uxn *u)
 		KeySym sym;
 		char buf[7];
 		XLookupString((XKeyPressedEvent *)&ev, buf, 7, &sym, 0);
+		if(sym == XK_F2)
+			system_inspect(u);
+		if(sym == XK_F4)
+			emu_start(u, "boot.rom");
 		controller_down(u, &u->dev[0x80], get_button(sym));
 		controller_key(u, &u->dev[0x80], sym < 0x80 ? sym : (Uint8)buf[0]);
 	} break;
@@ -192,19 +213,12 @@ main(int argc, char **argv)
 	char expirations[8];
 	struct pollfd fds[2];
 	static const struct itimerspec screen_tspec = {{0, 16666666}, {0, 16666666}};
+	/* TODO: Try loading launcher.rom if present */
 	if(argc < 2)
 		return emu_error("Usage", "uxncli game.rom args");
 	/* start sequence */
-	if(!uxn_boot(&u, (Uint8 *)calloc(0x10300, sizeof(Uint8))))
-		return emu_error("Boot", "Failed");
-	if(!load_rom(&u, argv[1]))
-		return emu_error("Load", "Failed");
-	fprintf(stderr, "Loaded %s\n", argv[1]);
-	u.dei = emu_dei;
-	u.deo = emu_deo;
-	screen_resize(&uxn_screen, WIDTH, HEIGHT);
-	if(!uxn_eval(&u, PAGE_PROGRAM))
-		return emu_error("Boot", "Failed to start rom.");
+	if(!emu_start(&u, argv[1]))
+		return emu_error("Start", "Failed");
 	if(!init())
 		return emu_error("Init", "Failed");
 	/* console vector */
