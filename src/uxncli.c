@@ -18,7 +18,7 @@ WITH REGARD TO THIS SOFTWARE.
 */
 
 static int
-error(char *msg, const char *err)
+emu_error(char *msg, const char *err)
 {
 	fprintf(stderr, "Error %s: %s\n", msg, err);
 	return 0;
@@ -44,7 +44,7 @@ console_deo(Uint8 *d, Uint8 port)
 }
 
 static Uint8
-uxn11_dei(struct Uxn *u, Uint8 addr)
+emu_dei(struct Uxn *u, Uint8 addr)
 {
 	Uint8 p = addr & 0x0f, d = addr & 0xf0;
 	switch(d) {
@@ -56,7 +56,7 @@ uxn11_dei(struct Uxn *u, Uint8 addr)
 }
 
 static void
-uxn11_deo(Uxn *u, Uint8 addr, Uint8 v)
+emu_deo(Uxn *u, Uint8 addr, Uint8 v)
 {
 	Uint8 p = addr & 0x0f, d = addr & 0xf0;
 	u->dev[addr] = v;
@@ -68,51 +68,31 @@ uxn11_deo(Uxn *u, Uint8 addr, Uint8 v)
 	}
 }
 
-static void
-run(Uxn *u)
-{
-	while(!u->dev[0x0f]) {
-		int c = fgetc(stdin);
-		if(c != EOF)
-			console_input(u, (Uint8)c);
-	}
-}
-
-int
-uxn_interrupt(void)
-{
-	return 1;
-}
-
-static int
-start(Uxn *u)
-{
-	if(!uxn_boot(u, (Uint8 *)calloc(0x10200, sizeof(Uint8))))
-		return error("Boot", "Failed");
-	u->dei = uxn11_dei;
-	u->deo = uxn11_deo;
-	return 1;
-}
-
 int
 main(int argc, char **argv)
 {
 	Uxn u;
 	int i;
 	if(argc < 2)
-		return error("Usage", "uxncli game.rom args");
-	if(!start(&u))
-		return error("Start", "Failed");
+		return emu_error("Usage", "uxncli game.rom args");
+	if(!uxn_boot(&u, (Uint8 *)calloc(0x10300, sizeof(Uint8))))
+		return emu_error("Boot", "Failed");
+	u.dei = emu_dei;
+	u.deo = emu_deo;
 	if(!load_rom(&u, argv[1]))
-		return error("Load", "Failed");
-	fprintf(stderr, ">> Loaded %s\n", argv[1]);
+		return emu_error("Load", "Failed");
+	fprintf(stderr, "Loaded %s\n", argv[1]);
 	if(!uxn_eval(&u, PAGE_PROGRAM))
-		return error("Init", "Failed");
+		return emu_error("Init", "Failed");
 	for(i = 2; i < argc; i++) {
 		char *p = argv[i];
 		while(*p) console_input(&u, *p++);
 		console_input(&u, '\n');
 	}
-	run(&u);
+	while(!u.dev[0x0f]) {
+		int c = fgetc(stdin);
+		if(c != EOF)
+			console_input(&u, (Uint8)c);
+	}
 	return 0;
 }

@@ -138,7 +138,7 @@ processEvent(Uxn *u)
 		char buf[7];
 		XLookupString((XKeyPressedEvent *)&ev, buf, 7, &sym, 0);
 		controller_down(u, &u->dev[0x80], get_button(sym));
-		controller_key(u, &u->dev[0x80], sym < 0x80 ? sym : buf[0]);
+		controller_key(u, &u->dev[0x80], sym < 0x80 ? sym : (Uint8)buf[0]);
 	} break;
 	case KeyRelease: {
 		KeySym sym;
