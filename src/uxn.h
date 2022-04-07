@@ -32,10 +32,10 @@ typedef struct {
 typedef struct Uxn {
 	Uint8 *ram, *dev;
 	Stack *wst, *rst;
-	Uint8 (*dei)(struct Uxn *u, Uint8 address);
-	void (*deo)(struct Uxn *u, Uint8 address, Uint8 value);
+	Uint8 (*dei)(struct Uxn *u, Uint8 addr);
+	void (*deo)(struct Uxn *u, Uint8 addr, Uint8 value);
 } Uxn;
 
 int uxn_boot(Uxn *u, Uint8 *ram);
 int uxn_eval(Uxn *u, Uint16 pc);
-int uxn_halt(Uxn *u, Uint8 error, Uint16 addr);
+int uxn_halt(Uxn *u, Uint8 err, Uint16 addr);

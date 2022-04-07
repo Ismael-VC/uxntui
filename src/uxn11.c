@@ -15,6 +15,17 @@
 #include "devices/file.h"
 #include "devices/datetime.h"
 
+/*
+Copyright (c) 2022 Devine Lu Linvega
+
+Permission to use, copy, modify, and distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE.
+*/
+
 static XImage *ximage;
 static Display *display;
 static Visual *visual;
@@ -81,7 +92,7 @@ emu_deo(Uxn *u, Uint8 addr, Uint8 v)
 }
 
 static void
-emu_redraw(void)
+emu_draw(void)
 {
 	screen_redraw(&uxn_screen, uxn_screen.pixels);
 	XPutImage(display, window, DefaultGC(display, 0), ximage, 0, 0, 0, 0, uxn_screen.width, uxn_screen.height);
@@ -142,7 +153,7 @@ emu_event(Uxn *u)
 	XNextEvent(display, &ev);
 	switch(ev.type) {
 	case Expose:
-		emu_redraw();
+		emu_draw();
 		break;
 	case ClientMessage: {
 		XDestroyImage(ximage);
@@ -213,7 +224,6 @@ main(int argc, char **argv)
 	char expirations[8];
 	struct pollfd fds[2];
 	static const struct itimerspec screen_tspec = {{0, 16666666}, {0, 16666666}};
-	/* TODO: Try loading launcher.rom if present */
 	if(argc < 2)
 		return emu_error("Usage", "uxncli game.rom args");
 	/* start sequence */
@@ -227,6 +237,7 @@ main(int argc, char **argv)
 		while(*p) console_input(&u, *p++);
 		console_input(&u, '\n');
 	}
+	/* timer */
 	fds[0].fd = XConnectionNumber(display);
 	fds[1].fd = timerfd_create(CLOCK_MONOTONIC, 0);
 	timerfd_settime(fds[1].fd, 0, &screen_tspec, NULL);
@@ -242,7 +253,7 @@ main(int argc, char **argv)
 			uxn_eval(&u, GETVEC(&u.dev[0x20])); /* Call the vector once, even if the timer fired multiple times */
 		}
 		if(uxn_screen.fg.changed || uxn_screen.bg.changed)
-			emu_redraw();
+			emu_draw();
 	}
 	XDestroyImage(ximage);
 	return 0;

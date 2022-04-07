@@ -1,6 +1,5 @@
 /*
-Copyright (c) 2021 Devine Lu Linvega
-Copyright (c) 2021 Andrew Alderwick
+Copyright (c) 2021 Devine Lu Linvega, Andrew Alderwick
 
 Permission to use, copy, modify, and distribute this software for any
 purpose with or without fee is hereby granted, provided that the above
@@ -13,4 +12,3 @@ WITH REGARD TO THIS SOFTWARE.
 void controller_down(Uxn *u, Uint8 *d, Uint8 mask);
 void controller_up(Uxn *u, Uint8 *d, Uint8 mask);
 void controller_key(Uxn *u, Uint8 *d, Uint8 key);
-void controller_special(Uxn *u, Uint8 *d, Uint8 key);

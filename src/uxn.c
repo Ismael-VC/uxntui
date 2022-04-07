@@ -24,7 +24,7 @@ WITH REGARD TO THIS SOFTWARE.
 #define PEEK(o, x) { if(bs) { PEEK16(o, x) } else { o = u->ram[(x)]; } }
 #define DEVR(o, x) { o = u->dei(u, x); if (bs) o = (o << 8) + u->dei(u, ((x) + 1) & 0xFF); }
 #define DEVW(x, y) { if (bs) { u->deo(u, (x), (y) >> 8); u->deo(u, ((x) + 1) & 0xFF, (y)); } else { u->deo(u, x, (y)); } }
-#define WARP(x) { if(bs) pc = (x); else pc += (Sint8)(x); }
+#define JUMP(x) { if(bs) pc = (x); else pc += (Sint8)(x); }
 
 int
 uxn_eval(Uxn *u, Uint16 pc)
@@ -65,9 +65,9 @@ uxn_eval(Uxn *u, Uint16 pc)
 		case 0x09: /* NEQ */ POP(a) POP(b) PUSH8(src, b != a) break;
 		case 0x0a: /* GTH */ POP(a) POP(b) PUSH8(src, b > a) break;
 		case 0x0b: /* LTH */ POP(a) POP(b) PUSH8(src, b < a) break;
-		case 0x0c: /* JMP */ POP(a) WARP(a) break;
-		case 0x0d: /* JCN */ POP(a) POP8(b) if(b) WARP(a) break;
-		case 0x0e: /* JSR */ POP(a) PUSH16(dst, pc) WARP(a) break;
+		case 0x0c: /* JMP */ POP(a) JUMP(a) break;
+		case 0x0d: /* JCN */ POP(a) POP8(b) if(b) JUMP(a) break;
+		case 0x0e: /* JSR */ POP(a) PUSH16(dst, pc) JUMP(a) break;
 		case 0x0f: /* STH */ POP(a) PUSH(dst, a) break;
 		/* Memory */
 		case 0x10: /* LDZ */ POP8(a) PEEK(b, a) PUSH(src, b) break;
@@ -86,7 +86,7 @@ uxn_eval(Uxn *u, Uint16 pc)
 		case 0x1c: /* AND */ POP(a) POP(b) PUSH(src, b & a) break;
 		case 0x1d: /* ORA */ POP(a) POP(b) PUSH(src, b | a) break;
 		case 0x1e: /* EOR */ POP(a) POP(b) PUSH(src, b ^ a) break;
-		case 0x1f: /* SFT */ POP8(a) POP(b) c = b >> (a & 0x0f) << ((a & 0xf0) >> 4); PUSH(src, c) break;
+		case 0x1f: /* SFT */ POP8(a) POP(b) PUSH(src, b >> (a & 0x0f) << ((a & 0xf0) >> 4)) break;
 		}
 	}
 	return 1;
