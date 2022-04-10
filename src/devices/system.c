@@ -41,14 +41,16 @@ system_inspect(Uxn *u)
 int
 uxn_halt(Uxn *u, Uint8 instr, Uint8 err, Uint16 addr)
 {
-	Stack *origin = (instr & 0x40) ? u->wst : u->rst;
 	Uint8 *d = &u->dev[0x00];
-	origin->err = err;
+	if(instr & 0x40)
+		u->rst->err = err;
+	else
+		u->wst->err = err;
 	if(GETVEC(d))
 		uxn_eval(u, GETVEC(d));
 	else {
 		system_inspect(u);
-		fprintf(stderr, "%s %s, at 0x%04x.\n", (instr & 0x40) ? "Return-stack" : "Working-stack", errors[err - 1], addr);
+		fprintf(stderr, "%s %s, by %02x at 0x%04x.\n", (instr & 0x40) ? "Return-stack" : "Working-stack", errors[err - 1], instr, addr);
 	}
 	return 0;
 }
