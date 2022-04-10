@@ -26,7 +26,7 @@ typedef unsigned int Uint32;
 /* clang-format on */
 
 typedef struct {
-	Uint8 dat[255], ptr;
+	Uint8 dat[254], err, ptr;
 } Stack;
 
 typedef struct Uxn {
@@ -38,4 +38,4 @@ typedef struct Uxn {
 
 int uxn_boot(Uxn *u, Uint8 *ram);
 int uxn_eval(Uxn *u, Uint16 pc);
-int uxn_halt(Uxn *u, Uint8 err, Uint16 addr);
+int uxn_halt(Uxn *u, Uint8 instr, Uint8 err, Uint16 addr);

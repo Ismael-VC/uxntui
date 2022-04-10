@@ -15,12 +15,9 @@ WITH REGARD TO THIS SOFTWARE.
 */
 
 static const char *errors[] = {
-	"Working-stack underflow",
-	"Return-stack underflow",
-	"Working-stack overflow",
-	"Return-stack overflow",
-	"Working-stack division by zero",
-	"Return-stack division by zero"};
+	"underflow",
+	"overflow",
+	"division by zero"};
 
 static void
 system_print(Stack *s, char *name)
@@ -42,10 +39,17 @@ system_inspect(Uxn *u)
 }
 
 int
-uxn_halt(Uxn *u, Uint8 error, Uint16 addr)
+uxn_halt(Uxn *u, Uint8 instr, Uint8 err, Uint16 addr)
 {
-	system_inspect(u);
-	fprintf(stderr, "Halted: %s#%04x, at 0x%04x\n", errors[error], u->ram[addr], addr);
+	Stack *origin = (instr & 0x40) ? u->wst : u->rst;
+	Uint8 *d = &u->dev[0x00];
+	origin->err = err;
+	if(GETVEC(d))
+		uxn_eval(u, GETVEC(d));
+	else {
+		system_inspect(u);
+		fprintf(stderr, "%s %s, at 0x%04x.\n", (instr & 0x40) ? "Return-stack" : "Working-stack", errors[err - 1], addr);
+	}
 	return 0;
 }
 
