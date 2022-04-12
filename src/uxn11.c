@@ -227,6 +227,7 @@ main(int argc, char **argv)
 	if(argc < 2)
 		return emu_error("Usage", "uxncli game.rom args");
 	/* start sequence */
+	u.ram = NULL;
 	if(!emu_start(&u, argv[1]))
 		return emu_error("Start", "Failed");
 	if(!init())
