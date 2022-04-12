@@ -199,7 +199,7 @@ emu_event(Uxn *u)
 }
 
 static int
-init(void)
+init(char *title)
 {
 	Atom wmDelete;
 	display = XOpenDisplay(NULL);
@@ -210,6 +210,7 @@ init(void)
 	XSelectInput(display, window, ButtonPressMask | ButtonReleaseMask | PointerMotionMask | ExposureMask | KeyPressMask | KeyReleaseMask);
 	wmDelete = XInternAtom(display, "WM_DELETE_WINDOW", True);
 	XSetWMProtocols(display, window, &wmDelete, 1);
+	XStoreName(display, window, title);
 	XMapWindow(display, window);
 	ximage = XCreateImage(display, visual, DefaultDepth(display, DefaultScreen(display)), ZPixmap, 0, (char *)uxn_screen.pixels, uxn_screen.width, uxn_screen.height, 32, 0);
 	hide_cursor();
@@ -230,7 +231,7 @@ main(int argc, char **argv)
 	u.ram = NULL;
 	if(!emu_start(&u, argv[1]))
 		return emu_error("Start", "Failed");
-	if(!init())
+	if(!init(argv[1]))
 		return emu_error("Init", "Failed");
 	/* console vector */
 	for(i = 2; i < argc; i++) {
