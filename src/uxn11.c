@@ -225,7 +225,7 @@ main(int argc, char **argv)
 	struct pollfd fds[2];
 	static const struct itimerspec screen_tspec = {{0, 16666666}, {0, 16666666}};
 	if(argc < 2)
-		return emu_error("Usage", "uxncli game.rom args");
+		return emu_error("Usage", "uxn11 game.rom args");
 	/* start sequence */
 	u.ram = NULL;
 	if(!emu_start(&u, argv[1]))
