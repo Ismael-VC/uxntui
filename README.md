@@ -25,7 +25,7 @@ The stack mapping is 254 bytes of data, a byte for the pointer and a byte for an
 All you need is X11.
 
 ```sh
-gcc -DNDEBUG -Og -g0 -s src/uxn.c src/devices/system.c src/devices/screen.c src/devices/controller.c src/devices/mouse.c src/devices/file.c src/devices/datetime.c src/uxn11.c -o bin/uxn11 -lX11
+gcc -Os -DNDEBUG -g0 -s src/uxn.c src/devices/system.c src/devices/screen.c src/devices/controller.c src/devices/mouse.c src/devices/file.c src/devices/datetime.c src/uxn11.c -o bin/uxn11 -lX11
 ```
 
 ### Terminal
@@ -33,7 +33,7 @@ gcc -DNDEBUG -Og -g0 -s src/uxn.c src/devices/system.c src/devices/screen.c src/
 If you wish to build the emulator without graphics mode:
 
 ```sh
-gcc -DNDEBUG -Og -g0 -s src/uxn.c src/devices/system.c src/devices/file.c src/devices/datetime.c src/uxncli.c -o bin/uxncli
+gcc -Os -DNDEBUG -g0 -s src/uxn.c src/devices/system.c src/devices/file.c src/devices/datetime.c src/uxncli.c -o bin/uxncli
 ```
 
 ## Usage

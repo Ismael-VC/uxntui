@@ -51,8 +51,7 @@ uxn_eval(Uxn *u, Uint16 pc)
 		bs = instr & 0x20 ? 1 : 0;
 		switch(instr & 0x1f) {
 		/* Stack */
-		case 0x00: /* LIT */ if(bs) { PEEK16(a, pc) PUSH16(src, a) pc += 2; }
-		                     else   { a = u->ram[pc]; PUSH8(src, a) pc++; } break;
+		case 0x00: /* LIT */ PEEK(a, pc) PUSH(src, a) pc += 1 + bs; break;
 		case 0x01: /* INC */ POP(a) PUSH(src, a + 1) break;
 		case 0x02: /* POP */ POP(a) break;
 		case 0x03: /* NIP */ POP(a) POP(b) PUSH(src, a) break;
