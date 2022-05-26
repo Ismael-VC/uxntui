@@ -5,6 +5,14 @@ DEBUG_FLAGS="-std=c89 -D_POSIX_C_SOURCE=199309L -DDEBUG -Wall -Wno-unknown-pragm
 EMU_INC="src/uxn.c src/devices/system.c src/devices/screen.c src/devices/controller.c src/devices/mouse.c src/devices/file.c src/devices/datetime.c src/uxn11.c -o bin/uxn11 -lX11"
 CLI_INC="src/uxn.c src/devices/system.c src/devices/file.c src/devices/datetime.c src/uxncli.c -o bin/uxncli"
 
+# find X11 libs on various systems
+if [ -e /usr/X11R6 ]; then
+	# OpenBSD
+	RELEASE_FLAGS="-L/usr/X11R6/lib/ -I/usr/X11R6/include/ $RELEASE_FLAGS"
+	DEBUG_FLAGS="-L/usr/X11R6/lib/ -I/usr/X11R6/include/ $DEBUG_FLAGS"
+fi
+
+
 if [ "${1}" = '--format' ];
 then
 	echo "Formatting.."
