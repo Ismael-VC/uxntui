@@ -246,6 +246,8 @@ main(int argc, char **argv)
 	fds[0].events = fds[1].events = POLLIN;
 	/* main loop */
 	while(1) {
+		if(u.dev[0x0f])
+			break;
 		if(poll(fds, 2, 1000) <= 0)
 			continue;
 		while(XPending(display))
