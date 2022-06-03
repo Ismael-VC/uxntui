@@ -245,9 +245,7 @@ main(int argc, char **argv)
 	timerfd_settime(fds[1].fd, 0, &screen_tspec, NULL);
 	fds[0].events = fds[1].events = POLLIN;
 	/* main loop */
-	while(1) {
-		if(u.dev[0x0f])
-			break;
+	while(!u.dev[0x0f]) {
 		if(poll(fds, 2, 1000) <= 0)
 			continue;
 		while(XPending(display))
