@@ -17,8 +17,7 @@ WITH REGARD TO THIS SOFTWARE.
 static const char *errors[] = {
 	"underflow",
 	"overflow",
-	"division by zero",
-	"busy"
+	"division by zero"
 };
 
 static void
