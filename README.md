@@ -58,8 +58,8 @@ bin/uxnemu bin/polycat.rom arg1 arg2
 
 ## Emulator Controls
 
-- `F2` toggle debug
-- `F4` load launcher.rom
+- `F2` print non-empty stacks
+- `F4` load boot.rom, or reload rom
 
 ### Buttons
 
