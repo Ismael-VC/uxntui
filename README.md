@@ -77,8 +77,6 @@ The following resources are a good place to start:
 * [XXIIVV — uxntal reference](https://wiki.xxiivv.com/site/uxntal_reference.html)
 * [compudanzas — uxn tutorial](https://compudanzas.net/uxn_tutorial.html)
 
-You can also find us in [`#uxn` on irc.esper.net](ircs://irc.esper.net:6697/#uxn).
-
 ## Contributing
 
 Submit patches using [`git send-email`](https://git-send-email.io/) to the [~rabbits/public-inbox mailing list](https://lists.sr.ht/~rabbits/public-inbox).

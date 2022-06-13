@@ -198,7 +198,7 @@ emu_event(Uxn *u)
 }
 
 static int
-init(char *title)
+viewport_start(char *title)
 {
 	Atom wmDelete;
 	display = XOpenDisplay(NULL);
@@ -227,16 +227,14 @@ main(int argc, char **argv)
 	if(argc < 2)
 		return emu_error("Usage", "uxn11 game.rom args");
 	rom_path = argv[1];
-	/* start sequence */
-	u.ram = NULL;
-	/* free(u->ram); */
 	if(!uxn_boot(&u, (Uint8 *)calloc(0x10300, sizeof(Uint8))))
 		return emu_error("Boot", "Failed");
 	u.dei = emu_dei;
 	u.deo = emu_deo;
+	/* start sequence */
 	if(!emu_start(&u, rom_path))
 		return emu_error("Start", rom_path);
-	if(!init(rom_path))
+	if(!viewport_start(rom_path))
 		return emu_error("Init", "Failed");
 	/* console vector */
 	for(i = 2; i < argc; i++) {
