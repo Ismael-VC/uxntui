@@ -23,7 +23,6 @@ static void
 system_print(Stack *s, char *name)
 {
 	Uint8 i;
-
 	fprintf(stderr, "<%s>", name);
 	for(i = 0; i < s->ptr; i++)
 		fprintf(stderr, " %02x", s->dat[i]);
@@ -35,10 +34,8 @@ system_print(Stack *s, char *name)
 void
 system_inspect(Uxn *u)
 {
-	if(u->wst->ptr)
-		system_print(u->wst, "wst");
-	if(u->rst->ptr)
-		system_print(u->rst, "rst");
+	system_print(u->wst, "wst");
+	system_print(u->rst, "rst");
 }
 
 int
@@ -66,6 +63,6 @@ system_deo(Uxn *u, Uint8 *d, Uint8 port)
 	switch(port) {
 	case 0x2: u->wst = (Stack *)(u->ram + (d[port] ? (d[port] * 0x100) : 0x10000)); break;
 	case 0x3: u->rst = (Stack *)(u->ram + (d[port] ? (d[port] * 0x100) : 0x10100)); break;
-	case 0xe: system_inspect(u); break;
+	case 0xe: if(u->wst->ptr || u->rst->ptr) system_inspect(u); break;
 	}
 }
