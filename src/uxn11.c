@@ -233,7 +233,7 @@ main(int argc, char **argv)
 	u.dei = emu_dei;
 	u.deo = emu_deo;
 	if(!emu_start(&u, rom_path))
-		return emu_error("Start", "Failed");
+		return emu_error("Start", rom_path);
 	if(!init(rom_path))
 		return emu_error("Init", "Failed");
 	/* console vector */
