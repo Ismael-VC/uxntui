@@ -103,13 +103,8 @@ emu_draw(void)
 static int
 emu_start(Uxn *u, char *rom)
 {
-	free(u->ram);
-	if(!uxn_boot(u, (Uint8 *)calloc(0x10300, sizeof(Uint8))))
-		return emu_error("Boot", "Failed");
 	if(!load_rom(u, rom))
-		return emu_error("Load", "Failed");
-	u->dei = emu_dei;
-	u->deo = emu_deo;
+		return 0;
 	screen_resize(&uxn_screen, WIDTH, HEIGHT);
 	if(!uxn_eval(u, PAGE_PROGRAM))
 		return emu_error("Boot", "Failed to start rom.");
@@ -232,6 +227,11 @@ main(int argc, char **argv)
 	rom_path = argv[1];
 	/* start sequence */
 	u.ram = NULL;
+	/* free(u->ram); */
+	if(!uxn_boot(&u, (Uint8 *)calloc(0x10300, sizeof(Uint8))))
+		return emu_error("Boot", "Failed");
+	u.dei = emu_dei;
+	u.deo = emu_deo;
 	if(!emu_start(&u, rom_path))
 		return emu_error("Start", "Failed");
 	if(!init(rom_path))
