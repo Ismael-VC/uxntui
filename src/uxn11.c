@@ -105,7 +105,9 @@ emu_start(Uxn *u, char *rom)
 {
 	if(!load_rom(u, rom))
 		return 0;
-	screen_resize(&uxn_screen, WIDTH, HEIGHT);
+	if(!uxn_screen.width || !uxn_screen.height)
+		screen_resize(&uxn_screen, WIDTH, HEIGHT);
+	screen_clear(&uxn_screen);
 	if(!uxn_eval(u, PAGE_PROGRAM))
 		return emu_error("Boot", "Failed to start rom.");
 	return 1;

@@ -53,6 +53,14 @@ screen_blit(UxnScreen *p, Layer *layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8
 	}
 }
 
+static void layer_clear(UxnScreen *p, Layer *layer)
+{
+	Uint32 i, size = p->width * p->height;
+	for(i = 0; i < size; i++)
+		layer->pixels[i] = 0x00;
+	layer->changed = 1;
+}
+
 void
 screen_palette(UxnScreen *p, Uint8 *addr)
 {
@@ -82,18 +90,15 @@ screen_resize(UxnScreen *p, Uint16 width, Uint16 height)
 	if(bg && fg && pixels) {
 		p->width = width;
 		p->height = height;
-		screen_clear(p, &p->bg);
-		screen_clear(p, &p->fg);
+		screen_clear(p);
 	}
 }
 
 void
-screen_clear(UxnScreen *p, Layer *layer)
+screen_clear(UxnScreen *p)
 {
-	Uint32 i, size = p->width * p->height;
-	for(i = 0; i < size; i++)
-		layer->pixels[i] = 0x00;
-	layer->changed = 1;
+	layer_clear(p, &p->bg);
+	layer_clear(p, &p->fg);
 }
 
 void
