@@ -63,7 +63,7 @@ console_deo(Uint8 *d, Uint8 port)
 }
 
 static Uint8
-emu_dei(struct Uxn *u, Uint8 addr)
+emu_dei(Uxn *u, Uint8 addr)
 {
 	Uint8 p = addr & 0x0f, d = addr & 0xf0;
 	switch(d) {
