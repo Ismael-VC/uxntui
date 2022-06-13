@@ -198,7 +198,7 @@ emu_event(Uxn *u)
 }
 
 static int
-viewport_start(char *title)
+display_start(char *title)
 {
 	Atom wmDelete;
 	display = XOpenDisplay(NULL);
@@ -234,8 +234,8 @@ main(int argc, char **argv)
 	/* start sequence */
 	if(!emu_start(&u, rom_path))
 		return emu_error("Start", rom_path);
-	if(!viewport_start(rom_path))
-		return emu_error("Init", "Failed");
+	if(!display_start(rom_path))
+		return emu_error("Display", "Failed");
 	/* console vector */
 	for(i = 2; i < argc; i++) {
 		char *p = argv[i];
