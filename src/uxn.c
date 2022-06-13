@@ -96,7 +96,7 @@ err:
 /* clang-format on */
 
 int
-uxn_boot(Uxn *u, Uint8 *ram)
+uxn_boot(Uxn *u, Uint8 *ram, Uint8 (*dei)(struct Uxn *, Uint8), void (*deo)(struct Uxn *, Uint8, Uint8))
 {
 	Uint32 i;
 	char *cptr = (char *)u;
@@ -106,5 +106,7 @@ uxn_boot(Uxn *u, Uint8 *ram)
 	u->wst = (Stack *)(ram + 0x10000);
 	u->rst = (Stack *)(ram + 0x10100);
 	u->dev = (Uint8 *)(ram + 0x10200);
+	u->dei = dei;
+	u->deo = deo;
 	return 1;
 }
