@@ -88,7 +88,7 @@ uxn_eval(Uxn *u, Uint16 pc)
 		case 0x1f: /* SFT */ POP8(a) POP(b) PUSH(src, b >> (a & 0x0f) << ((a & 0xf0) >> 4)) break;
 		}
 	}
-	return (u->wst->ptr || u->rst->ptr) ? uxn_halt(u, instr, 4, pc - 1) : 1;
+	return 1;
 err:
 	return uxn_halt(u, instr, errcode, pc - 1);
 }

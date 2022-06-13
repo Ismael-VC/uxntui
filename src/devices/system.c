@@ -17,14 +17,14 @@ WITH REGARD TO THIS SOFTWARE.
 static const char *errors[] = {
 	"underflow",
 	"overflow",
-	"division by zero",
-	"Busy"
+	"division by zero"
 };
 
 static void
 system_print(Stack *s, char *name)
 {
 	Uint8 i;
+
 	fprintf(stderr, "<%s>", name);
 	for(i = 0; i < s->ptr; i++)
 		fprintf(stderr, " %02x", s->dat[i]);
@@ -36,8 +36,10 @@ system_print(Stack *s, char *name)
 void
 system_inspect(Uxn *u)
 {
-	system_print(u->wst, "wst");
-	system_print(u->rst, "rst");
+	if(u->wst->ptr)
+		system_print(u->wst, "wst");
+	if(u->rst->ptr)
+		system_print(u->rst, "rst");
 }
 
 int
