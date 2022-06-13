@@ -31,6 +31,8 @@ static Display *display;
 static Visual *visual;
 static Window window;
 
+char *rom_path;
+
 #define WIDTH (64 * 8)
 #define HEIGHT (40 * 8)
 
@@ -106,7 +108,6 @@ emu_start(Uxn *u, char *rom)
 		return emu_error("Boot", "Failed");
 	if(!load_rom(u, rom))
 		return emu_error("Load", "Failed");
-	fprintf(stderr, "Loaded %s\n", rom);
 	u->dei = emu_dei;
 	u->deo = emu_deo;
 	screen_resize(&uxn_screen, WIDTH, HEIGHT);
@@ -168,7 +169,8 @@ emu_event(Uxn *u)
 		if(sym == XK_F2)
 			system_inspect(u);
 		if(sym == XK_F4)
-			emu_start(u, "boot.rom");
+			if(!emu_start(u, "boot.rom"))
+				emu_start(u, rom_path);
 		controller_down(u, &u->dev[0x80], get_button(sym));
 		controller_key(u, &u->dev[0x80], sym < 0x80 ? sym : (Uint8)buf[0]);
 	} break;
@@ -227,11 +229,12 @@ main(int argc, char **argv)
 	static const struct itimerspec screen_tspec = {{0, 16666666}, {0, 16666666}};
 	if(argc < 2)
 		return emu_error("Usage", "uxn11 game.rom args");
+	rom_path = argv[1];
 	/* start sequence */
 	u.ram = NULL;
-	if(!emu_start(&u, argv[1]))
+	if(!emu_start(&u, rom_path))
 		return emu_error("Start", "Failed");
-	if(!init(argv[1]))
+	if(!init(rom_path))
 		return emu_error("Init", "Failed");
 	/* console vector */
 	for(i = 2; i < argc; i++) {
