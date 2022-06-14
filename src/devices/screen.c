@@ -53,7 +53,8 @@ screen_blit(UxnScreen *p, Layer *layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8
 	}
 }
 
-static void layer_clear(UxnScreen *p, Layer *layer)
+static void
+layer_clear(UxnScreen *p, Layer *layer)
 {
 	Uint32 i, size = p->width * p->height;
 	for(i = 0; i < size; i++)

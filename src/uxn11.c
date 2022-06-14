@@ -94,7 +94,7 @@ emu_deo(Uxn *u, Uint8 addr, Uint8 v)
 	case 0xb0: file_deo(1, u->ram, &u->dev[d], p); break;
 	}
 	if(p == 0x01 && !(SUPPORT & mask))
-		fprintf(stderr, "Warning: Incompatible emulation, device: %02x.\n", d >> 4);
+		fprintf(stderr, "Warning: Incompatible emulation, device: %02x.\n", d);
 }
 
 static void
