@@ -17,6 +17,8 @@ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
 WITH REGARD TO THIS SOFTWARE.
 */
 
+#define SUPPORT 0x1c03 /* devices mask */
+
 static int
 emu_error(char *msg, const char *err)
 {
@@ -59,6 +61,7 @@ static void
 emu_deo(Uxn *u, Uint8 addr, Uint8 v)
 {
 	Uint8 p = addr & 0x0f, d = addr & 0xf0;
+	Uint16 mask = 0x1 << (d >> 4);
 	u->dev[addr] = v;
 	switch(d) {
 	case 0x00: system_deo(u, &u->dev[d], p); break;
@@ -66,6 +69,8 @@ emu_deo(Uxn *u, Uint8 addr, Uint8 v)
 	case 0xa0: file_deo(0, u->ram, &u->dev[d], p); break;
 	case 0xb0: file_deo(1, u->ram, &u->dev[d], p); break;
 	}
+	if(p == 0x01 && !(SUPPORT & mask))
+		fprintf(stderr, "Warning: Incompatible emulation, device: %02x.\n", d >> 4);
 }
 
 int

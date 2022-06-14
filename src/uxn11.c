@@ -33,6 +33,7 @@ static Window window;
 
 char *rom_path;
 
+#define SUPPORT 0x1f07 /* devices mask */
 #define WIDTH (64 * 8)
 #define HEIGHT (40 * 8)
 
@@ -79,6 +80,7 @@ static void
 emu_deo(Uxn *u, Uint8 addr, Uint8 v)
 {
 	Uint8 p = addr & 0x0f, d = addr & 0xf0;
+	Uint16 mask = 0x1 << (d >> 4);
 	u->dev[addr] = v;
 	switch(d) {
 	case 0x00:
@@ -91,6 +93,8 @@ emu_deo(Uxn *u, Uint8 addr, Uint8 v)
 	case 0xa0: file_deo(0, u->ram, &u->dev[d], p); break;
 	case 0xb0: file_deo(1, u->ram, &u->dev[d], p); break;
 	}
+	if(p == 0x01 && !(SUPPORT & mask))
+		fprintf(stderr, "Warning: Incompatible emulation, device: %02x.\n", d >> 4);
 }
 
 static void
