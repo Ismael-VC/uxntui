@@ -36,6 +36,7 @@ char *rom_path;
 #define SUPPORT 0x1f07 /* devices mask */
 #define WIDTH (64 * 8)
 #define HEIGHT (40 * 8)
+#define PAD 4
 
 static int
 emu_error(char *msg, const char *err)
@@ -101,7 +102,7 @@ static void
 emu_draw(void)
 {
 	screen_redraw(&uxn_screen, uxn_screen.pixels);
-	XPutImage(display, window, DefaultGC(display, 0), ximage, 0, 0, 0, 0, uxn_screen.width, uxn_screen.height);
+	XPutImage(display, window, DefaultGC(display, 0), ximage, 0, 0, PAD, PAD, uxn_screen.width, uxn_screen.height);
 }
 
 static int
@@ -196,7 +197,7 @@ emu_event(Uxn *u)
 	} break;
 	case MotionNotify: {
 		XMotionEvent *e = (XMotionEvent *)&ev;
-		mouse_pos(u, &u->dev[0x90], e->x, e->y);
+		mouse_pos(u, &u->dev[0x90], e->x - PAD, e->y - PAD);
 	} break;
 	}
 }
@@ -207,7 +208,7 @@ display_start(char *title)
 	Atom wmDelete;
 	display = XOpenDisplay(NULL);
 	visual = DefaultVisual(display, 0);
-	window = XCreateSimpleWindow(display, RootWindow(display, 0), 0, 0, uxn_screen.width, uxn_screen.height, 1, 0, 0);
+	window = XCreateSimpleWindow(display, RootWindow(display, 0), 0, 0, uxn_screen.width + PAD * 2, uxn_screen.height + PAD * 2, 1, 0, 0);
 	if(visual->class != TrueColor)
 		return emu_error("Init", "True-color visual failed");
 	XSelectInput(display, window, ButtonPressMask | ButtonReleaseMask | PointerMotionMask | ExposureMask | KeyPressMask | KeyReleaseMask);
