@@ -1,8 +1,16 @@
+#define _XOPEN_SOURCE 500
 #include <stdio.h>
 #include <dirent.h>
+#include <errno.h>
+#include <limits.h>
 #include <string.h>
+#include <stdlib.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
 
 #include "../uxn.h"
 #include "file.h"
@@ -27,6 +35,7 @@ typedef struct {
 		FILE_READ,
 		FILE_WRITE,
 		DIR_READ } state;
+	int outside_sandbox;
 } UxnFile;
 
 static UxnFile uxn_file[POLYFILEY];
@@ -44,6 +53,7 @@ reset(UxnFile *c)
 	}
 	c->de = NULL;
 	c->state = IDLE;
+	c->outside_sandbox = 0;
 }
 
 static Uint16
@@ -84,6 +94,49 @@ file_read_dir(UxnFile *c, char *dest, Uint16 len)
 	return p - dest;
 }
 
+static char *
+retry_realpath(const char *file_name)
+{
+	char r[PATH_MAX] = {'\0'}, p[PATH_MAX] = {'\0'}, *x;
+	if(file_name == NULL) {
+		errno = EINVAL;
+		return NULL;
+	} else if(strlen(file_name) >= PATH_MAX) {
+		errno = ENAMETOOLONG;
+		return NULL;
+	}
+	if(file_name[0] != '/') {
+		/* TODO: use a macro instead of '/' for absolute path first character so that other systems can work */
+		/* if a relative path, prepend cwd */
+		getcwd(p, sizeof(p));
+		strcat(p, "/"); /* TODO: use a macro instead of '/' for the path delimiter */
+	}
+	strcat(p, file_name);
+	while(realpath(p, r) == NULL) {
+		if(errno != ENOENT)
+			return NULL;
+		x = strrchr(p, '/'); /* TODO: path delimiter macro */
+		if(x)
+			*x = '\0';
+		else
+			return NULL;
+	}
+	return strdup(r);
+}
+
+static void
+file_check_sandbox(UxnFile *c)
+{
+	char *x, *rp, cwd[PATH_MAX] = {'\0'};
+	x = getcwd(cwd, sizeof(cwd));
+	rp = retry_realpath(c->current_filename);
+	if(rp == NULL || (x && strncmp(cwd, rp, strlen(cwd)) != 0)) {
+		c->outside_sandbox = 1;
+		fprintf(stderr, "file warning: blocked attempt to access %s outside of sandbox\n", c->current_filename);
+	}
+	free(rp);
+}
+
 static Uint16
 file_init(UxnFile *c, char *filename, size_t max_len)
 {
@@ -92,8 +145,10 @@ file_init(UxnFile *c, char *filename, size_t max_len)
 	reset(c);
 	if(len > max_len) len = max_len;
 	while(len) {
-		if((*p++ = *filename++) == '\0')
+		if((*p++ = *filename++) == '\0') {
+			file_check_sandbox(c);
 			return 0;
+		}
 		len--;
 	}
 	c->current_filename[0] = '\0';
@@ -103,6 +158,7 @@ file_init(UxnFile *c, char *filename, size_t max_len)
 static Uint16
 file_read(UxnFile *c, void *dest, Uint16 len)
 {
+	if(c->outside_sandbox) return 0;
 	if(c->state != FILE_READ && c->state != DIR_READ) {
 		reset(c);
 		if((c->dir = opendir(c->current_filename)) != NULL)
@@ -121,6 +177,7 @@ static Uint16
 file_write(UxnFile *c, void *src, Uint16 len, Uint8 flags)
 {
 	Uint16 ret = 0;
+	if(c->outside_sandbox) return 0;
 	if(c->state != FILE_WRITE) {
 		reset(c);
 		if((c->f = fopen(c->current_filename, (flags & 0x01) ? "ab" : "wb")) != NULL)
@@ -137,6 +194,7 @@ static Uint16
 file_stat(UxnFile *c, void *dest, Uint16 len)
 {
 	char *basename = strrchr(c->current_filename, '/');
+	if(c->outside_sandbox) return 0;
 	if(basename != NULL)
 		basename++;
 	else
@@ -147,7 +205,7 @@ file_stat(UxnFile *c, void *dest, Uint16 len)
 static Uint16
 file_delete(UxnFile *c)
 {
-	return unlink(c->current_filename);
+	return c->outside_sandbox ? 0 : unlink(c->current_filename);
 }
 
 /* IO */
