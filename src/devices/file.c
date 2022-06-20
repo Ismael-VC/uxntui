@@ -138,7 +138,7 @@ file_check_sandbox(UxnFile *c)
 }
 
 static Uint16
-file_init(UxnFile *c, char *filename, size_t max_len)
+file_init(UxnFile *c, char *filename, size_t max_len, int override_sandbox)
 {
 	char *p = c->current_filename;
 	size_t len = sizeof(c->current_filename);
@@ -146,7 +146,8 @@ file_init(UxnFile *c, char *filename, size_t max_len)
 	if(len > max_len) len = max_len;
 	while(len) {
 		if((*p++ = *filename++) == '\0') {
-			file_check_sandbox(c);
+			if(!override_sandbox) /* override sandbox for loading roms */
+				file_check_sandbox(c);
 			return 0;
 		}
 		len--;
@@ -230,7 +231,7 @@ file_deo(Uint8 id, Uint8 *ram, Uint8 *d, Uint8 port)
 		break;
 	case 0x9:
 		PEKDEV(addr, 0x8);
-		res = file_init(c, (char *)&ram[addr], 0x10000 - addr);
+		res = file_init(c, (char *)&ram[addr], 0x10000 - addr, 0);
 		POKDEV(0x2, res);
 		break;
 	case 0xd:
@@ -273,7 +274,7 @@ int
 load_rom(Uxn *u, char *filename)
 {
 	int ret;
-	file_init(uxn_file, filename, strlen(filename) + 1);
+	file_init(uxn_file, filename, strlen(filename) + 1, 1);
 	ret = file_read(uxn_file, &u->ram[PAGE_PROGRAM], 0x10000 - PAGE_PROGRAM);
 	reset(uxn_file);
 	return ret;
