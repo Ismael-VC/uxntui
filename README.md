@@ -46,6 +46,8 @@ bin/uxnemu bin/polycat.rom arg1 arg2
 
 ## Devices
 
+The file device is _sandboxed_, meaning that it should not be able to read or write outside of the working directory.
+
 - `00` system
 - `10` console
 - `20` screen
@@ -53,7 +55,7 @@ bin/uxnemu bin/polycat.rom arg1 arg2
 - `70` midi(missing)
 - `80` controller
 - `90` mouse
-- `a0` file
+- `a0` file(sandboxed)
 - `c0` datetime
 
 ## Emulator Controls
