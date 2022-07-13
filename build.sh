@@ -19,6 +19,7 @@ then
 	clang-format -i src/uxn.c
 	clang-format -i src/uxn.h
 	clang-format -i src/uxn11.c
+	clang-format -i src/uxnasm.c
 	clang-format -i src/uxncli.c
 	clang-format -i src/devices/*
 fi
@@ -28,13 +29,15 @@ rm -f bin/*
 mkdir -p bin
 
 echo "Building.."
+cc -DNDEBUG -Os -g0 -s src/uxnasm.c -o bin/uxnasm
 if [ "${1}" = '--install' ];
 then
 	echo "Installing.."
 	gcc ${RELEASE_FLAGS} ${EMU_INC}
 	gcc ${RELEASE_FLAGS} ${CLI_INC}
-	cp bin/uxn11 ~/bin
+	cp bin/uxnasm ~/bin
 	cp bin/uxncli ~/bin
+	cp bin/uxn11 ~/bin
 else
 	gcc ${DEBUG_FLAGS} ${EMU_INC}
 	gcc ${DEBUG_FLAGS} ${CLI_INC} 
