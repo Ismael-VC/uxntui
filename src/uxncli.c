@@ -84,7 +84,6 @@ main(int argc, char **argv)
 		return emu_error("Boot", "Failed");
 	if(!load_rom(&u, argv[1]))
 		return emu_error("Load", "Failed");
-	fprintf(stderr, "Loaded %s\n", argv[1]);
 	if(!uxn_eval(&u, PAGE_PROGRAM))
 		return emu_error("Init", "Failed");
 	for(i = 2; i < argc; i++) {

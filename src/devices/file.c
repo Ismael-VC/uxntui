@@ -90,7 +90,7 @@ file_read_dir(UxnFile *c, char *dest, Uint16 len)
 			getcwd(cwd, sizeof(cwd));
 			/* We already checked that c->current_filename exists so don't need a wrapper. */
 			realpath(c->current_filename, t);
-			if (strcmp(cwd, t) == 0)
+			if(strcmp(cwd, t) == 0)
 				continue;
 		}
 		if(strlen(c->current_filename) + 1 + strlen(c->de->d_name) < sizeof(pathname))
