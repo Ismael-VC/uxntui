@@ -319,9 +319,6 @@ parse(char *w, FILE *f)
 		makereference(p.scope, w, p.ptr);
 		if(!writeshort(0xffff, 0)) return 0;
 		break;
-	case '\'': /* raw char */
-		if(!writebyte((Uint8)w[1])) return 0;
-		break;
 	case '"': /* raw string */
 		i = 0;
 		while((c = w[++i]))
