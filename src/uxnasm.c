@@ -451,8 +451,11 @@ review(char *filename)
 static void
 writesym(char *filename)
 {
-	char symdst[0x40];
-	FILE *fp = fopen(scat(scpy(filename, symdst, slen(filename) + 1), ".sym"), "w");
+	char symdst[0x60];
+	FILE *fp;
+	if(slen(filename) > 0x60 - 5)
+		return;
+	fp = fopen(scat(scpy(filename, symdst, slen(filename) + 1), ".sym"), "w");
 	int i;
 	if(fp != NULL) {
 		for(i = 0; i < p.llen; i++) {
