@@ -44,9 +44,9 @@ else
 fi
 
 echo "Assembling.."
-bin/uxncli etc/drifblim.rom etc/polycat.tal && mv etc/polycat.rom bin/
+bin/uxnasm etc/polycat.tal bin/polycat.rom
 
 echo "Running.."
-bin/uxn11 ~/roms/noodle.rom
+bin/uxn11 bin/polycat.rom
 
 echo "Done."
