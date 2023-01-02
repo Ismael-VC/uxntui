@@ -39,6 +39,6 @@ typedef struct Uxn {
 typedef Uint8 Dei(Uxn *u, Uint8 addr);
 typedef void Deo(Uxn *u, Uint8 addr, Uint8 value);
 
+int uxn_halt(Uxn *u, Uint8 instr, Uint8 err, Uint16 addr);
 int uxn_boot(Uxn *u, Uint8 *ram, Dei *dei, Deo *deo);
 int uxn_eval(Uxn *u, Uint16 pc);
-int uxn_halt(Uxn *u, Uint8 instr, Uint8 err, Uint16 addr);

@@ -16,8 +16,6 @@ fi
 if [ "${1}" = '--format' ];
 then
 	echo "Formatting.."
-	clang-format -i src/uxn.c
-	clang-format -i src/uxn.h
 	clang-format -i src/uxn11.c
 	clang-format -i src/uxnasm.c
 	clang-format -i src/uxncli.c
