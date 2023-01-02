@@ -18,6 +18,9 @@ WITH REGARD TO THIS SOFTWARE.
 	x,y: macro in params. d: macro in device. j,k,dev: macro temp variables. o: macro out param. */
 
 #define HALT(c) { return uxn_halt(u, instr, (c), pc - 1); }
+#define LITERAL { if(bs) { PEEK16(a, pc) PUSH16(src, a) pc += 2; } else { a = u->ram[pc]; PUSH8(src, a) pc += 1; } }
+#define CALL { if(bs){ PEEK16(a, pc) PUSH16(u->rst, pc + 2) pc = a; } else { a = u->ram[pc]; PUSH16(u->rst, pc + 1) pc += (Sint8)a + 2; } }
+#define JUMP(x) { if(bs) pc = (x); else pc += (Sint8)(x); }
 #define PUSH8(s, x) { if(s->ptr == 0xff) HALT(2) s->dat[s->ptr++] = (x); }
 #define PUSH16(s, x) { if((j = s->ptr) >= 0xfe) HALT(2) k = (x); s->dat[j] = k >> 8; s->dat[j + 1] = k; s->ptr = j + 2; }
 #define PUSH(s, x) { if(bs) { PUSH16(s, (x)) } else { PUSH8(s, (x)) } }
@@ -29,7 +32,6 @@ WITH REGARD TO THIS SOFTWARE.
 #define PEEK(o, x) { if(bs) PEEK16(o, x) else o = u->ram[(x)]; }
 #define DEVR(o, x) { o = u->dei(u, x); if (bs) o = (o << 8) + u->dei(u, ((x) + 1) & 0xFF); }
 #define DEVW(x, y) { if (bs) { u->deo(u, (x), (y) >> 8); u->deo(u, ((x) + 1) & 0xFF, (y)); } else { u->deo(u, x, (y)); } }
-#define JUMP(x) { if(bs) pc = (x); else pc += (Sint8)(x); }
 
 int
 uxn_eval(Uxn *u, Uint16 pc)
@@ -48,8 +50,7 @@ uxn_eval(Uxn *u, Uint16 pc)
 		/* Short Mode */
 		bs = instr & 0x20;
 		switch(instr & 0x1f) {
-		case 0x00: /* LIT */ if(bs) { PEEK16(a, pc) PUSH16(src, a) pc += 2; }
-		                     else   { a = u->ram[pc]; PUSH8(src, a) pc++; } break;
+		case 0x00: /* LIT */ if(instr & 0x80) { LITERAL } else { CALL } break;
 		case 0x01: /* INC */ POP(a) PUSH(src, a + 1) break;
 		case 0x02: /* POP */ POP(a) break;
 		case 0x03: /* NIP */ POP(a) POP(b) PUSH(src, a) break;
