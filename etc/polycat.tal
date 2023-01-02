@@ -36,7 +36,7 @@
 	#ff ;draw-tail/last STA
 	( set screen mode auto-x )
 	#05 .Screen/auto DEO
-	,draw-polycat JSR
+	draw-polycat
 
 BRK
 
@@ -53,8 +53,8 @@ BRK
 	;body .Screen/addr DEO2
 	#81 .Screen/sprite DEO
 	( eye/tail )
-	#00 ,draw-eye JSR
-	#00 ,draw-tail JSR
+	#00 draw-eye
+	#00 draw-tail
 
 JMP2r
 
@@ -62,16 +62,16 @@ JMP2r
 	
 	.Mouse/x DEI2 .cat/x LDZ2 GTH2 #50 SFT
 	.Mouse/y DEI2 .cat/y LDZ2 GTH2 #60 SFT
-		ADD ,draw-eye JSR
+		ADD draw-eye
 	.cat/timer LDZ INC [ DUP ] .cat/timer STZ
-		#04 SFT ,draw-tail JSR
-	,draw-cursor JSR
+		#04 SFT draw-tail
+	draw-cursor
 
 BRK
 
 @draw-eye ( quad -- )
 	
-	DUP ,&last LDR NEQ ,&changed JCN
+	DUP ,&last LDR NEQ ?&changed
 		POP JMP2r &changed
 	( only redraw on change )
 	DUP
@@ -86,7 +86,7 @@ JMP2r
 
 @draw-tail ( frame -- )
 
-	STHk ,&last LDR NEQ ,&changed JCN
+	STHk ,&last LDR NEQ ?&changed
 		POPr JMP2r &changed
 	( only redraw on change )
 	STHr #00 OVR ;frames ADD2 LDA

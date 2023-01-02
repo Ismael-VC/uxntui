@@ -328,6 +328,14 @@ parse(char *w, FILE *f)
 		makereference(p.scope, w, p.ptr);
 		if(!writeshort(0xffff, 1)) return 0;
 		break;
+	case '!': /* JMI */
+		makereference(p.scope, w, p.ptr);
+		if(!writebyte(0x20) || !writeshort(0xffff, 0)) return 0;
+		break;
+	case '?': /* JCI */
+		makereference(p.scope, w, p.ptr);
+		if(!writebyte(0x40) || !writeshort(0xffff, 0)) return 0;
+		break;
 	case '"': /* raw string */
 		i = 0;
 		while((c = w[++i]))
@@ -355,8 +363,11 @@ parse(char *w, FILE *f)
 				if(!parse(m->items[i], f))
 					return 0;
 			return 1;
-		} else
-			return error("Unknown token", w);
+		} else {
+			makereference(p.scope, w - 1, p.ptr);
+			if(!writebyte(0x60) || !writeshort(0xffff, 0))
+				return 0;
+		}
 	}
 	return 1;
 }
@@ -405,15 +416,13 @@ resolve(void)
 			p.data[r->addr + 1] = l->addr & 0xff;
 			l->refs++;
 			break;
-		case ';':
+		default:
 			if(!(l = findlabel(r->name)))
 				return error("Unknown absolute reference", r->name);
 			p.data[r->addr + 1] = l->addr >> 0x8;
 			p.data[r->addr + 2] = l->addr & 0xff;
 			l->refs++;
 			break;
-		default:
-			return error("Unknown reference", r->name);
 		}
 	}
 	return 1;
