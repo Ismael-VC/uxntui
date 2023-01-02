@@ -1,7 +1,7 @@
 #include "uxn.h"
 
 /*
-Copyright (u) 2022 Devine Lu Linvega, Andrew Alderwick, Andrew Richards
+Copyright (u) 2022-2023 Devine Lu Linvega, Andrew Alderwick, Andrew Richards
 
 Permission to use, copy, modify, and distribute this software for any
 purpose with or without fee is hereby granted, provided that the above
@@ -16,11 +16,9 @@ WITH REGARD TO THIS SOFTWARE.
 	x,y: macro in params. d: macro in device. j: macro temp variables. o: macro out param. */
 
 #define HALT(c) { return uxn_halt(u, instr, (c), pc - 1); }
-#define LITERAL { if(bs) { PEEK16(a, pc) PUSH16(src, a) pc += 2; } else { a = u->ram[pc]; PUSH8(src, a) pc += 1; } }
-#define CALL { if(bs){ PEEK16(a, pc) PUSH16(u->rst, pc + 2) pc = a; } else { a = u->ram[pc]; PUSH16(u->rst, pc + 1) pc += (Sint8)a + 2; } }
 #define JUMP(x) { if(bs) pc = (x); else pc += (Sint8)(x); }
 #define PUSH8(s, x) { if(s->ptr == 0xff) HALT(2) s->dat[s->ptr++] = (x); }
-#define PUSH16(s, x) { if((j = s->ptr) >= 0xfe) HALT(2) s->dat[j] = (x) >> 8; s->dat[j + 1] = (x); s->ptr = j + 2; }
+#define PUSH16(s, x) { if((j = s->ptr) >= 0xfe) HALT(2) k = (x); s->dat[j] = k >> 8; s->dat[j + 1] = k; s->ptr = j + 2; }
 #define PUSH(s, x) { if(bs) { PUSH16(s, (x)) } else { PUSH8(s, (x)) } }
 #define POP8(o) { if(!(j = *sp)) HALT(1) o = (Uint16)src->dat[--j]; *sp = j; }
 #define POP16(o) { if((j = *sp) <= 1) HALT(1) o = src->dat[j - 1]; o += src->dat[j - 2] << 8; *sp = j - 2; }
@@ -34,7 +32,7 @@ WITH REGARD TO THIS SOFTWARE.
 int
 uxn_eval(Uxn *u, Uint16 pc)
 {
-	unsigned int a, b, c, j, bs, instr;
+	unsigned int a, b, c, j, k, bs, instr;
 	Uint8 kptr, *sp;
 	Stack *src, *dst;
 	if(!pc || u->dev[0x0f]) return 0;
@@ -48,7 +46,14 @@ uxn_eval(Uxn *u, Uint16 pc)
 		/* Short Mode */
 		bs = instr & 0x20;
 		switch(instr & 0x1f) {
-		case 0x00: /* LIT */ if(instr & 0x80) { LITERAL } else { CALL } break;
+		case 0x00:
+		/* Literals/Calls */
+		if(instr == 0x20)      /* JMI  */ { sp = &u->wst->ptr; PEEK16(a, pc) pc = a; }
+		else if(instr == 0x40) /* JCI  */ { sp = &u->wst->ptr; src = u->wst; POP8(a) PEEK16(b, pc) pc = a ? (Uint16)b : pc + 2; }
+		else if(instr == 0x60) /* JSI  */ { sp = &u->wst->ptr; PEEK16(a, pc) PUSH16(u->rst, pc + 2) pc = a; }
+		else if(bs)            /* LIT2 */ { PEEK16(a, pc) PUSH16(src, a) pc = pc + 2; }
+		else                   /* LITr */ { a = u->ram[pc++]; PUSH8(src, a) } break;
+		/* ALU */
 		case 0x01: /* INC */ POP(a) PUSH(src, a + 1) break;
 		case 0x02: /* POP */ POP(a) break;
 		case 0x03: /* NIP */ POP(a) POP(b) PUSH(src, a) break;
