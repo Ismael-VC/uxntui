@@ -25,7 +25,8 @@ WITH REGARD TO THIS SOFTWARE.
 #define POP16(o) { if((j = *sp) <= 1) HALT(1) o = src->dat[j - 1]; o += src->dat[j - 2] << 8; *sp = j - 2; }
 #define POP(o) { if(bs) { POP16(o) } else { POP8(o) } }
 #define POKE(x, y) { if(bs) { u->ram[(x)] = (y) >> 8; u->ram[(x) + 1] = (y); } else { u->ram[(x)] = y; } }
-#define PEEK(o, x) { if(bs) { o = (u->ram[(x)] << 8) + u->ram[(x) + 1]; } else { o = u->ram[(x)]; } }
+#define PEEK16(o, x) { o = (u->ram[(x)] << 8) + u->ram[(x) + 1]; }
+#define PEEK(o, x) { if(bs) PEEK16(o, x) else o = u->ram[(x)]; }
 #define DEVR(o, x) { o = u->dei(u, x); if (bs) o = (o << 8) + u->dei(u, ((x) + 1) & 0xFF); }
 #define DEVW(x, y) { if (bs) { u->deo(u, (x), (y) >> 8); u->deo(u, ((x) + 1) & 0xFF, (y)); } else { u->deo(u, x, (y)); } }
 #define JUMP(x) { if(bs) pc = (x); else pc += (Sint8)(x); }
@@ -45,9 +46,10 @@ uxn_eval(Uxn *u, Uint16 pc)
 		if(instr & 0x80) { kptr = src->ptr; sp = &kptr; }
 		else sp = &src->ptr;
 		/* Short Mode */
-		bs = instr & 0x20 ? 1 : 0;
+		bs = instr & 0x20;
 		switch(instr & 0x1f) {
-		case 0x00: /* LIT */ PEEK(a, pc) PUSH(src, a) pc += 1 + bs; break;
+		case 0x00: /* LIT */ if(bs) { PEEK16(a, pc) PUSH16(src, a) pc += 2; }
+		                     else   { a = u->ram[pc]; PUSH8(src, a) pc++; } break;
 		case 0x01: /* INC */ POP(a) PUSH(src, a + 1) break;
 		case 0x02: /* POP */ POP(a) break;
 		case 0x03: /* NIP */ POP(a) POP(b) PUSH(src, a) break;
