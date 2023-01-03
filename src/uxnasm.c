@@ -211,9 +211,7 @@ writebyte(Uint8 b)
 static int
 writeopcode(char *w)
 {
-	Uint8 res;
-	res = writebyte(findopcode(w));
-	return res;
+	return writebyte(findopcode(w));
 }
 
 static int
@@ -227,9 +225,7 @@ writeshort(Uint16 s, int lit)
 static int
 writelitbyte(Uint8 b)
 {
-	if(!writebyte(findopcode("LIT"))) return 0;
-	if(!writebyte(b)) return 0;
-	return 1;
+	return writebyte(findopcode("LIT")) && writebyte(b);
 }
 
 static int
@@ -295,47 +291,38 @@ parse(char *w, FILE *f)
 			return error("Invalid sublabel", w);
 		break;
 	case '#': /* literals hex */
-		if(!sihx(w + 1) || (slen(w) != 3 && slen(w) != 5))
+		if(sihx(w + 1) && slen(w) == 3)
+			return writelitbyte(shex(w + 1));
+		else if(sihx(w + 1) && slen(w) == 5)
+			return writeshort(shex(w + 1), 1);
+		else
 			return error("Invalid hex literal", w);
-		if(slen(w) == 3) {
-			if(!writelitbyte(shex(w + 1))) return 0;
-		} else if(slen(w) == 5) {
-			if(!writeshort(shex(w + 1), 1)) return 0;
-		}
 		break;
 	case '_': /* raw byte relative */
 		makereference(p.scope, w, p.ptr);
-		if(!writebyte(0xff)) return 0;
-		break;
+		return writebyte(0xff);
 	case ',': /* literal byte relative */
 		makereference(p.scope, w, p.ptr);
-		if(!writelitbyte(0xff)) return 0;
-		break;
+		return writelitbyte(0xff);
 	case '-': /* raw byte absolute */
 		makereference(p.scope, w, p.ptr);
-		if(!writebyte(0xff)) return 0;
-		break;
+		return writebyte(0xff);
 	case '.': /* literal byte zero-page */
 		makereference(p.scope, w, p.ptr);
-		if(!writelitbyte(0xff)) return 0;
-		break;
+		return writelitbyte(0xff);
 	case ':': /* raw short absolute */
 	case '=':
 		makereference(p.scope, w, p.ptr);
-		if(!writeshort(0xffff, 0)) return 0;
-		break;
+		return writeshort(0xffff, 0);
 	case ';': /* literal short absolute */
 		makereference(p.scope, w, p.ptr);
-		if(!writeshort(0xffff, 1)) return 0;
-		break;
+		return writeshort(0xffff, 1);
 	case '!': /* JMI */
 		makereference(p.scope, w, p.ptr);
-		if(!writebyte(0x20) || !writeshort(0xffff, 0)) return 0;
-		break;
+		return writebyte(0x20) && writeshort(0xffff, 0);
 	case '?': /* JCI */
 		makereference(p.scope, w, p.ptr);
-		if(!writebyte(0x40) || !writeshort(0xffff, 0)) return 0;
-		break;
+		return writebyte(0x40) && writeshort(0xffff, 0);
 	case '"': /* raw string */
 		i = 0;
 		while((c = w[++i]))
@@ -346,17 +333,14 @@ parse(char *w, FILE *f)
 		if(slen(w) == 1) break; /* else fallthrough */
 	default:
 		/* opcode */
-		if(findopcode(w) || scmp(w, "BRK", 4)) {
-			if(!writeopcode(w)) return 0;
-		}
+		if(findopcode(w) || scmp(w, "BRK", 4))
+			return writeopcode(w);
 		/* raw byte */
-		else if(sihx(w) && slen(w) == 2) {
-			if(!writebyte(shex(w))) return 0;
-		}
+		else if(sihx(w) && slen(w) == 2)
+			return writebyte(shex(w));
 		/* raw short */
-		else if(sihx(w) && slen(w) == 4) {
-			if(!writeshort(shex(w), 0)) return 0;
-		}
+		else if(sihx(w) && slen(w) == 4)
+			return writeshort(shex(w), 0);
 		/* macro */
 		else if((m = findmacro(w))) {
 			for(i = 0; i < m->len; i++)
@@ -365,8 +349,7 @@ parse(char *w, FILE *f)
 			return 1;
 		} else {
 			makereference(p.scope, w - 1, p.ptr);
-			if(!writebyte(0x60) || !writeshort(0xffff, 0))
-				return 0;
+			return writebyte(0x60) && writeshort(0xffff, 0);
 		}
 	}
 	return 1;
