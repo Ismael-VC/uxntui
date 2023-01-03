@@ -1,7 +1,7 @@
 #include <stdio.h>
 
 /*
-Copyright (c) 2021 Devine Lu Linvega
+-Copyright (c) 2021-2023 Devine Lu Linvega, Andrew Alderwick
 
 Permission to use, copy, modify, and distribute this software for any
 purpose with or without fee is hereby granted, provided that the above
