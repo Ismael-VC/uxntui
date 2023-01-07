@@ -1,7 +1,7 @@
 #include <stdio.h>
 
 /*
--Copyright (c) 2021-2023 Devine Lu Linvega, Andrew Alderwick
+Copyright (c) 2021-2023 Devine Lu Linvega, Andrew Alderwick
 
 Permission to use, copy, modify, and distribute this software for any
 purpose with or without fee is hereby granted, provided that the above
@@ -416,9 +416,9 @@ assemble(FILE *f)
 {
 	char w[0x40];
 	scpy("on-reset", p.scope, 0x40);
-	while(fscanf(f, "%63s", w) == 1)
-		if(!parse(w, f))
-			return error("Unknown token", w);
+	while(fscanf(f, "%62s", w) == 1)
+		if(slen(w) > 0x3d || !parse(w, f))
+			return error("Invalid token", w);
 	return resolve();
 }
 
@@ -443,12 +443,12 @@ review(char *filename)
 static void
 writesym(char *filename)
 {
+	int i;
 	char symdst[0x60];
 	FILE *fp;
 	if(slen(filename) > 0x60 - 5)
 		return;
 	fp = fopen(scat(scpy(filename, symdst, slen(filename) + 1), ".sym"), "w");
-	int i;
 	if(fp != NULL) {
 		for(i = 0; i < p.llen; i++) {
 			fwrite(&p.labels[i].addr + 1, 1, 1, fp);

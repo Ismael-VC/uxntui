@@ -32,8 +32,8 @@ WITH REGARD TO THIS SOFTWARE.
 int
 uxn_eval(Uxn *u, Uint16 pc)
 {
-	unsigned int a, b, c, j, k, bs, instr;
 	Uint8 kptr, *sp;
+	Uint16 a, b, c, j, k, bs, instr;
 	Stack *src, *dst;
 	if(!pc || u->dev[0x0f]) return 0;
 	while((instr = u->ram[pc++])) {
@@ -49,8 +49,8 @@ uxn_eval(Uxn *u, Uint16 pc)
 		case 0x00:
 		/* Literals/Calls */
 		if(instr == 0x20)      /* JMI  */ { PEEK16(a, pc) pc = a; }
-		else if(instr == 0x40) /* JCI  */ { sp = &u->wst->ptr; src = u->wst; POP8(a) if(a) { PEEK16(b, pc) pc = b; } else { pc += 2; } }
-		else if(instr == 0x60) /* JSI  */ { PEEK16(a, pc) PUSH16(u->rst, pc + 2) pc = a; }
+		else if(instr == 0x40) /* JCI  */ { sp = &u->wst->ptr; src = u->wst; POP8(b) if(b) { PEEK16(a, pc) pc = a; } else pc += 2; }
+		else if(instr == 0x60) /* JSI  */ { PUSH16(u->rst, pc + 2) PEEK16(a, pc) pc = a; }
 		else if(bs)            /* LIT2 */ { PEEK16(a, pc) PUSH16(src, a) pc += 2; }
 		else                   /* LITr */ { a = u->ram[pc++]; PUSH8(src, a) } break;
 		/* ALU */
@@ -80,7 +80,7 @@ uxn_eval(Uxn *u, Uint16 pc)
 		case 0x18: /* ADD */ POP(a) POP(b) PUSH(src, b + a) break;
 		case 0x19: /* SUB */ POP(a) POP(b) PUSH(src, b - a) break;
 		case 0x1a: /* MUL */ POP(a) POP(b) PUSH(src, (Uint32)b * a) break;
-		case 0x1b: /* DIV */ POP(a) POP(b) if(a == 0) HALT(3) PUSH(src, b / a) break;
+		case 0x1b: /* DIV */ POP(a) POP(b) if(!a) HALT(3) PUSH(src, b / a) break;
 		case 0x1c: /* AND */ POP(a) POP(b) PUSH(src, b & a) break;
 		case 0x1d: /* ORA */ POP(a) POP(b) PUSH(src, b | a) break;
 		case 0x1e: /* EOR */ POP(a) POP(b) PUSH(src, b ^ a) break;
