@@ -21,13 +21,13 @@ WITH REGARD TO THIS SOFTWARE.
 #define PUSH16(s, x) { if((j = s->ptr) >= 0xfe) HALT(2) k = (x); s->dat[j] = k >> 8; s->dat[j + 1] = k; s->ptr = j + 2; }
 #define PUSH(s, x) { if(bs) { PUSH16(s, (x)) } else { PUSH8(s, (x)) } }
 #define POP8(o) { if(!(j = *sp)) HALT(1) o = (Uint16)src->dat[--j]; *sp = j; }
-#define POP16(o) { if((j = *sp) <= 1) HALT(1) o = src->dat[j - 1]; o += src->dat[j - 2] << 8; *sp = j - 2; }
+#define POP16(o) { if((j = *sp) <= 1) HALT(1) o = (src->dat[j - 2] << 8) + src->dat[j - 1]; *sp = j - 2; }
 #define POP(o) { if(bs) { POP16(o) } else { POP8(o) } }
 #define POKE(x, y) { if(bs) { u->ram[(x)] = (y) >> 8; u->ram[(x) + 1] = (y); } else { u->ram[(x)] = y; } }
 #define PEEK16(o, x) { o = (u->ram[(x)] << 8) + u->ram[(x) + 1]; }
 #define PEEK(o, x) { if(bs) PEEK16(o, x) else o = u->ram[(x)]; }
-#define DEVR(o, x) { o = u->dei(u, x); if (bs) o = (o << 8) + u->dei(u, ((x) + 1) & 0xFF); }
-#define DEVW(x, y) { if (bs) { u->deo(u, (x), (y) >> 8); u->deo(u, ((x) + 1) & 0xFF, (y)); } else { u->deo(u, x, (y)); } }
+#define DEVR(o, x) { o = u->dei(u, x); if (bs) o = (o << 8) + u->dei(u, (x) + 1); }
+#define DEVW(x, y) { if (bs) { u->deo(u, (x), (y) >> 8); u->deo(u, (x) + 1, (y)); } else { u->deo(u, x, (y)); } }
 
 int
 uxn_eval(Uxn *u, Uint16 pc)
