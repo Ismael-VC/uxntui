@@ -33,10 +33,11 @@ int
 uxn_eval(Uxn *u, Uint16 pc)
 {
 	Uint8 kptr, *sp;
-	Uint16 a, b, c, j, k, bs, instr;
+	Uint16 a, b, c, j, k, bs, instr, opcode;
 	Stack *src, *dst;
 	if(!pc || u->dev[0x0f]) return 0;
-	while((instr = u->ram[pc++])) {
+	for(;;) {
+		instr = u->ram[pc++];
 		/* Return Mode */
 		if(instr & 0x40) { src = u->rst; dst = u->wst; }
 		else { src = u->wst; dst = u->rst; }
@@ -45,14 +46,17 @@ uxn_eval(Uxn *u, Uint16 pc)
 		else sp = &src->ptr;
 		/* Short Mode */
 		bs = instr & 0x20;
-		switch(instr & 0x1f) {
-		case 0x00:
+		opcode = instr & 0x1f;
+		switch(opcode - (!opcode * (instr >> 5))) {
 		/* Literals/Calls */
-		if(instr == 0x20)      /* JMI  */ { PEEK16(a, pc) pc = a; }
-		else if(instr == 0x40) /* JCI  */ { sp = &u->wst->ptr; src = u->wst; POP8(b) if(b) { PEEK16(a, pc) pc = a; } else pc += 2; }
-		else if(instr == 0x60) /* JSI  */ { PUSH16(u->rst, pc + 2) PEEK16(a, pc) pc = a; }
-		else if(bs)            /* LIT2 */ { PEEK16(a, pc) PUSH16(src, a) pc += 2; }
-		else                   /* LITr */ { a = u->ram[pc++]; PUSH8(src, a) } break;
+		case -0x0: /* BRK */ return 1;
+		case -0x1: /* JMI */ PEEK16(a, pc) pc += a + 2; break;
+		case -0x2: /* JCI */ sp = &u->wst->ptr; src = u->wst; POP8(b) if(b) { PEEK16(a, pc) pc += a + 2; } else pc += 2; break;
+		case -0x3: /* JSI */ PUSH16(u->rst, pc + 2) PEEK16(a, pc) pc += a + 2; break;
+		case -0x4: /* LIT */
+		case -0x6: /* LITr */ a = u->ram[pc++]; PUSH8(src, a) break;
+		case -0x5: /* LIT2 */
+		case -0x7: /* LIT2r */ PEEK16(a, pc) PUSH16(src, a) pc += 2; break;
 		/* ALU */
 		case 0x01: /* INC */ POP(a) PUSH(src, a + 1) break;
 		case 0x02: /* POP */ POP(a) break;
@@ -87,7 +91,6 @@ uxn_eval(Uxn *u, Uint16 pc)
 		case 0x1f: /* SFT */ POP8(a) POP(b) PUSH(src, b >> (a & 0x0f) << ((a & 0xf0) >> 4)) break;
 		}
 	}
-	return 1;
 }
 
 int

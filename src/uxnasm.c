@@ -302,26 +302,26 @@ parse(char *w, FILE *f)
 		makereference(p.scope, w, p.ptr);
 		return writebyte(0xff);
 	case ',': /* literal byte relative */
-		makereference(p.scope, w, p.ptr);
+		makereference(p.scope, w, p.ptr + 1);
 		return writelitbyte(0xff);
 	case '-': /* raw byte absolute */
 		makereference(p.scope, w, p.ptr);
 		return writebyte(0xff);
 	case '.': /* literal byte zero-page */
-		makereference(p.scope, w, p.ptr);
+		makereference(p.scope, w, p.ptr + 1);
 		return writelitbyte(0xff);
 	case ':': /* raw short absolute */
 	case '=':
 		makereference(p.scope, w, p.ptr);
 		return writeshort(0xffff, 0);
 	case ';': /* literal short absolute */
-		makereference(p.scope, w, p.ptr);
+		makereference(p.scope, w, p.ptr + 1);
 		return writeshort(0xffff, 1);
 	case '!': /* JMI */
-		makereference(p.scope, w, p.ptr);
+		makereference(p.scope, w, p.ptr + 1);
 		return writebyte(0x20) && writeshort(0xffff, 0);
 	case '?': /* JCI */
-		makereference(p.scope, w, p.ptr);
+		makereference(p.scope, w, p.ptr + 1);
 		return writebyte(0x40) && writeshort(0xffff, 0);
 	case '"': /* raw string */
 		i = 0;
@@ -348,7 +348,7 @@ parse(char *w, FILE *f)
 					return 0;
 			return 1;
 		} else {
-			makereference(p.scope, w - 1, p.ptr);
+			makereference(p.scope, w - 1, p.ptr + 1);
 			return writebyte(0x60) && writeshort(0xffff, 0);
 		}
 	}
@@ -360,10 +360,12 @@ resolve(void)
 {
 	Label *l;
 	int i;
+	Uint16 a;
 	for(i = 0; i < p.rlen; i++) {
 		Reference *r = &p.refs[i];
 		switch(r->rune) {
 		case '_':
+		case ',':
 			if(!(l = findlabel(r->name)))
 				return error("Unknown relative reference", r->name);
 			p.data[r->addr] = (Sint8)(l->addr - r->addr - 2);
@@ -371,39 +373,30 @@ resolve(void)
 				return error("Relative reference is too far", r->name);
 			l->refs++;
 			break;
-		case ',':
-			if(!(l = findlabel(r->name)))
-				return error("Unknown relative reference", r->name);
-			p.data[r->addr + 1] = (Sint8)(l->addr - r->addr - 3);
-			if((Sint8)p.data[r->addr + 1] != (l->addr - r->addr - 3))
-				return error("Relative reference is too far", r->name);
-			l->refs++;
-			break;
 		case '-':
-			if(!(l = findlabel(r->name)))
-				return error("Unknown absolute reference", r->name);
-			p.data[r->addr] = l->addr & 0xff;
-			l->refs++;
-			break;
 		case '.':
 			if(!(l = findlabel(r->name)))
 				return error("Unknown zero-page reference", r->name);
-			p.data[r->addr + 1] = l->addr & 0xff;
+			p.data[r->addr] = l->addr & 0xff;
 			l->refs++;
 			break;
 		case ':':
 		case '=':
+		case ';':
 			if(!(l = findlabel(r->name)))
 				return error("Unknown absolute reference", r->name);
 			p.data[r->addr] = l->addr >> 0x8;
 			p.data[r->addr + 1] = l->addr & 0xff;
 			l->refs++;
 			break;
+		case '?':
+		case '!':
 		default:
 			if(!(l = findlabel(r->name)))
 				return error("Unknown absolute reference", r->name);
-			p.data[r->addr + 1] = l->addr >> 0x8;
-			p.data[r->addr + 2] = l->addr & 0xff;
+			a = l->addr - r->addr - 2;
+			p.data[r->addr] = a >> 0x8;
+			p.data[r->addr + 1] = a & 0xff;
 			l->refs++;
 			break;
 		}
@@ -451,8 +444,9 @@ writesym(char *filename)
 	fp = fopen(scat(scpy(filename, symdst, slen(filename) + 1), ".sym"), "w");
 	if(fp != NULL) {
 		for(i = 0; i < p.llen; i++) {
-			fwrite(&p.labels[i].addr + 1, 1, 1, fp);
-			fwrite((Uint8*)&p.labels[i].addr, 1, 1, fp);
+			Uint8 hb = p.labels[i].addr >> 8, lb = p.labels[i].addr & 0xff;
+			fwrite(&hb, 1, 1, fp);
+			fwrite(&lb, 1, 1, fp);
 			fwrite(p.labels[i].name, slen(p.labels[i].name) + 1, 1, fp);
 		}
 	}
