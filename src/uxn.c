@@ -50,8 +50,8 @@ uxn_eval(Uxn *u, Uint16 pc)
 		switch(opcode - (!opcode * (instr >> 5))) {
 		/* Literals/Calls */
 		case -0x0: /* BRK */ return 1;
-		case -0x1: /* JMI */ PEEK16(a, pc) pc += a + 2; break;
-		case -0x2: /* JCI */ sp = &u->wst->ptr; src = u->wst; POP8(b) if(b) { PEEK16(a, pc) pc += a + 2; } else pc += 2; break;
+		case -0x1: /* JCI */ POP8(b) if(!b) { pc += 2; break; }
+		case -0x2: /* JMI */ PEEK16(a, pc) pc += a + 2; break;
 		case -0x3: /* JSI */ PUSH16(u->rst, pc + 2) PEEK16(a, pc) pc += a + 2; break;
 		case -0x4: /* LIT */
 		case -0x6: /* LITr */ a = u->ram[pc++]; PUSH8(src, a) break;

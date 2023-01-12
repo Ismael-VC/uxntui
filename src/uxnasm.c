@@ -317,10 +317,10 @@ parse(char *w, FILE *f)
 	case ';': /* literal short absolute */
 		makereference(p.scope, w, p.ptr + 1);
 		return writeshort(0xffff, 1);
-	case '!': /* JMI */
+	case '?': /* JCI */
 		makereference(p.scope, w, p.ptr + 1);
 		return writebyte(0x20) && writeshort(0xffff, 0);
-	case '?': /* JCI */
+	case '!': /* JMI */
 		makereference(p.scope, w, p.ptr + 1);
 		return writebyte(0x40) && writeshort(0xffff, 0);
 	case '"': /* raw string */
