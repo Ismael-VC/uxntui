@@ -452,7 +452,7 @@ writesym(char *filename)
 	if(fp != NULL) {
 		for(i = 0; i < p.llen; i++) {
 			fwrite(&p.labels[i].addr + 1, 1, 1, fp);
-			fwrite(&p.labels[i].addr, 1, 1, fp);
+			fwrite((Uint8*)&p.labels[i].addr, 1, 1, fp);
 			fwrite(p.labels[i].name, slen(p.labels[i].name) + 1, 1, fp);
 		}
 	}
