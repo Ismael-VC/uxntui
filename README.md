@@ -75,7 +75,6 @@ The file device is _sandboxed_, meaning that it should not be able to read or wr
 The following resources are a good place to start:
 
 * [XXIIVV — uxntal](https://wiki.xxiivv.com/site/uxntal.html)
-* [XXIIVV — uxntal cheatsheet](https://wiki.xxiivv.com/site/uxntal_cheatsheet.html)
 * [XXIIVV — uxntal reference](https://wiki.xxiivv.com/site/uxntal_reference.html)
 * [compudanzas — uxn tutorial](https://compudanzas.net/uxn_tutorial.html)
 
