@@ -7,7 +7,7 @@
 #include "devices/datetime.h"
 
 /*
-Copyright (c) 2021 Devine Lu Linvega
+Copyright (c) 2021-2023 Devine Lu Linvega, Andrew Alderwick
 
 Permission to use, copy, modify, and distribute this software for any
 purpose with or without fee is hereby granted, provided that the above
@@ -37,8 +37,8 @@ console_input(Uxn *u, char c)
 static void
 console_deo(Uint8 *d, Uint8 port)
 {
-	FILE *fd = port == 0x8 ? stdout : port == 0x9 ? stderr :
-													0;
+	FILE *fd = port == 0x8 ? stdout : port == 0x9 ? stderr
+												  : 0;
 	if(fd) {
 		fputc(d[port], fd);
 		fflush(fd);
@@ -78,9 +78,10 @@ main(int argc, char **argv)
 {
 	Uxn u;
 	int i;
+	Mmu mmu;
 	if(argc < 2)
 		return emu_error("Usage", "uxncli game.rom args");
-	if(!uxn_boot(&u, (Uint8 *)calloc(0x10300, sizeof(Uint8)), emu_dei, emu_deo))
+	if(!uxn_boot(&u, mmu_init(&mmu, 16), emu_dei, emu_deo))
 		return emu_error("Boot", "Failed");
 	if(!load_rom(&u, argv[1]))
 		return emu_error("Load", "Failed");

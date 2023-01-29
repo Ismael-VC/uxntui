@@ -1,10 +1,11 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "../uxn.h"
 #include "system.h"
 
 /*
-Copyright (c) 2022 Devine Lu Linvega, Andrew Alderwick
+Copyright (c) 2022-2023 Devine Lu Linvega, Andrew Alderwick
 
 Permission to use, copy, modify, and distribute this software for any
 purpose with or without fee is hereby granted, provided that the above
@@ -42,17 +43,43 @@ int
 uxn_halt(Uxn *u, Uint8 instr, Uint8 err, Uint16 addr)
 {
 	Uint8 *d = &u->dev[0x00];
-	if(instr & 0x40)
-		u->rst->err = err;
-	else
-		u->wst->err = err;
-	if(GETVEC(d))
-		uxn_eval(u, GETVEC(d));
-	else {
+	Uint16 handler = GETVEC(d);
+	if(handler) {
+		u->wst->ptr = 4;
+		u->wst->dat[0] = addr >> 0x8;
+		u->wst->dat[1] = addr & 0xff;
+		u->wst->dat[2] = instr;
+		u->wst->dat[3] = err;
+		return uxn_eval(u, handler);
+	} else {
 		system_inspect(u);
 		fprintf(stderr, "%s %s, by %02x at 0x%04x.\n", (instr & 0x40) ? "Return-stack" : "Working-stack", errors[err - 1], instr, addr);
 	}
 	return 0;
+}
+
+/* MMU */
+
+Uint8 *
+mmu_init(Mmu *m, Uint16 pages)
+{
+	m->length = pages;
+	m->pages = (Uint8 *)calloc(0x10000 * pages, sizeof(Uint8));
+	return m->pages;
+}
+
+void
+mmu_eval(Uint8 *ram, Uint16 addr)
+{
+	Uint16 a = addr, i = 0;
+	Uint8 o = ram[a++];
+	if(o == 1) {
+		Uint16 length = (ram[a++] << 8) + ram[a++];
+		Uint16 src_page = ((ram[a++] << 8) + ram[a++]) % 16, src_addr = (ram[a++] << 8) + ram[a++];
+		Uint16 dst_page = ((ram[a++] << 8) + ram[a++]) % 16, dst_addr = (ram[a++] << 8) + ram[a];
+		for(i = 0; i < length; i++)
+			ram[dst_page * 0x10000 + dst_addr + i] = ram[src_page * 0x10000 + src_addr + i];
+	}
 }
 
 /* IO */
@@ -60,9 +87,12 @@ uxn_halt(Uxn *u, Uint8 instr, Uint8 err, Uint16 addr)
 void
 system_deo(Uxn *u, Uint8 *d, Uint8 port)
 {
+	Uint16 a;
 	switch(port) {
-	case 0x2: u->wst = (Stack *)(u->ram + (d[port] ? (d[port] * 0x100) : 0x10000)); break;
-	case 0x3: u->rst = (Stack *)(u->ram + (d[port] ? (d[port] * 0x100) : 0x10100)); break;
+	case 0x3:
+		PEKDEV(a, 0x2);
+		mmu_eval(u->ram, a);
+		break;
 	case 0xe:
 		if(u->wst->ptr || u->rst->ptr) system_inspect(u);
 		break;

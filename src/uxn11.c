@@ -225,6 +225,7 @@ int
 main(int argc, char **argv)
 {
 	Uxn u;
+	Mmu m;
 	int i;
 	char expirations[8];
 	struct pollfd fds[2];
@@ -232,7 +233,7 @@ main(int argc, char **argv)
 	if(argc < 2)
 		return emu_error("Usage", "uxn11 game.rom args");
 	rom_path = argv[1];
-	if(!uxn_boot(&u, (Uint8 *)calloc(0x10300, sizeof(Uint8)), emu_dei, emu_deo))
+	if(!uxn_boot(&u, mmu_init(&m, 16), emu_dei, emu_deo))
 		return emu_error("Boot", "Failed");
 	/* start sequence */
 	if(!emu_start(&u, rom_path))

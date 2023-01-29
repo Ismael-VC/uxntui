@@ -11,3 +11,9 @@ WITH REGARD TO THIS SOFTWARE.
 
 void system_inspect(Uxn *u);
 void system_deo(Uxn *u, Uint8 *d, Uint8 port);
+
+typedef struct {
+	Uint8 length, *pages;
+} Mmu;
+
+Uint8 *mmu_init(Mmu *m, Uint16 pages);
