@@ -37,8 +37,8 @@ console_input(Uxn *u, char c)
 static void
 console_deo(Uint8 *d, Uint8 port)
 {
-	FILE *fd = port == 0x8 ? stdout : port == 0x9 ? stderr
-												  : 0;
+	FILE *fd = port == 0x8 ? stdout : port == 0x9 ? stderr :
+													0;
 	if(fd) {
 		fputc(d[port], fd);
 		fflush(fd);
@@ -78,12 +78,11 @@ main(int argc, char **argv)
 {
 	Uxn u;
 	int i;
-	Mmu mmu;
 	if(argc < 2)
 		return emu_error("Usage", "uxncli game.rom args");
-	if(!uxn_boot(&u, mmu_init(&mmu, 16), emu_dei, emu_deo))
+	if(!uxn_boot(&u, (Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8)), emu_dei, emu_deo))
 		return emu_error("Boot", "Failed");
-	if(!load_rom(&u, argv[1]))
+	if(!system_load(&u, argv[1]))
 		return emu_error("Load", "Failed");
 	if(!uxn_eval(&u, PAGE_PROGRAM))
 		return emu_error("Init", "Failed");

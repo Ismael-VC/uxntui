@@ -108,7 +108,7 @@ emu_draw(void)
 static int
 emu_start(Uxn *u, char *rom)
 {
-	if(!load_rom(u, rom))
+	if(!system_load(u, rom))
 		return 0;
 	if(!uxn_screen.width || !uxn_screen.height)
 		screen_resize(&uxn_screen, WIDTH, HEIGHT);
@@ -225,7 +225,6 @@ int
 main(int argc, char **argv)
 {
 	Uxn u;
-	Mmu m;
 	int i;
 	char expirations[8];
 	struct pollfd fds[2];
@@ -233,7 +232,7 @@ main(int argc, char **argv)
 	if(argc < 2)
 		return emu_error("Usage", "uxn11 game.rom args");
 	rom_path = argv[1];
-	if(!uxn_boot(&u, mmu_init(&m, 16), emu_dei, emu_deo))
+	if(!uxn_boot(&u, (Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8)), emu_dei, emu_deo))
 		return emu_error("Boot", "Failed");
 	/* start sequence */
 	if(!emu_start(&u, rom_path))

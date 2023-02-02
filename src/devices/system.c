@@ -39,6 +39,55 @@ system_inspect(Uxn *u)
 	system_print(u->rst, "rst");
 }
 
+/* RAM */
+
+void
+system_cmd(Uint8 *ram, Uint16 addr)
+{
+	Uint16 a = addr, i = 0;
+	Uint8 o = ram[a++];
+	if(o == 1) {
+		Uint16 length = (ram[a++] << 8) + ram[a++];
+		Uint16 src_page = ((ram[a++] << 8) + ram[a++]) % 16, src_addr = (ram[a++] << 8) + ram[a++];
+		Uint16 dst_page = ((ram[a++] << 8) + ram[a++]) % 16, dst_addr = (ram[a++] << 8) + ram[a];
+		for(i = 0; i < length; i++)
+			ram[dst_page * 0x10000 + dst_addr + i] = ram[src_page * 0x10000 + src_addr + i];
+	}
+}
+
+int
+system_load(Uxn *u, char *filename)
+{
+	int l, i = 0;
+	FILE *f = fopen(filename, "rb");
+	if(!f)
+		return 0;
+	l = fread(&u->ram[PAGE_PROGRAM], 1, 0x10000 - PAGE_PROGRAM, f);
+	while(l && ++i < RAM_PAGES)
+		l = fread(u->ram + 0x10000 * i, 1, 0x10000, f);
+	fclose(f);
+	return 1;
+}
+
+/* IO */
+
+void
+system_deo(Uxn *u, Uint8 *d, Uint8 port)
+{
+	Uint16 a;
+	switch(port) {
+	case 0x3:
+		PEKDEV(a, 0x2);
+		system_cmd(u->ram, a);
+		break;
+	case 0xe:
+		if(u->wst->ptr || u->rst->ptr) system_inspect(u);
+		break;
+	}
+}
+
+/* Error */
+
 int
 uxn_halt(Uxn *u, Uint8 instr, Uint8 err, Uint16 addr)
 {
@@ -56,45 +105,4 @@ uxn_halt(Uxn *u, Uint8 instr, Uint8 err, Uint16 addr)
 		fprintf(stderr, "%s %s, by %02x at 0x%04x.\n", (instr & 0x40) ? "Return-stack" : "Working-stack", errors[err - 1], instr, addr);
 	}
 	return 0;
-}
-
-/* MMU */
-
-Uint8 *
-mmu_init(Mmu *m, Uint16 pages)
-{
-	m->length = pages;
-	m->pages = (Uint8 *)calloc(0x10000 * pages, sizeof(Uint8));
-	return m->pages;
-}
-
-void
-mmu_eval(Uint8 *ram, Uint16 addr)
-{
-	Uint16 a = addr, i = 0;
-	Uint8 o = ram[a++];
-	if(o == 1) {
-		Uint16 length = (ram[a++] << 8) + ram[a++];
-		Uint16 src_page = ((ram[a++] << 8) + ram[a++]) % 16, src_addr = (ram[a++] << 8) + ram[a++];
-		Uint16 dst_page = ((ram[a++] << 8) + ram[a++]) % 16, dst_addr = (ram[a++] << 8) + ram[a];
-		for(i = 0; i < length; i++)
-			ram[dst_page * 0x10000 + dst_addr + i] = ram[src_page * 0x10000 + src_addr + i];
-	}
-}
-
-/* IO */
-
-void
-system_deo(Uxn *u, Uint8 *d, Uint8 port)
-{
-	Uint16 a;
-	switch(port) {
-	case 0x3:
-		PEKDEV(a, 0x2);
-		mmu_eval(u->ram, a);
-		break;
-	case 0xe:
-		if(u->wst->ptr || u->rst->ptr) system_inspect(u);
-		break;
-	}
 }

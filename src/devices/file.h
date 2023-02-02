@@ -14,4 +14,3 @@ WITH REGARD TO THIS SOFTWARE.
 
 void file_deo(Uint8 id, Uint8 *ram, Uint8 *d, Uint8 port);
 Uint8 file_dei(Uint8 id, Uint8 *d, Uint8 port);
-int load_rom(Uxn *u, char *filename);
