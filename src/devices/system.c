@@ -62,9 +62,9 @@ system_load(Uxn *u, char *filename)
 	FILE *f = fopen(filename, "rb");
 	if(!f)
 		return 0;
-	l = fread(&u->ram[PAGE_PROGRAM], 1, 0x10000 - PAGE_PROGRAM, f);
+	l = fread(&u->ram[PAGE_PROGRAM], 0x10000 - PAGE_PROGRAM, 1, f);
 	while(l && ++i < RAM_PAGES)
-		l = fread(u->ram + 0x10000 * i, 1, 0x10000, f);
+		l = fread(u->ram + 0x10000 * i, 0x10000, 1, f);
 	fclose(f);
 	return 1;
 }

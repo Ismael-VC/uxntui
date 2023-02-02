@@ -75,7 +75,7 @@ uxn_eval(Uxn *u, Uint16 pc)
 		case 0x0f: /* STH */ POP(a) PUSH(dst, a) break;
 		case 0x10: /* LDZ */ POP8(a) PEEK(b, a) PUSH(src, b) break;
 		case 0x11: /* STZ */ POP8(a) POP(b) POKE(a, b) break;
-		case 0x12: /* LDR */ POP8(a) PEEK(b, pc + (Sint8)a) PUSH(src, b) break;
+		case 0x12: /* LDR */ POP8(a) b = pc + (Sint8)a; PEEK(c, b) PUSH(src, c) break;
 		case 0x13: /* STR */ POP8(a) POP(b) c = pc + (Sint8)a; POKE(c, b) break;
 		case 0x14: /* LDA */ POP16(a) PEEK(b, a) PUSH(src, b) break;
 		case 0x15: /* STA */ POP16(a) POP(b) POKE(a, b) break;
@@ -100,9 +100,9 @@ uxn_boot(Uxn *u, Uint8 *ram, Dei *dei, Deo *deo)
 	char *cptr = (char *)u;
 	for(i = 0; i < sizeof(*u); i++)
 		cptr[i] = 0x00;
-	u->wst = (Stack *)(ram + 0x10000);
-	u->rst = (Stack *)(ram + 0x10100);
-	u->dev = (Uint8 *)(ram + 0x10200);
+	u->wst = (Stack *)(ram + 0xf0000);
+	u->rst = (Stack *)(ram + 0xf0100);
+	u->dev = (Uint8 *)(ram + 0xf0200);
 	u->ram = ram;
 	u->dei = dei;
 	u->deo = deo;

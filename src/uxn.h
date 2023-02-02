@@ -26,7 +26,7 @@ typedef unsigned int Uint32;
 /* clang-format on */
 
 typedef struct {
-	Uint8 dat[254], err, ptr;
+	Uint8 dat[255], ptr;
 } Stack;
 
 typedef struct Uxn {
