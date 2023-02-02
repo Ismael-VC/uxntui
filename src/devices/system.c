@@ -32,27 +32,26 @@ system_print(Stack *s, char *name)
 	fprintf(stderr, "\n");
 }
 
+static void
+system_cmd(Uint8 *ram, Uint16 addr)
+{
+	if(ram[addr] == 0x01) {
+		int src, dst;
+		Uint16 i, args[5]; /* length, a_page, a_addr, b_page, b_addr */
+		for(i = 0; i < 5; i++)
+			args[i] = PEEK16(ram + addr + 1 + i * 2);
+		src = (args[1] % RAM_PAGES) * 0x10000;
+		dst = (args[3] % RAM_PAGES) * 0x10000;
+		for(i = 0; i < args[0]; i++)
+			ram[dst + (Uint16)(args[4] + i)] = ram[src + (Uint16)(args[2] + i)];
+	}
+}
+
 void
 system_inspect(Uxn *u)
 {
 	system_print(u->wst, "wst");
 	system_print(u->rst, "rst");
-}
-
-/* RAM */
-
-void
-system_cmd(Uint8 *ram, Uint16 addr)
-{
-	Uint16 a = addr, i = 0;
-	Uint8 o = ram[a++];
-	if(o == 1) {
-		Uint16 length = (ram[a++] << 8) + ram[a++];
-		Uint16 src_page = ((ram[a++] << 8) + ram[a++]) % 16, src_addr = (ram[a++] << 8) + ram[a++];
-		Uint16 dst_page = ((ram[a++] << 8) + ram[a++]) % 16, dst_addr = (ram[a++] << 8) + ram[a];
-		for(i = 0; i < length; i++)
-			ram[dst_page * 0x10000 + dst_addr + i] = ram[src_page * 0x10000 + src_addr + i];
-	}
 }
 
 int

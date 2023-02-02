@@ -38,7 +38,10 @@
 	#05 .Screen/auto DEO
 	draw-polycat
 
+	;&mmu #02 DEO2
+
 BRK
+	&mmu 01 0001 0002 89ab 0003 3333
 
 @draw-polycat ( -- )
 
