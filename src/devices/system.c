@@ -36,14 +36,12 @@ static void
 system_cmd(Uint8 *ram, Uint16 addr)
 {
 	if(ram[addr] == 0x01) {
-		int src, dst;
-		Uint16 i, args[5]; /* length, a_page, a_addr, b_page, b_addr */
-		for(i = 0; i < 5; i++)
-			args[i] = PEEK16(ram + addr + 1 + i * 2);
-		src = (args[1] % RAM_PAGES) * 0x10000;
-		dst = (args[3] % RAM_PAGES) * 0x10000;
-		for(i = 0; i < args[0]; i++)
-			ram[dst + (Uint16)(args[4] + i)] = ram[src + (Uint16)(args[2] + i)];
+		Uint16 i, length = PEEK16(ram + addr + 1);
+		Uint16 a_page = PEEK16(ram + addr + 1 + 2), a_addr = PEEK16(ram + addr + 1 + 4);
+		Uint16 b_page = PEEK16(ram + addr + 1 + 6), b_addr = PEEK16(ram + addr + 1 + 8);
+		int src = (a_page % RAM_PAGES) * 0x10000, dst = (b_page % RAM_PAGES) * 0x10000;
+		for(i = 0; i < length; i++)
+			ram[dst + (Uint16)(b_addr + i)] = ram[src + (Uint16)(a_addr + i)];
 	}
 }
 
