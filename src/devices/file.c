@@ -70,7 +70,7 @@ get_entry(char *p, Uint16 len, const char *pathname, const char *basename, int f
 	if(stat(pathname, &st))
 		return fail_nonzero ? sprintf(p, "!!!! %s\n", basename) : 0;
 	else if(S_ISDIR(st.st_mode))
-		return sprintf(p, "---- %s\n", basename);
+		return sprintf(p, "---- %s/\n", basename);
 	else if(st.st_size < 0x10000)
 		return sprintf(p, "%04x %s\n", (unsigned int)st.st_size, basename);
 	else
