@@ -39,7 +39,7 @@ typedef struct {
 	Uint16 llen, mlen, rlen;
 	Label labels[0x400];
 	Macro macros[0x100];
-	Reference refs[0x1000];
+	Reference refs[0x400];
 	char scope[0x40];
 } Program;
 
@@ -175,27 +175,27 @@ makelabel(char *name)
 }
 
 static int
-makereference(char *scope, char *label, Uint16 addr)
+makereference(char *scope, char *label, char rune, Uint16 addr)
 {
 	char subw[0x40], parent[0x40];
 	Reference *r;
 	if(p.rlen == 0x1000)
 		return error("References limit exceeded", label);
 	r = &p.refs[p.rlen++];
-	if(label[1] == '&') {
-		if(!sublabel(subw, scope, label + 2))
+	if(label[0] == '&') {
+		if(!sublabel(subw, scope, label + 1))
 			return error("Invalid sublabel", label);
 		scpy(subw, r->name, 0x40);
 	} else {
-		int pos = spos(label + 1, '/');
+		int pos = spos(label, '/');
 		if(pos > 0) {
 			Label *l;
-			if((l = findlabel(scpy(label + 1, parent, pos))))
+			if((l = findlabel(scpy(label, parent, pos))))
 				l->refs++;
 		}
-		scpy(label + 1, r->name, 0x40);
+		scpy(label, r->name, 0x40);
 	}
-	r->rune = label[0];
+	r->rune = rune;
 	r->addr = addr;
 	return 1;
 }
@@ -305,29 +305,29 @@ parse(char *w, FILE *f)
 			return error("Invalid hex literal", w);
 		break;
 	case '_': /* raw byte relative */
-		makereference(p.scope, w, p.ptr);
+		makereference(p.scope, w + 1, w[0], p.ptr);
 		return writebyte(0xff);
 	case ',': /* literal byte relative */
-		makereference(p.scope, w, p.ptr + 1);
+		makereference(p.scope, w + 1, w[0], p.ptr + 1);
 		return writelitbyte(0xff);
 	case '-': /* raw byte absolute */
-		makereference(p.scope, w, p.ptr);
+		makereference(p.scope, w + 1, w[0], p.ptr);
 		return writebyte(0xff);
 	case '.': /* literal byte zero-page */
-		makereference(p.scope, w, p.ptr + 1);
+		makereference(p.scope, w + 1, w[0], p.ptr + 1);
 		return writelitbyte(0xff);
-	case ':': /* raw short absolute */
-	case '=':
-		makereference(p.scope, w, p.ptr);
+	case ':':
+	case '=': /* raw short absolute */
+		makereference(p.scope, w + 1, w[0], p.ptr);
 		return writeshort(0xffff, 0);
 	case ';': /* literal short absolute */
-		makereference(p.scope, w, p.ptr + 1);
+		makereference(p.scope, w + 1, w[0], p.ptr + 1);
 		return writeshort(0xffff, 1);
 	case '?': /* JCI */
-		makereference(p.scope, w, p.ptr + 1);
+		makereference(p.scope, w + 1, w[0], p.ptr + 1);
 		return writebyte(0x20) && writeshort(0xffff, 0);
 	case '!': /* JMI */
-		makereference(p.scope, w, p.ptr + 1);
+		makereference(p.scope, w + 1, w[0], p.ptr + 1);
 		return writebyte(0x40) && writeshort(0xffff, 0);
 	case '"': /* raw string */
 		i = 0;
@@ -354,7 +354,7 @@ parse(char *w, FILE *f)
 					return 0;
 			return 1;
 		} else {
-			makereference(p.scope, w - 1, p.ptr + 1);
+			makereference(p.scope, w, ' ', p.ptr + 1);
 			return writebyte(0x60) && writeshort(0xffff, 0);
 		}
 	}
