@@ -31,14 +31,18 @@ cc -DNDEBUG -Os -g0 -s src/uxnasm.c -o bin/uxnasm
 if [ "${1}" = '--install' ];
 then
 	echo "Installing.."
-	gcc ${RELEASE_FLAGS} ${EMU_INC}
-	gcc ${RELEASE_FLAGS} ${CLI_INC}
+	gcc ${C_FLAGS} ${LD_FLAGS} ${RELEASE_FLAGS} ${EMU_INC}
+	gcc ${C_FLAGS} ${LD_FLAGS} ${RELEASE_FLAGS} ${CLI_INC}
 	cp bin/uxnasm ~/bin
 	cp bin/uxncli ~/bin
 	cp bin/uxn11 ~/bin
+elif [ "${1}" = '--release' ];
+then
+	gcc ${C_FLAGS} ${LD_FLAGS} ${RELEASE_FLAGS} ${EMU_INC}
+	gcc ${C_FLAGS} ${LD_FLAGS} ${RELEASE_FLAGS} ${CLI_INC}
 else
-	gcc ${DEBUG_FLAGS} ${EMU_INC}
-	gcc ${DEBUG_FLAGS} ${CLI_INC} 
+	gcc ${C_FLAGS} ${LD_FLAGS} ${DEBUG_FLAGS} ${EMU_INC}
+	gcc ${C_FLAGS} ${LD_FLAGS} ${DEBUG_FLAGS} ${CLI_INC} 
 fi
 
 echo "Assembling.."

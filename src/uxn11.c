@@ -37,6 +37,7 @@ char *rom_path;
 #define WIDTH (64 * 8)
 #define HEIGHT (40 * 8)
 #define PAD 4
+#define CONINBUFSIZE 256
 
 static int
 emu_error(char *msg, const char *err)
@@ -225,9 +226,10 @@ int
 main(int argc, char **argv)
 {
 	Uxn u;
-	int i;
+	int i,n;
 	char expirations[8];
-	struct pollfd fds[2];
+	char coninp[CONINBUFSIZE];
+	struct pollfd fds[3];
 	static const struct itimerspec screen_tspec = {{0, 16666666}, {0, 16666666}};
 	if(argc < 2)
 		return emu_error("Usage", "uxn11 game.rom args");
@@ -249,16 +251,26 @@ main(int argc, char **argv)
 	fds[0].fd = XConnectionNumber(display);
 	fds[1].fd = timerfd_create(CLOCK_MONOTONIC, 0);
 	timerfd_settime(fds[1].fd, 0, &screen_tspec, NULL);
-	fds[0].events = fds[1].events = POLLIN;
+	fds[2].fd = STDIN_FILENO;
+	fds[0].events = fds[1].events = fds[2].events = POLLIN;
 	/* main loop */
 	while(!u.dev[0x0f]) {
-		if(poll(fds, 2, 1000) <= 0)
+		if(poll(fds, 3, 1000) <= 0)
 			continue;
 		while(XPending(display))
 			emu_event(&u);
 		if(poll(&fds[1], 1, 0)) {
 			read(fds[1].fd, expirations, 8);    /* Indicate we handled the timer */
 			uxn_eval(&u, GETVEC(&u.dev[0x20])); /* Call the vector once, even if the timer fired multiple times */
+		}
+		if ((fds[2].revents & POLLIN)!=0)
+		{
+			n = read(fds[2].fd, coninp, CONINBUFSIZE-1);
+			coninp[n] = 0;
+			for (i=0;i<n;i++)
+			{
+				console_input(&u, coninp[i]);
+			}
 		}
 		if(uxn_screen.fg.changed || uxn_screen.bg.changed)
 			emu_draw();
