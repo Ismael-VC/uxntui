@@ -37,8 +37,8 @@ console_input(Uxn *u, char c)
 static void
 console_deo(Uint8 *d, Uint8 port)
 {
-	FILE *fd = port == 0x8 ? stdout : port == 0x9 ? stderr
-												  : 0;
+	FILE *fd = port == 0x8 ? stdout : port == 0x9 ? stderr :
+													0;
 	if(fd) {
 		fputc(d[port], fd);
 		fflush(fd);

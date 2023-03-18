@@ -226,7 +226,7 @@ int
 main(int argc, char **argv)
 {
 	Uxn u;
-	int i,n;
+	int i, n;
 	char expirations[8];
 	char coninp[CONINBUFSIZE];
 	struct pollfd fds[3];
@@ -263,12 +263,10 @@ main(int argc, char **argv)
 			read(fds[1].fd, expirations, 8);    /* Indicate we handled the timer */
 			uxn_eval(&u, GETVEC(&u.dev[0x20])); /* Call the vector once, even if the timer fired multiple times */
 		}
-		if ((fds[2].revents & POLLIN)!=0)
-		{
-			n = read(fds[2].fd, coninp, CONINBUFSIZE-1);
+		if((fds[2].revents & POLLIN) != 0) {
+			n = read(fds[2].fd, coninp, CONINBUFSIZE - 1);
 			coninp[n] = 0;
-			for (i=0;i<n;i++)
-			{
+			for(i = 0; i < n; i++) {
 				console_input(&u, coninp[i]);
 			}
 		}
