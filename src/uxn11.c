@@ -9,6 +9,7 @@
 
 #include "uxn.h"
 #include "devices/system.h"
+#include "devices/console.h"
 #include "devices/screen.h"
 #include "devices/controller.h"
 #include "devices/mouse.h"
@@ -44,25 +45,6 @@ emu_error(char *msg, const char *err)
 {
 	fprintf(stderr, "Error %s: %s\n", msg, err);
 	return 0;
-}
-
-static int
-console_input(Uxn *u, char c)
-{
-	Uint8 *d = &u->dev[0x10];
-	d[0x02] = c;
-	return uxn_eval(u, GETVEC(d));
-}
-
-static void
-console_deo(Uint8 *d, Uint8 port)
-{
-	FILE *fd = port == 0x8 ? stdout : port == 0x9 ? stderr :
-													0;
-	if(fd) {
-		fputc(d[port], fd);
-		fflush(fd);
-	}
 }
 
 static Uint8
@@ -260,8 +242,8 @@ main(int argc, char **argv)
 		while(XPending(display))
 			emu_event(&u);
 		if(poll(&fds[1], 1, 0)) {
-			read(fds[1].fd, expirations, 8);    /* Indicate we handled the timer */
-			uxn_eval(&u, GETVEC(&u.dev[0x20])); /* Call the vector once, even if the timer fired multiple times */
+			read(fds[1].fd, expirations, 8);   /* Indicate we handled the timer */
+			uxn_eval(&u, PEEK2(&u.dev[0x20])); /* Call the vector once, even if the timer fired multiple times */
 		}
 		if((fds[2].revents & POLLIN) != 0) {
 			n = read(fds[2].fd, coninp, CONINBUFSIZE - 1);

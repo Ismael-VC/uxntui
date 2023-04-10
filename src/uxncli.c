@@ -31,7 +31,7 @@ console_input(Uxn *u, char c)
 {
 	Uint8 *d = &u->dev[0x10];
 	d[0x02] = c;
-	return uxn_eval(u, GETVEC(d));
+	return uxn_eval(u, PEEK2(d));
 }
 
 static void

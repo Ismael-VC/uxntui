@@ -89,7 +89,7 @@ int
 uxn_halt(Uxn *u, Uint8 instr, Uint8 err, Uint16 addr)
 {
 	Uint8 *d = &u->dev[0x00];
-	Uint16 handler = GETVEC(d);
+	Uint16 handler = PEEK2(d);
 	if(handler) {
 		u->wst->ptr = 4;
 		u->wst->dat[0] = addr >> 0x8;
