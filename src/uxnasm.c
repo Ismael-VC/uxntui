@@ -39,7 +39,7 @@ typedef struct {
 	Uint16 llen, mlen, rlen;
 	Label labels[0x400];
 	Macro macros[0x100];
-	Reference refs[0x400];
+	Reference refs[0x800];
 	char scope[0x40];
 } Program;
 
@@ -179,7 +179,7 @@ makereference(char *scope, char *label, char rune, Uint16 addr)
 {
 	char subw[0x40], parent[0x40];
 	Reference *r;
-	if(p.rlen == 0x1000)
+	if(p.rlen >= 0x800)
 		return error("References limit exceeded", label);
 	r = &p.refs[p.rlen++];
 	if(label[0] == '&') {
@@ -253,6 +253,7 @@ parse(char *w, FILE *f)
 {
 	int i;
 	char word[0x40], subw[0x40], c;
+	Label *l;
 	Macro *m;
 	if(slen(w) >= 63)
 		return error("Invalid token", w);
@@ -278,14 +279,30 @@ parse(char *w, FILE *f)
 			return error("Invalid macro", w);
 		break;
 	case '|': /* pad-absolute */
-		if(!sihx(w + 1))
-			return error("Invalid padding", w);
-		p.ptr = shex(w + 1);
+		if(sihx(w + 1))
+			p.ptr = shex(w + 1);
+		else if(w[1] == '&') {
+			if(!sublabel(subw, p.scope, w + 2) || !(l = findlabel(subw)))
+				return error("Invalid sublabel", w);
+			p.ptr = l->addr;
+		} else {
+			if(!(l = findlabel(w + 1)))
+				return error("Invalid label", w);
+			p.ptr = l->addr;
+		}
 		break;
 	case '$': /* pad-relative */
-		if(!sihx(w + 1))
-			return error("Invalid padding", w);
-		p.ptr += shex(w + 1);
+		if(sihx(w + 1))
+			p.ptr += shex(w + 1);
+		else if(w[1] == '&') {
+			if(!sublabel(subw, p.scope, w + 2) || !(l = findlabel(subw)))
+				return error("Invalid sublabel", w);
+			p.ptr += l->addr;
+		} else {
+			if(!(l = findlabel(w + 1)))
+				return error("Invalid label", w);
+			p.ptr += l->addr;
+		}
 		break;
 	case '@': /* label */
 		if(!makelabel(w + 1))
