@@ -40,6 +40,9 @@ char *rom_path;
 #define PAD 4
 #define CONINBUFSIZE 256
 
+Uint16 deo_mask[] = {0xff08, 0x0300, 0xc028, 0x8000, 0x8000, 0x8000, 0x8000, 0x0000, 0x0000, 0x0000, 0xa260, 0xa260, 0x0000, 0x0000, 0x0000, 0x0000};
+Uint16 dei_mask[] = {0x0000, 0x0000, 0x003c, 0x0014, 0x0014, 0x0014, 0x0014, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x07ff, 0x0000, 0x0000, 0x0000};
+
 static int
 emu_error(char *msg, const char *err)
 {
@@ -47,23 +50,20 @@ emu_error(char *msg, const char *err)
 	return 0;
 }
 
-static Uint8
-emu_dei(Uxn *u, Uint8 addr)
+Uint8
+uxn_dei(Uxn *u, Uint8 addr)
 {
-	Uint8 p = addr & 0x0f, d = addr & 0xf0;
-	switch(d) {
+	switch(addr & 0xf0) {
 	case 0x20: return screen_dei(u, addr);
-	case 0xc0: return datetime_dei(&u->dev[d], p);
+	case 0xc0: return datetime_dei(u, addr);
 	}
 	return u->dev[addr];
 }
 
-static void
-emu_deo(Uxn *u, Uint8 addr, Uint8 v)
+void
+uxn_deo(Uxn *u, Uint8 addr)
 {
 	Uint8 p = addr & 0x0f, d = addr & 0xf0;
-	Uint16 mask = 0x1 << (d >> 4);
-	u->dev[addr] = v;
 	switch(d) {
 	case 0x00:
 		system_deo(u, &u->dev[d], p);
@@ -75,8 +75,6 @@ emu_deo(Uxn *u, Uint8 addr, Uint8 v)
 	case 0xa0: file_deo(0, u->ram, &u->dev[d], p); break;
 	case 0xb0: file_deo(1, u->ram, &u->dev[d], p); break;
 	}
-	if(p == 0x01 && !(SUPPORT & mask))
-		fprintf(stderr, "Warning: Incompatible emulation, device: %02x.\n", d);
 }
 
 static void
@@ -214,7 +212,7 @@ main(int argc, char **argv)
 	if(argc < 2)
 		return emu_error("Usage", "uxn11 game.rom args");
 	rom_path = argv[1];
-	if(!uxn_boot(&u, (Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8)), emu_dei, emu_deo))
+	if(!uxn_boot(&u, (Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8))))
 		return emu_error("Boot", "Failed");
 	/* start sequence */
 	if(!emu_start(&u, rom_path))

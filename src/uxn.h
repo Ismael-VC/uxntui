@@ -9,12 +9,6 @@ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
 WITH REGARD TO THIS SOFTWARE.
 */
 
-typedef unsigned char Uint8;
-typedef signed char Sint8;
-typedef unsigned short Uint16;
-typedef signed short Sint16;
-typedef unsigned int Uint32;
-
 #define PAGE_PROGRAM 0x0100
 
 /* clang-format off */
@@ -24,20 +18,32 @@ typedef unsigned int Uint32;
 
 /* clang-format on */
 
+typedef unsigned char Uint8;
+typedef signed char Sint8;
+typedef unsigned short Uint16;
+typedef signed short Sint16;
+typedef unsigned int Uint32;
+
 typedef struct {
 	Uint8 dat[255], ptr;
 } Stack;
 
 typedef struct Uxn {
-	Uint8 *ram, *dev;
+	Uint8 *ram, dev[256];
 	Stack *wst, *rst;
 	Uint8 (*dei)(struct Uxn *u, Uint8 addr);
-	void (*deo)(struct Uxn *u, Uint8 addr, Uint8 value);
+	void (*deo)(struct Uxn *u, Uint8 addr);
 } Uxn;
 
-typedef Uint8 Dei(Uxn *u, Uint8 addr);
-typedef void Deo(Uxn *u, Uint8 addr, Uint8 value);
+/* required functions */
 
-int uxn_halt(Uxn *u, Uint8 instr, Uint8 err, Uint16 addr);
-int uxn_boot(Uxn *u, Uint8 *ram, Dei *dei, Deo *deo);
+extern Uint8 uxn_dei(Uxn *u, Uint8 addr);
+extern void uxn_deo(Uxn *u, Uint8 addr);
+extern int uxn_halt(Uxn *u, Uint8 instr, Uint8 err, Uint16 addr);
+extern Uint16 dei_mask[];
+extern Uint16 deo_mask[];
+
+/* built-ins */
+
+int uxn_boot(Uxn *u, Uint8 *ram);
 int uxn_eval(Uxn *u, Uint16 pc);

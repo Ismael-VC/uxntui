@@ -3,6 +3,7 @@
 
 #include "uxn.h"
 #include "devices/system.h"
+#include "devices/console.h"
 #include "devices/file.h"
 #include "devices/datetime.h"
 
@@ -17,7 +18,8 @@ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
 WITH REGARD TO THIS SOFTWARE.
 */
 
-#define SUPPORT 0x1c03 /* devices mask */
+Uint16 deo_mask[] = {0x6a08, 0x0300, 0xc028, 0x8000, 0x8000, 0x8000, 0x8000, 0x0000, 0x0000, 0x0000, 0xa260, 0xa260, 0x0000, 0x0000, 0x0000, 0x0000};
+Uint16 dei_mask[] = {0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x07ff, 0x0000, 0x0000, 0x0000};
 
 static int
 emu_error(char *msg, const char *err)
@@ -26,49 +28,25 @@ emu_error(char *msg, const char *err)
 	return 1;
 }
 
-static int
-console_input(Uxn *u, char c)
+Uint8
+uxn_dei(Uxn *u, Uint8 addr)
 {
-	Uint8 *d = &u->dev[0x10];
-	d[0x02] = c;
-	return uxn_eval(u, PEEK2(d));
-}
-
-static void
-console_deo(Uint8 *d, Uint8 port)
-{
-	FILE *fd = port == 0x8 ? stdout : port == 0x9 ? stderr :
-													0;
-	if(fd) {
-		fputc(d[port], fd);
-		fflush(fd);
-	}
-}
-
-static Uint8
-emu_dei(Uxn *u, Uint8 addr)
-{
-	Uint8 p = addr & 0x0f, d = addr & 0xf0;
-	switch(d) {
-	case 0xc0: return datetime_dei(&u->dev[d], p);
+	switch(addr & 0xf0) {
+	case 0xc0: return datetime_dei(u, addr);
 	}
 	return u->dev[addr];
 }
 
-static void
-emu_deo(Uxn *u, Uint8 addr, Uint8 v)
+void
+uxn_deo(Uxn *u, Uint8 addr)
 {
 	Uint8 p = addr & 0x0f, d = addr & 0xf0;
-	Uint16 mask = 0x1 << (d >> 4);
-	u->dev[addr] = v;
 	switch(d) {
 	case 0x00: system_deo(u, &u->dev[d], p); break;
 	case 0x10: console_deo(&u->dev[d], p); break;
 	case 0xa0: file_deo(0, u->ram, &u->dev[d], p); break;
 	case 0xb0: file_deo(1, u->ram, &u->dev[d], p); break;
 	}
-	if(p == 0x01 && !(SUPPORT & mask))
-		fprintf(stderr, "Warning: Incompatible emulation, device: %02x.\n", d);
 }
 
 int
@@ -78,7 +56,7 @@ main(int argc, char **argv)
 	int i;
 	if(argc < 2)
 		return emu_error("Usage", "uxncli game.rom args");
-	if(!uxn_boot(&u, (Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8)), emu_dei, emu_deo))
+	if(!uxn_boot(&u, (Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8))))
 		return emu_error("Boot", "Failed");
 	if(!system_load(&u, argv[1]))
 		return emu_error("Load", "Failed");
