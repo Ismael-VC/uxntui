@@ -75,7 +75,7 @@ uxn_eval(Uxn *u, Uint16 pc)
 		case 0x13: /* STR */ POP8(a) POP(b) POKE(pc + (Sint8)a, b) break;
 		case 0x14: /* LDA */ POP16(a) PEEK(b, a) PUSH(b) break;
 		case 0x15: /* STA */ POP16(a) POP(b) POKE(a, b) break;
-		case 0x16: /* DEI */ POP8(a) if(m2){ DEI(b, a) DEI(c, a + 1) PUSH16((b << 8) | c) } else { DEI(a, b) PUSH8(b) } break;
+		case 0x16: /* DEI */ POP8(a) if(m2){ DEI(b, a) DEI(c, a + 1) PUSH16((b << 8) | c) } else { DEI(b, a) PUSH8(b) } break;
 		case 0x17: /* DEO */ POP8(a) if(m2){ POP(b) DEO(a, b >> 8) DEO(a + 1, b) } else { POP8(b) DEO(a, b) } break;
 		case 0x18: /* ADD */ POP(a) POP(b) PUSH(b + a) break;
 		case 0x19: /* SUB */ POP(a) POP(b) PUSH(b - a) break;
