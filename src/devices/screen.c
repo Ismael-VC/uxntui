@@ -54,6 +54,15 @@ screen_blit(UxnScreen *p, Layer *layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8
 }
 
 static void
+screen_wipe(UxnScreen *p, Layer *layer, Uint16 x, Uint16 y)
+{
+	int v, h;
+	for(v = 0; v < 8; v++)
+		for(h = 0; h < 8; h++)
+			screen_write(p, layer, x + h, y + v, 0);
+}
+
+static void
 layer_clear(UxnScreen *p, Layer *layer)
 {
 	Uint32 i, size = p->width * p->height;
@@ -122,14 +131,14 @@ clamp(int val, int min, int max)
 /* IO */
 
 Uint8
-screen_dei(Uint8 *d, Uint8 port)
+screen_dei(Uxn *u, Uint8 addr)
 {
-	switch(port) {
-	case 0x2: return uxn_screen.width >> 8;
-	case 0x3: return uxn_screen.width;
-	case 0x4: return uxn_screen.height >> 8;
-	case 0x5: return uxn_screen.height;
-	default: return d[port];
+	switch(addr) {
+	case 0x22: return uxn_screen.width >> 8;
+	case 0x23: return uxn_screen.width;
+	case 0x24: return uxn_screen.height >> 8;
+	case 0x25: return uxn_screen.height;
+	default: return u->dev[addr];
 	}
 }
 
@@ -138,49 +147,43 @@ screen_deo(Uint8 *ram, Uint8 *d, Uint8 port)
 {
 	switch(port) {
 	case 0x3:
-		if(!FIXED_SIZE) {
-			Uint16 w;
-			PEKDEV(w, 0x2);
-			screen_resize(&uxn_screen, clamp(w, 1, 1024), uxn_screen.height);
-		}
+		if(!FIXED_SIZE)
+			screen_resize(&uxn_screen, clamp(PEEK2(d + 2), 1, 1024), uxn_screen.height);
 		break;
 	case 0x5:
-		if(!FIXED_SIZE) {
-			Uint16 h;
-			PEKDEV(h, 0x4);
-			screen_resize(&uxn_screen, uxn_screen.width, clamp(h, 1, 1024));
-		}
+		if(!FIXED_SIZE)
+			screen_resize(&uxn_screen, uxn_screen.width, clamp(PEEK2(d + 4), 1, 1024));
 		break;
 	case 0xe: {
-		Uint16 x, y;
+		Uint16 x = PEEK2(d + 0x8), y = PEEK2(d + 0xa);
 		Uint8 layer = d[0xe] & 0x40;
-		PEKDEV(x, 0x8);
-		PEKDEV(y, 0xa);
 		screen_write(&uxn_screen, layer ? &uxn_screen.fg : &uxn_screen.bg, x, y, d[0xe] & 0x3);
-		if(d[0x6] & 0x01) POKDEV(0x8, x + 1); /* auto x+1 */
-		if(d[0x6] & 0x02) POKDEV(0xa, y + 1); /* auto y+1 */
+		if(d[0x6] & 0x01) POKE2(d + 0x8, x + 1); /* auto x+1 */
+		if(d[0x6] & 0x02) POKE2(d + 0xa, y + 1); /* auto y+1 */
 		break;
 	}
 	case 0xf: {
-		Uint16 x, y, dx, dy, addr;
+		Uint16 x = PEEK2(d + 0x8), y = PEEK2(d + 0xa), dx, dy, addr = PEEK2(d + 0xc);
 		Uint8 i, n, twobpp = !!(d[0xf] & 0x80);
 		Layer *layer = (d[0xf] & 0x40) ? &uxn_screen.fg : &uxn_screen.bg;
-		PEKDEV(x, 0x8);
-		PEKDEV(y, 0xa);
-		PEKDEV(addr, 0xc);
 		n = d[0x6] >> 4;
 		dx = (d[0x6] & 0x01) << 3;
 		dy = (d[0x6] & 0x02) << 2;
 		if(addr > 0x10000 - ((n + 1) << (3 + twobpp)))
 			return;
 		for(i = 0; i <= n; i++) {
-			screen_blit(&uxn_screen, layer, x + dy * i, y + dx * i, &ram[addr], d[0xf] & 0xf, d[0xf] & 0x10, d[0xf] & 0x20, twobpp);
-			addr += (d[0x6] & 0x04) << (1 + twobpp);
+			if(!(d[0xf] & 0xf))
+				screen_wipe(&uxn_screen, layer, x + dy * i, y + dx * i);
+			else {
+				screen_blit(&uxn_screen, layer, x + dy * i, y + dx * i, &ram[addr], d[0xf] & 0xf, d[0xf] & 0x10, d[0xf] & 0x20, twobpp);
+				addr += (d[0x6] & 0x04) << (1 + twobpp);
+			}
 		}
-		POKDEV(0xc, addr);   /* auto addr+length */
-		POKDEV(0x8, x + dx); /* auto x+8 */
-		POKDEV(0xa, y + dy); /* auto y+8 */
+		POKE2(d + 0xc, addr);   /* auto addr+length */
+		POKE2(d + 0x8, x + dx); /* auto x+8 */
+		POKE2(d + 0xa, y + dy); /* auto y+8 */
 		break;
 	}
 	}
 }
+

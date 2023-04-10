@@ -28,6 +28,6 @@ void screen_resize(UxnScreen *p, Uint16 width, Uint16 height);
 void screen_clear(UxnScreen *p);
 void screen_redraw(UxnScreen *p, Uint32 *pixels);
 
-Uint8 screen_dei(Uint8 *d, Uint8 port);
+Uint8 screen_dei(Uxn *u, Uint8 addr);
 void screen_deo(Uint8 *ram, Uint8 *d, Uint8 port);
 int clamp(int val, int min, int max);
