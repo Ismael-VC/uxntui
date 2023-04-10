@@ -43,13 +43,6 @@ char *rom_path;
 Uint16 deo_mask[] = {0xff08, 0x0300, 0xc028, 0x8000, 0x8000, 0x8000, 0x8000, 0x0000, 0x0000, 0x0000, 0xa260, 0xa260, 0x0000, 0x0000, 0x0000, 0x0000};
 Uint16 dei_mask[] = {0x0000, 0x0000, 0x003c, 0x0014, 0x0014, 0x0014, 0x0014, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x07ff, 0x0000, 0x0000, 0x0000};
 
-static int
-emu_error(char *msg, const char *err)
-{
-	fprintf(stderr, "%s: %s\n", msg, err);
-	return 0;
-}
-
 Uint8
 uxn_dei(Uxn *u, Uint8 addr)
 {
@@ -92,7 +85,7 @@ emu_start(Uxn *u, char *rom)
 	if(!uxn_screen.width || !uxn_screen.height)
 		screen_resize(&uxn_screen, WIDTH, HEIGHT);
 	if(!uxn_eval(u, PAGE_PROGRAM))
-		return emu_error("boot", "Failed to start rom.");
+		return system_error("boot", "Failed to start rom.");
 	return 1;
 }
 
@@ -188,7 +181,7 @@ display_start(char *title)
 	visual = DefaultVisual(display, 0);
 	window = XCreateSimpleWindow(display, RootWindow(display, 0), 0, 0, uxn_screen.width + PAD * 2, uxn_screen.height + PAD * 2, 1, 0, 0);
 	if(visual->class != TrueColor)
-		return emu_error("init", "True-color visual failed");
+		return system_error("init", "True-color visual failed");
 	XSelectInput(display, window, ButtonPressMask | ButtonReleaseMask | PointerMotionMask | ExposureMask | KeyPressMask | KeyReleaseMask);
 	wmDelete = XInternAtom(display, "WM_DELETE_WINDOW", True);
 	XSetWMProtocols(display, window, &wmDelete, 1);
@@ -209,15 +202,15 @@ main(int argc, char **argv)
 	struct pollfd fds[3];
 	static const struct itimerspec screen_tspec = {{0, 16666666}, {0, 16666666}};
 	if(argc < 2)
-		return emu_error("usage", "uxn11 game.rom args");
+		return system_error("usage", "uxn11 game.rom args");
 	rom_path = argv[1];
 	if(!uxn_boot(&u, (Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8))))
-		return emu_error("boot", "Failed");
+		return system_error("boot", "Failed");
 	/* start sequence */
 	if(!emu_start(&u, rom_path))
-		return emu_error("start", rom_path);
+		return system_error("start", rom_path);
 	if(!display_start(rom_path))
-		return emu_error("display", "Failed");
+		return system_error("display", "Failed");
 	/* console vector */
 	for(i = 2; i < argc; i++) {
 		char *p = argv[i];

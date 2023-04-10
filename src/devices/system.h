@@ -12,6 +12,7 @@ WITH REGARD TO THIS SOFTWARE.
 #define RAM_PAGES 0x10
 #define PEEK16(d) ((d)[0] << 8 | (d)[1])
 
+int system_error(char *msg, const char *err);
 int system_load(Uxn *u, char *filename);
 void system_deo(Uxn *u, Uint8 *d, Uint8 port);
 void system_inspect(Uxn *u);
