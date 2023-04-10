@@ -11,6 +11,15 @@
 #ifdef _WIN32
 #include <libiberty/libiberty.h>
 #define realpath(s, dummy) lrealpath(s)
+#define DIR_SEP_CHAR '\\'
+#define DIR_SEP_STR "\\"
+#define pathcmp(path1, path2, length) strncasecmp(path1, path2, length) /* strncasecmp provided by libiberty */
+#define notdriveroot(file_name) (file_name[0] != DIR_SEP_CHAR && ((strlen(file_name) > 2 && file_name[1] != ':') || strlen(file_name) <= 2))
+#else
+#define DIR_SEP_CHAR '/'
+#define DIR_SEP_STR "/"
+#define pathcmp(path1, path2, length) strncmp(path1, path2, length)
+#define notdriveroot(file_name) (file_name[0] != DIR_SEP_CHAR)
 #endif
 
 #ifndef PATH_MAX
@@ -65,16 +74,16 @@ static Uint16
 get_entry(char *p, Uint16 len, const char *pathname, const char *basename, int fail_nonzero)
 {
 	struct stat st;
-	if(len < strlen(basename) + 7)
+	if(len < strlen(basename) + 8)
 		return 0;
 	if(stat(pathname, &st))
-		return fail_nonzero ? sprintf(p, "!!!! %s\n", basename) : 0;
+		return fail_nonzero ? snprintf(p, len, "!!!! %s\n", basename) : 0;
 	else if(S_ISDIR(st.st_mode))
-		return sprintf(p, "---- %s/\n", basename);
+		return snprintf(p, len, "---- %s/\n", basename);
 	else if(st.st_size < 0x10000)
-		return sprintf(p, "%04x %s\n", (unsigned int)st.st_size, basename);
+		return snprintf(p, len, "%04x %s\n", (unsigned int)st.st_size, basename);
 	else
-		return sprintf(p, "???? %s\n", basename);
+		return snprintf(p, len, "???? %s\n", basename);
 }
 
 static Uint16
@@ -102,7 +111,7 @@ file_read_dir(UxnFile *c, char *dest, Uint16 len)
 			free(t);
 		}
 		if(strlen(c->current_filename) + 1 + strlen(c->de->d_name) < sizeof(pathname))
-			sprintf(pathname, "%s/%s", c->current_filename, c->de->d_name);
+			snprintf(pathname, sizeof(pathname), "%s/%s", c->current_filename, c->de->d_name);
 		else
 			pathname[0] = '\0';
 		n = get_entry(p, len, pathname, c->de->d_name, 1);
@@ -124,17 +133,17 @@ retry_realpath(const char *file_name)
 		errno = ENAMETOOLONG;
 		return NULL;
 	}
-	if(file_name[0] != '/') {
+	if(notdriveroot(file_name)) {
 		/* TODO: use a macro instead of '/' for absolute path first character so that other systems can work */
 		/* if a relative path, prepend cwd */
 		getcwd(p, sizeof(p));
-		strcat(p, "/"); /* TODO: use a macro instead of '/' for the path delimiter */
+		strcat(p, DIR_SEP_STR); /* TODO: use a macro instead of '/' for the path delimiter */
 	}
 	strcat(p, file_name);
 	while((r = realpath(p, NULL)) == NULL) {
 		if(errno != ENOENT)
 			return NULL;
-		x = strrchr(p, '/'); /* TODO: path delimiter macro */
+		x = strrchr(p, DIR_SEP_CHAR); /* TODO: path delimiter macro */
 		if(x)
 			*x = '\0';
 		else
@@ -149,7 +158,7 @@ file_check_sandbox(UxnFile *c)
 	char *x, *rp, cwd[PATH_MAX] = {'\0'};
 	x = getcwd(cwd, sizeof(cwd));
 	rp = retry_realpath(c->current_filename);
-	if(rp == NULL || (x && strncmp(cwd, rp, strlen(cwd)) != 0)) {
+	if(rp == NULL || (x && pathcmp(cwd, rp, strlen(cwd)) != 0)) {
 		c->outside_sandbox = 1;
 		fprintf(stderr, "file warning: blocked attempt to access %s outside of sandbox\n", c->current_filename);
 	}
@@ -213,7 +222,7 @@ file_write(UxnFile *c, void *src, Uint16 len, Uint8 flags)
 static Uint16
 file_stat(UxnFile *c, void *dest, Uint16 len)
 {
-	char *basename = strrchr(c->current_filename, '/');
+	char *basename = strrchr(c->current_filename, DIR_SEP_CHAR);
 	if(c->outside_sandbox) return 0;
 	if(basename != NULL)
 		basename++;
@@ -237,52 +246,37 @@ file_deo(Uint8 id, Uint8 *ram, Uint8 *d, Uint8 port)
 	Uint16 addr, len, res;
 	switch(port) {
 	case 0x5:
-		PEKDEV(addr, 0x4);
-		PEKDEV(len, 0xa);
+		addr = PEEK2(d + 0x4);
+		len = PEEK2(d + 0xa);
 		if(len > 0x10000 - addr)
 			len = 0x10000 - addr;
 		res = file_stat(c, &ram[addr], len);
-		POKDEV(0x2, res);
+		POKE2(d + 0x2, res);
 		break;
 	case 0x6:
 		res = file_delete(c);
-		POKDEV(0x2, res);
+		POKE2(d + 0x2, res);
 		break;
 	case 0x9:
-		PEKDEV(addr, 0x8);
+		addr = PEEK2(d + 0x8);
 		res = file_init(c, (char *)&ram[addr], 0x10000 - addr, 0);
-		POKDEV(0x2, res);
+		POKE2(d + 0x2, res);
 		break;
 	case 0xd:
-		PEKDEV(addr, 0xc);
-		PEKDEV(len, 0xa);
+		addr = PEEK2(d + 0xc);
+		len = PEEK2(d + 0xa);
 		if(len > 0x10000 - addr)
 			len = 0x10000 - addr;
 		res = file_read(c, &ram[addr], len);
-		POKDEV(0x2, res);
+		POKE2(d + 0x2, res);
 		break;
 	case 0xf:
-		PEKDEV(addr, 0xe);
-		PEKDEV(len, 0xa);
+		addr = PEEK2(d + 0xe);
+		len = PEEK2(d + 0xa);
 		if(len > 0x10000 - addr)
 			len = 0x10000 - addr;
 		res = file_write(c, &ram[addr], len, d[0x7]);
-		POKDEV(0x2, res);
+		POKE2(d + 0x2, res);
 		break;
 	}
-}
-
-Uint8
-file_dei(Uint8 id, Uint8 *d, Uint8 port)
-{
-	UxnFile *c = &uxn_file[id];
-	Uint16 res;
-	switch(port) {
-	case 0xc:
-	case 0xd:
-		res = file_read(c, &d[port], 1);
-		POKDEV(0x2, res);
-		break;
-	}
-	return d[port];
 }

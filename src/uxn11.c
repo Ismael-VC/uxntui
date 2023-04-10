@@ -53,8 +53,6 @@ emu_dei(Uxn *u, Uint8 addr)
 	Uint8 p = addr & 0x0f, d = addr & 0xf0;
 	switch(d) {
 	case 0x20: return screen_dei(u, addr);
-	case 0xa0: return file_dei(0, &u->dev[d], p);
-	case 0xb0: return file_dei(1, &u->dev[d], p);
 	case 0xc0: return datetime_dei(&u->dev[d], p);
 	}
 	return u->dev[addr];

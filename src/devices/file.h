@@ -13,4 +13,3 @@ WITH REGARD TO THIS SOFTWARE.
 #define DEV_FILE0 0xa
 
 void file_deo(Uint8 id, Uint8 *ram, Uint8 *d, Uint8 port);
-Uint8 file_dei(Uint8 id, Uint8 *d, Uint8 port);
