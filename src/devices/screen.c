@@ -4,7 +4,7 @@
 #include "screen.h"
 
 /*
-Copyright (c) 2021 Devine Lu Linvega, Andrew Alderwick
+Copyright (c) 2021-2023 Devine Lu Linvega, Andrew Alderwick
 
 Permission to use, copy, modify, and distribute this software for any
 purpose with or without fee is hereby granted, provided that the above
@@ -16,12 +16,11 @@ WITH REGARD TO THIS SOFTWARE.
 
 UxnScreen uxn_screen;
 
-static Uint8 blending[5][16] = {
+static Uint8 blending[4][16] = {
 	{0, 0, 0, 0, 1, 0, 1, 1, 2, 2, 0, 2, 3, 3, 3, 0},
 	{0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3},
 	{1, 2, 3, 1, 1, 2, 3, 1, 1, 2, 3, 1, 1, 2, 3, 1},
-	{2, 3, 1, 2, 2, 3, 1, 2, 2, 3, 1, 2, 2, 3, 1, 2},
-	{1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0}};
+	{2, 3, 1, 2, 2, 3, 1, 2, 2, 3, 1, 2, 2, 3, 1, 2}};
 
 static void
 screen_write(UxnScreen *p, Layer *layer, Uint16 x, Uint16 y, Uint8 color)
@@ -36,11 +35,20 @@ screen_write(UxnScreen *p, Layer *layer, Uint16 x, Uint16 y, Uint8 color)
 }
 
 static void
+screen_wipe(UxnScreen *p, Layer *layer, Uint16 x, Uint16 y)
+{
+	int v, h;
+	for(v = 0; v < 8; v++)
+		for(h = 0; h < 8; h++)
+			screen_write(p, layer, x + h, y + v, 0);
+}
+
+static void
 screen_blit(UxnScreen *p, Layer *layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8 color, Uint8 flipx, Uint8 flipy, Uint8 twobpp)
 {
-	int v, h, opaque = blending[4][color];
+	int v, h, opaque = (color % 5) || !color;
 	for(v = 0; v < 8; v++) {
-		Uint16 c = sprite[v] | (twobpp ? sprite[v + 8] : 0) << 8;
+		Uint16 c = sprite[v] | (twobpp ? (sprite[v + 8] << 8) : 0);
 		for(h = 7; h >= 0; --h, c >>= 1) {
 			Uint8 ch = (c & 1) | ((c >> 7) & 2);
 			if(opaque || ch)
@@ -51,24 +59,6 @@ screen_blit(UxnScreen *p, Layer *layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8
 					blending[ch][color]);
 		}
 	}
-}
-
-static void
-screen_wipe(UxnScreen *p, Layer *layer, Uint16 x, Uint16 y)
-{
-	int v, h;
-	for(v = 0; v < 8; v++)
-		for(h = 0; h < 8; h++)
-			screen_write(p, layer, x + h, y + v, 0);
-}
-
-static void
-layer_clear(UxnScreen *p, Layer *layer)
-{
-	Uint32 i, size = p->width * p->height;
-	for(i = 0; i < size; i++)
-		layer->pixels[i] = 0x00;
-	layer->changed = 1;
 }
 
 void
@@ -100,15 +90,18 @@ screen_resize(UxnScreen *p, Uint16 width, Uint16 height)
 	if(bg && fg && pixels) {
 		p->width = width;
 		p->height = height;
-		screen_clear(p);
+		screen_clear(p, &p->bg);
+		screen_clear(p, &p->fg);
 	}
 }
 
 void
-screen_clear(UxnScreen *p)
+screen_clear(UxnScreen *p, Layer *layer)
 {
-	layer_clear(p, &p->bg);
-	layer_clear(p, &p->fg);
+	Uint32 i, size = p->width * p->height;
+	for(i = 0; i < size; i++)
+		layer->pixels[i] = 0x00;
+	layer->changed = 1;
 }
 
 void

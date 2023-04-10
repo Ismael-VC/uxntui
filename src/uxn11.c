@@ -46,7 +46,7 @@ Uint16 dei_mask[] = {0x0000, 0x0000, 0x003c, 0x0014, 0x0014, 0x0014, 0x0014, 0x0
 static int
 emu_error(char *msg, const char *err)
 {
-	fprintf(stderr, "Error %s: %s\n", msg, err);
+	fprintf(stderr, "%s: %s\n", msg, err);
 	return 0;
 }
 
@@ -91,9 +91,8 @@ emu_start(Uxn *u, char *rom)
 		return 0;
 	if(!uxn_screen.width || !uxn_screen.height)
 		screen_resize(&uxn_screen, WIDTH, HEIGHT);
-	screen_clear(&uxn_screen);
 	if(!uxn_eval(u, PAGE_PROGRAM))
-		return emu_error("Boot", "Failed to start rom.");
+		return emu_error("boot", "Failed to start rom.");
 	return 1;
 }
 
@@ -189,7 +188,7 @@ display_start(char *title)
 	visual = DefaultVisual(display, 0);
 	window = XCreateSimpleWindow(display, RootWindow(display, 0), 0, 0, uxn_screen.width + PAD * 2, uxn_screen.height + PAD * 2, 1, 0, 0);
 	if(visual->class != TrueColor)
-		return emu_error("Init", "True-color visual failed");
+		return emu_error("init", "True-color visual failed");
 	XSelectInput(display, window, ButtonPressMask | ButtonReleaseMask | PointerMotionMask | ExposureMask | KeyPressMask | KeyReleaseMask);
 	wmDelete = XInternAtom(display, "WM_DELETE_WINDOW", True);
 	XSetWMProtocols(display, window, &wmDelete, 1);
@@ -210,15 +209,15 @@ main(int argc, char **argv)
 	struct pollfd fds[3];
 	static const struct itimerspec screen_tspec = {{0, 16666666}, {0, 16666666}};
 	if(argc < 2)
-		return emu_error("Usage", "uxn11 game.rom args");
+		return emu_error("usage", "uxn11 game.rom args");
 	rom_path = argv[1];
 	if(!uxn_boot(&u, (Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8))))
-		return emu_error("Boot", "Failed");
+		return emu_error("boot", "Failed");
 	/* start sequence */
 	if(!emu_start(&u, rom_path))
-		return emu_error("Start", rom_path);
+		return emu_error("start", rom_path);
 	if(!display_start(rom_path))
-		return emu_error("Display", "Failed");
+		return emu_error("display", "Failed");
 	/* console vector */
 	for(i = 2; i < argc; i++) {
 		char *p = argv[i];
@@ -244,9 +243,8 @@ main(int argc, char **argv)
 		if((fds[2].revents & POLLIN) != 0) {
 			n = read(fds[2].fd, coninp, CONINBUFSIZE - 1);
 			coninp[n] = 0;
-			for(i = 0; i < n; i++) {
+			for(i = 0; i < n; i++)
 				console_input(&u, coninp[i]);
-			}
 		}
 		if(uxn_screen.fg.changed || uxn_screen.bg.changed)
 			emu_draw();
