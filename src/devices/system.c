@@ -71,14 +71,12 @@ system_load(Uxn *u, char *filename)
 void
 system_deo(Uxn *u, Uint8 *d, Uint8 port)
 {
-	Uint16 a;
 	switch(port) {
 	case 0x3:
-		PEKDEV(a, 0x2);
-		system_cmd(u->ram, a);
+		system_cmd(u->ram, PEEK2(d + 2));
 		break;
 	case 0xe:
-		if(u->wst->ptr || u->rst->ptr) system_inspect(u);
+		system_inspect(u);
 		break;
 	}
 }

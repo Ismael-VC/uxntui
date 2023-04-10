@@ -22,9 +22,6 @@ typedef unsigned int Uint32;
 #define POKE2(d, v) { (d)[0] = (v) >> 8; (d)[1] = (v); }
 #define PEEK2(d) ((d)[0] << 8 | (d)[1])
 
-#define POKDEV(x, y) { d[(x)] = (y) >> 8; d[(x) + 1] = (y); }
-#define PEKDEV(o, x) { (o) = (d[(x)] << 8) + d[(x) + 1]; }
-
 /* clang-format on */
 
 typedef struct {

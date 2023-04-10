@@ -186,4 +186,3 @@ screen_deo(Uint8 *ram, Uint8 *d, Uint8 port)
 	}
 	}
 }
-
