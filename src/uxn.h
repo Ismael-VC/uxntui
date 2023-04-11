@@ -30,7 +30,7 @@ typedef struct {
 
 typedef struct Uxn {
 	Uint8 *ram, dev[256];
-	Stack *wst, *rst;
+	Stack wst, rst;
 	Uint8 (*dei)(struct Uxn *u, Uint8 addr);
 	void (*deo)(struct Uxn *u, Uint8 addr);
 } Uxn;

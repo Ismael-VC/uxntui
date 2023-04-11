@@ -41,14 +41,14 @@ uxn_eval(Uxn *u, Uint16 pc)
 		instr = u->ram[pc++];
 		opcode = instr & 0x1f;
 		/* 2 Mode */ m2 = instr & 0x20;
-		/* r Mode */ s = instr & 0x40 ? u->rst : u->wst;
+		/* r Mode */ s = instr & 0x40 ? &u->rst : &u->wst;
 		/* k Mode */ if(instr & 0x80) { ksp = s->ptr; sp = &ksp; } else sp = &s->ptr;
 		switch(opcode - (!opcode * (instr >> 5))) {
 		/* Immediate */
 		case -0x0: /* BRK */ return 1;
 		case -0x1: /* JCI */ POP8(b) if(!b) { pc += 2; break; }
 		case -0x2: /* JMI */ PEEK16(a, pc) pc += a + 2; break;
-		case -0x3: /* JSI */ s = u->rst; PUSH16(pc + 2) PEEK16(a, pc) pc += a + 2; break;
+		case -0x3: /* JSI */ s = &u->rst; PUSH16(pc + 2) PEEK16(a, pc) pc += a + 2; break;
 		case -0x4: /* LIT */
 		case -0x6: /* LITr */ a = u->ram[pc++]; PUSH8(a) break;
 		case -0x5: /* LIT2 */
@@ -67,8 +67,8 @@ uxn_eval(Uxn *u, Uint16 pc)
 		case 0x0b: /* LTH */ POP(a) POP(b) PUSH8(b < a) break;
 		case 0x0c: /* JMP */ POP(a) JUMP(a) break;
 		case 0x0d: /* JCN */ POP(a) POP8(b) if(b) JUMP(a) break;
-		case 0x0e: /* JSR */ POP(a) s = (instr & 0x40) ? u->wst : u->rst; PUSH16(pc) JUMP(a) break;
-		case 0x0f: /* STH */ POP(a) s = (instr & 0x40) ? u->wst : u->rst; PUSH(a) break;
+		case 0x0e: /* JSR */ POP(a) s = (instr & 0x40) ? &u->wst : &u->rst; PUSH16(pc) JUMP(a) break;
+		case 0x0f: /* STH */ POP(a) s = (instr & 0x40) ? &u->wst : &u->rst; PUSH(a) break;
 		case 0x10: /* LDZ */ POP8(a) PEEK(b, a) PUSH(b) break;
 		case 0x11: /* STZ */ POP8(a) POP(b) POKE(a, b) break;
 		case 0x12: /* LDR */ POP8(a) PEEK(b, pc + (Sint8)a) PUSH(b) break;
@@ -96,8 +96,6 @@ uxn_boot(Uxn *u, Uint8 *ram)
 	char *cptr = (char *)u;
 	for(i = 0; i < sizeof(*u); i++)
 		cptr[i] = 0;
-	u->wst = (Stack *)(ram + 0xf0000);
-	u->rst = (Stack *)(ram + 0xf0100);
 	u->ram = ram;
 	return 1;
 }
