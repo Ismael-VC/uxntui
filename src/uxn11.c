@@ -34,7 +34,6 @@ static Window window;
 
 char *rom_path;
 
-#define SUPPORT 0x1f07 /* devices mask */
 #define WIDTH (64 * 8)
 #define HEIGHT (40 * 8)
 #define PAD 4
@@ -73,7 +72,7 @@ uxn_deo(Uxn *u, Uint8 addr)
 static void
 emu_draw(void)
 {
-	screen_redraw(&uxn_screen, uxn_screen.pixels);
+	screen_redraw(&uxn_screen);
 	XPutImage(display, window, DefaultGC(display, 0), ximage, 0, 0, PAD, PAD, uxn_screen.width, uxn_screen.height);
 }
 

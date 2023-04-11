@@ -22,6 +22,9 @@ static Uint8 blending[4][16] = {
 	{1, 2, 3, 1, 1, 2, 3, 1, 1, 2, 3, 1, 1, 2, 3, 1},
 	{2, 3, 1, 2, 2, 3, 1, 2, 2, 3, 1, 2, 2, 3, 1, 2}};
 
+static Uint32 palette_mono[] = {
+	0x0f000000, 0x0fffffff};
+
 static void
 screen_write(UxnScreen *p, Layer *layer, Uint16 x, Uint16 y, Uint8 color)
 {
@@ -35,12 +38,19 @@ screen_write(UxnScreen *p, Layer *layer, Uint16 x, Uint16 y, Uint8 color)
 }
 
 static void
-screen_wipe(UxnScreen *p, Layer *layer, Uint16 x, Uint16 y)
+screen_fill(UxnScreen *p, Layer *layer, Uint16 x1, Uint16 y1, Uint16 x2, Uint16 y2, Uint8 color)
 {
 	int v, h;
-	for(v = 0; v < 8; v++)
-		for(h = 0; h < 8; h++)
-			screen_write(p, layer, x + h, y + v, 0);
+	for(v = y1; v < y2; v++)
+		for(h = x1; h < x2; h++)
+			screen_write(p, layer, h, v, color);
+	layer->changed = 1;
+}
+
+static void
+screen_wipe(UxnScreen *p, Layer *layer, Uint16 x, Uint16 y)
+{
+	screen_fill(p, layer, x, y, x + 8, y + 8, 0);
 }
 
 static void
@@ -90,28 +100,24 @@ screen_resize(UxnScreen *p, Uint16 width, Uint16 height)
 	if(bg && fg && pixels) {
 		p->width = width;
 		p->height = height;
-		screen_clear(p, &p->bg);
-		screen_clear(p, &p->fg);
+		screen_fill(p, &p->bg, 0, 0, p->width, p->height, 0);
+		screen_fill(p, &p->fg, 0, 0, p->width, p->height, 0);
 	}
 }
 
 void
-screen_clear(UxnScreen *p, Layer *layer)
-{
-	Uint32 i, size = p->width * p->height;
-	for(i = 0; i < size; i++)
-		layer->pixels[i] = 0x00;
-	layer->changed = 1;
-}
-
-void
-screen_redraw(UxnScreen *p, Uint32 *pixels)
+screen_redraw(UxnScreen *p)
 {
 	Uint32 i, size = p->width * p->height, palette[16];
 	for(i = 0; i < 16; i++)
 		palette[i] = p->palette[(i >> 2) ? (i >> 2) : (i & 3)];
-	for(i = 0; i < size; i++)
-		pixels[i] = palette[p->fg.pixels[i] << 2 | p->bg.pixels[i]];
+	if(p->mono) {
+		for(i = 0; i < size; i++)
+			p->pixels[i] = palette_mono[(p->fg.pixels[i] ? p->fg.pixels[i] : p->bg.pixels[i]) & 0x1];
+	} else {
+		for(i = 0; i < size; i++)
+			p->pixels[i] = palette[p->fg.pixels[i] << 2 | p->bg.pixels[i]];
+	}
 	p->fg.changed = p->bg.changed = 0;
 }
 
@@ -119,6 +125,13 @@ int
 clamp(int val, int min, int max)
 {
 	return (val >= min) ? (val <= max) ? val : max : min;
+}
+
+void
+screen_mono(UxnScreen *p)
+{
+	p->mono = !p->mono;
+	screen_redraw(p);
 }
 
 /* IO */
@@ -149,10 +162,14 @@ screen_deo(Uint8 *ram, Uint8 *d, Uint8 port)
 		break;
 	case 0xe: {
 		Uint16 x = PEEK2(d + 0x8), y = PEEK2(d + 0xa);
-		Uint8 layer = d[0xe] & 0x40;
-		screen_write(&uxn_screen, layer ? &uxn_screen.fg : &uxn_screen.bg, x, y, d[0xe] & 0x3);
-		if(d[0x6] & 0x01) POKE2(d + 0x8, x + 1); /* auto x+1 */
-		if(d[0x6] & 0x02) POKE2(d + 0xa, y + 1); /* auto y+1 */
+		Layer *layer = (d[0xf] & 0x40) ? &uxn_screen.fg : &uxn_screen.bg;
+		if(d[0xe] & 0x80)
+			screen_fill(&uxn_screen, layer, (d[0xe] & 0x10) ? 0 : x, (d[0xe] & 0x20) ? 0 : y, (d[0xe] & 0x10) ? x : uxn_screen.width, (d[0xe] & 0x20) ? y : uxn_screen.height, d[0xe] & 0x3);
+		else {
+			screen_write(&uxn_screen, layer, x, y, d[0xe] & 0x3);
+			if(d[0x6] & 0x01) POKE2(d + 0x8, x + 1); /* auto x+1 */
+			if(d[0x6] & 0x02) POKE2(d + 0xa, y + 1); /* auto y+1 */
+		}
 		break;
 	}
 	case 0xf: {
