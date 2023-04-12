@@ -22,8 +22,11 @@ static Uint8 blending[4][16] = {
 	{1, 2, 3, 1, 1, 2, 3, 1, 1, 2, 3, 1, 1, 2, 3, 1},
 	{2, 3, 1, 2, 2, 3, 1, 2, 2, 3, 1, 2, 2, 3, 1, 2}};
 
-static Uint32 palette_mono[] = {
-	0x0f000000, 0x0fffffff};
+static int
+clamp(int val, int min, int max)
+{
+	return (val >= min) ? (val <= max) ? val : max : min;
+}
 
 static void
 screen_write(UxnScreen *p, Layer *layer, Uint16 x, Uint16 y, Uint8 color)
@@ -44,7 +47,6 @@ screen_fill(UxnScreen *p, Layer *layer, Uint16 x1, Uint16 y1, Uint16 x2, Uint16 
 	for(v = y1; v < y2; v++)
 		for(h = x1; h < x2; h++)
 			screen_write(p, layer, h, v, color);
-	layer->changed = 1;
 }
 
 static void
@@ -111,30 +113,10 @@ screen_redraw(UxnScreen *p)
 	Uint32 i, size = p->width * p->height, palette[16];
 	for(i = 0; i < 16; i++)
 		palette[i] = p->palette[(i >> 2) ? (i >> 2) : (i & 3)];
-	if(p->mono) {
-		for(i = 0; i < size; i++)
-			p->pixels[i] = palette_mono[(p->fg.pixels[i] ? p->fg.pixels[i] : p->bg.pixels[i]) & 0x1];
-	} else {
-		for(i = 0; i < size; i++)
-			p->pixels[i] = palette[p->fg.pixels[i] << 2 | p->bg.pixels[i]];
-	}
+	for(i = 0; i < size; i++)
+		p->pixels[i] = palette[p->fg.pixels[i] << 2 | p->bg.pixels[i]];
 	p->fg.changed = p->bg.changed = 0;
 }
-
-int
-clamp(int val, int min, int max)
-{
-	return (val >= min) ? (val <= max) ? val : max : min;
-}
-
-void
-screen_mono(UxnScreen *p)
-{
-	p->mono = !p->mono;
-	screen_redraw(p);
-}
-
-/* IO */
 
 Uint8
 screen_dei(Uxn *u, Uint8 addr)
@@ -153,12 +135,10 @@ screen_deo(Uint8 *ram, Uint8 *d, Uint8 port)
 {
 	switch(port) {
 	case 0x3:
-		if(!FIXED_SIZE)
-			screen_resize(&uxn_screen, clamp(PEEK2(d + 2), 1, 1024), uxn_screen.height);
+		screen_resize(&uxn_screen, clamp(PEEK2(d + 2), 1, 1024), uxn_screen.height);
 		break;
 	case 0x5:
-		if(!FIXED_SIZE)
-			screen_resize(&uxn_screen, uxn_screen.width, clamp(PEEK2(d + 4), 1, 1024));
+		screen_resize(&uxn_screen, uxn_screen.width, clamp(PEEK2(d + 4), 1, 1024));
 		break;
 	case 0xe: {
 		Uint16 x = PEEK2(d + 0x8), y = PEEK2(d + 0xa);
@@ -167,8 +147,8 @@ screen_deo(Uint8 *ram, Uint8 *d, Uint8 port)
 			screen_fill(&uxn_screen, layer, (d[0xe] & 0x10) ? 0 : x, (d[0xe] & 0x20) ? 0 : y, (d[0xe] & 0x10) ? x : uxn_screen.width, (d[0xe] & 0x20) ? y : uxn_screen.height, d[0xe] & 0x3);
 		else {
 			screen_write(&uxn_screen, layer, x, y, d[0xe] & 0x3);
-			if(d[0x6] & 0x01) POKE2(d + 0x8, x + 1); /* auto x+1 */
-			if(d[0x6] & 0x02) POKE2(d + 0xa, y + 1); /* auto y+1 */
+			if(d[0x6] & 0x1) POKE2(d + 0x8, x + 1); /* auto x+1 */
+			if(d[0x6] & 0x2) POKE2(d + 0xa, y + 1); /* auto y+1 */
 		}
 		break;
 	}
@@ -189,9 +169,9 @@ screen_deo(Uint8 *ram, Uint8 *d, Uint8 port)
 				addr += (d[0x6] & 0x04) << (1 + twobpp);
 			}
 		}
-		POKE2(d + 0xc, addr);   /* auto addr+length */
-		POKE2(d + 0x8, x + dx); /* auto x+8 */
-		POKE2(d + 0xa, y + dy); /* auto y+8 */
+		if(d[0x6] & 0x1) POKE2(d + 0x8, x + dx); /* auto x+8 */
+		if(d[0x6] & 0x2) POKE2(d + 0xa, y + dy); /* auto y+8 */
+		if(d[0x6] & 0x4) POKE2(d + 0xc, addr);   /* auto addr+length */
 		break;
 	}
 	}
