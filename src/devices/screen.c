@@ -22,12 +22,6 @@ static Uint8 blending[4][16] = {
 	{1, 2, 3, 1, 1, 2, 3, 1, 1, 2, 3, 1, 1, 2, 3, 1},
 	{2, 3, 1, 2, 2, 3, 1, 2, 2, 3, 1, 2, 2, 3, 1, 2}};
 
-static int
-clamp(int val, int min, int max)
-{
-	return (val >= min) ? (val <= max) ? val : max : min;
-}
-
 static void
 screen_write(UxnScreen *p, Layer *layer, Uint16 x, Uint16 y, Uint8 color)
 {
@@ -47,12 +41,6 @@ screen_fill(UxnScreen *p, Layer *layer, Uint16 x1, Uint16 y1, Uint16 x2, Uint16 
 	for(v = y1; v < y2; v++)
 		for(h = x1; h < x2; h++)
 			screen_write(p, layer, h, v, color);
-}
-
-static void
-screen_wipe(UxnScreen *p, Layer *layer, Uint16 x, Uint16 y)
-{
-	screen_fill(p, layer, x, y, x + 8, y + 8, 0);
 }
 
 static void
@@ -79,9 +67,9 @@ screen_palette(UxnScreen *p, Uint8 *addr)
 	int i, shift;
 	for(i = 0, shift = 4; i < 4; ++i, shift ^= 4) {
 		Uint8
-			r = (addr[0 + i / 2] >> shift) & 0x0f,
-			g = (addr[2 + i / 2] >> shift) & 0x0f,
-			b = (addr[4 + i / 2] >> shift) & 0x0f;
+			r = (addr[0 + i / 2] >> shift) & 0xf,
+			g = (addr[2 + i / 2] >> shift) & 0xf,
+			b = (addr[4 + i / 2] >> shift) & 0xf;
 		p->palette[i] = 0x0f000000 | r << 16 | g << 8 | b;
 		p->palette[i] |= p->palette[i] << 4;
 	}
@@ -91,20 +79,22 @@ screen_palette(UxnScreen *p, Uint8 *addr)
 void
 screen_resize(UxnScreen *p, Uint16 width, Uint16 height)
 {
-	Uint8
-		*bg = realloc(p->bg.pixels, width * height),
-		*fg = realloc(p->fg.pixels, width * height);
-	Uint32
-		*pixels = realloc(p->pixels, width * height * sizeof(Uint32));
-	if(bg) p->bg.pixels = bg;
-	if(fg) p->fg.pixels = fg;
-	if(pixels) p->pixels = pixels;
-	if(bg && fg && pixels) {
-		p->width = width;
-		p->height = height;
-		screen_fill(p, &p->bg, 0, 0, p->width, p->height, 0);
-		screen_fill(p, &p->fg, 0, 0, p->width, p->height, 0);
-	}
+	Uint8 *bg, *fg;
+	Uint32 *pixels;
+	if(width < 0x20 || height < 0x20 || width >= 0x400 || height >= 0x400)
+		return;
+	bg = realloc(p->bg.pixels, width * height),
+	fg = realloc(p->fg.pixels, width * height);
+	pixels = realloc(p->pixels, width * height * sizeof(Uint32));
+	if(!bg || !fg || !pixels)
+		return;
+	p->bg.pixels = bg;
+	p->fg.pixels = fg;
+	p->pixels = pixels;
+	p->width = width;
+	p->height = height;
+	screen_fill(p, &p->bg, 0, 0, p->width, p->height, 0);
+	screen_fill(p, &p->fg, 0, 0, p->width, p->height, 0);
 }
 
 void
@@ -135,17 +125,18 @@ screen_deo(Uint8 *ram, Uint8 *d, Uint8 port)
 {
 	switch(port) {
 	case 0x3:
-		screen_resize(&uxn_screen, clamp(PEEK2(d + 2), 1, 1024), uxn_screen.height);
+		screen_resize(&uxn_screen, PEEK2(d + 2), uxn_screen.height);
 		break;
 	case 0x5:
-		screen_resize(&uxn_screen, uxn_screen.width, clamp(PEEK2(d + 4), 1, 1024));
+		screen_resize(&uxn_screen, uxn_screen.width, PEEK2(d + 4));
 		break;
 	case 0xe: {
 		Uint16 x = PEEK2(d + 0x8), y = PEEK2(d + 0xa);
 		Layer *layer = (d[0xf] & 0x40) ? &uxn_screen.fg : &uxn_screen.bg;
-		if(d[0xe] & 0x80)
-			screen_fill(&uxn_screen, layer, (d[0xe] & 0x10) ? 0 : x, (d[0xe] & 0x20) ? 0 : y, (d[0xe] & 0x10) ? x : uxn_screen.width, (d[0xe] & 0x20) ? y : uxn_screen.height, d[0xe] & 0x3);
-		else {
+		if(d[0xe] & 0x80) {
+			Uint8 xflip = d[0xe] & 0x10, yflip = d[0xe] & 0x20;
+			screen_fill(&uxn_screen, layer, xflip ? 0 : x, yflip ? 0 : y, xflip ? x : uxn_screen.width, yflip ? y : uxn_screen.height, d[0xe] & 0x3);
+		} else {
 			screen_write(&uxn_screen, layer, x, y, d[0xe] & 0x3);
 			if(d[0x6] & 0x1) POKE2(d + 0x8, x + 1); /* auto x+1 */
 			if(d[0x6] & 0x2) POKE2(d + 0xa, y + 1); /* auto y+1 */
@@ -154,24 +145,24 @@ screen_deo(Uint8 *ram, Uint8 *d, Uint8 port)
 	}
 	case 0xf: {
 		Uint16 x = PEEK2(d + 0x8), y = PEEK2(d + 0xa), dx, dy, addr = PEEK2(d + 0xc);
-		Uint8 i, n, twobpp = !!(d[0xf] & 0x80);
+		Uint8 i, n = d[0x6] >> 4, twobpp = !!(d[0xf] & 0x80);
 		Layer *layer = (d[0xf] & 0x40) ? &uxn_screen.fg : &uxn_screen.bg;
-		n = d[0x6] >> 4;
 		dx = (d[0x6] & 0x01) << 3;
 		dy = (d[0x6] & 0x02) << 2;
 		if(addr > 0x10000 - ((n + 1) << (3 + twobpp)))
 			return;
 		for(i = 0; i <= n; i++) {
-			if(!(d[0xf] & 0xf))
-				screen_wipe(&uxn_screen, layer, x + dy * i, y + dx * i);
-			else {
+			if(!(d[0xf] & 0xf)) {
+				Uint16 ex = x + dy * i, ey = y + dx * i;
+				screen_fill(&uxn_screen, layer, ex, ey, ex + 8, ey + 8, 0);
+			} else {
 				screen_blit(&uxn_screen, layer, x + dy * i, y + dx * i, &ram[addr], d[0xf] & 0xf, d[0xf] & 0x10, d[0xf] & 0x20, twobpp);
 				addr += (d[0x6] & 0x04) << (1 + twobpp);
 			}
 		}
-		if(d[0x6] & 0x1) POKE2(d + 0x8, x + dx); /* auto x+8 */
-		if(d[0x6] & 0x2) POKE2(d + 0xa, y + dy); /* auto y+8 */
-		if(d[0x6] & 0x4) POKE2(d + 0xc, addr);   /* auto addr+length */
+		POKE2(d + 0x8, x + dx); /* auto x+8 */
+		POKE2(d + 0xa, y + dy); /* auto y+8 */
+		POKE2(d + 0xc, addr);   /* auto addr+length */
 		break;
 	}
 	}
