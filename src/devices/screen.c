@@ -23,24 +23,25 @@ static Uint8 blending[4][16] = {
 	{2, 3, 1, 2, 2, 3, 1, 2, 2, 3, 1, 2, 2, 3, 1, 2}};
 
 static void
-screen_write(UxnScreen *p, Layer *layer, Uint16 x, Uint16 y, Uint8 color)
+screen_pixel(UxnScreen *p, Layer *layer, Uint16 x, Uint16 y, Uint8 color)
 {
-	if(x < p->width && y < p->height) {
-		Uint32 i = x + y * p->width;
-		if(color != layer->pixels[i]) {
-			layer->pixels[i] = color;
-			layer->changed = 1;
-		}
-	}
+	if(x >= p->width || y >= p->height)
+		return;
+	layer->pixels[x + y * p->width] = color;
 }
 
 static void
 screen_fill(UxnScreen *p, Layer *layer, Uint16 x1, Uint16 y1, Uint16 x2, Uint16 y2, Uint8 color)
 {
-	int v, h;
-	for(v = y1; v < y2; v++)
-		for(h = x1; h < x2; h++)
-			screen_write(p, layer, h, v, color);
+	int x, y;
+	if(x2 >= p->width) x2 = p->width;
+	if(y2 >= p->height) y2 = p->height;
+	if(x1 >= x2 || y1 >= y2)
+		return;
+	for(y = y1; y < y2; y++)
+		for(x = x1; x < x2; x++)
+			layer->pixels[x + y * p->width] = color;
+	layer->changed = 1;
 }
 
 static void
@@ -52,13 +53,14 @@ screen_blit(UxnScreen *p, Layer *layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8
 		for(h = 7; h >= 0; --h, c >>= 1) {
 			Uint8 ch = (c & 1) | ((c >> 7) & 2);
 			if(opaque || ch)
-				screen_write(p,
+				screen_pixel(p,
 					layer,
 					x + (flipx ? 7 - h : h),
 					y + (flipy ? 7 - v : v),
 					blending[ch][color]);
 		}
 	}
+	layer->changed = 1;
 }
 
 void
@@ -137,7 +139,8 @@ screen_deo(Uint8 *ram, Uint8 *d, Uint8 port)
 			Uint8 xflip = d[0xe] & 0x10, yflip = d[0xe] & 0x20;
 			screen_fill(&uxn_screen, layer, xflip ? 0 : x, yflip ? 0 : y, xflip ? x : uxn_screen.width, yflip ? y : uxn_screen.height, d[0xe] & 0x3);
 		} else {
-			screen_write(&uxn_screen, layer, x, y, d[0xe] & 0x3);
+			screen_pixel(&uxn_screen, layer, x, y, d[0xe] & 0x3);
+			layer->changed = 1;
 			if(d[0x6] & 0x1) POKE2(d + 0x8, x + 1); /* auto x+1 */
 			if(d[0x6] & 0x2) POKE2(d + 0xa, y + 1); /* auto y+1 */
 		}
@@ -160,9 +163,9 @@ screen_deo(Uint8 *ram, Uint8 *d, Uint8 port)
 				addr += (d[0x6] & 0x04) << (1 + twobpp);
 			}
 		}
-		POKE2(d + 0x8, x + dx); /* auto x+8 */
-		POKE2(d + 0xa, y + dy); /* auto y+8 */
-		POKE2(d + 0xc, addr);   /* auto addr+length */
+		if(d[0x6] & 0x1) POKE2(d + 0x8, x + dx); /* auto x+8 */
+		if(d[0x6] & 0x2) POKE2(d + 0xa, y + dy); /* auto y+8 */
+		if(d[0x6] & 0x4) POKE2(d + 0xc, addr);   /* auto addr+length */
 		break;
 	}
 	}
