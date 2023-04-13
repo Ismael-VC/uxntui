@@ -16,6 +16,8 @@ WITH REGARD TO THIS SOFTWARE.
 
 UxnScreen uxn_screen;
 
+/* c = !ch ? (color % 5 ? color >> 2 : 0) : color % 4 + ch == 1 ? 0 : (ch - 2 + (color & 3)) % 3 + 1; */
+
 static Uint8 blending[4][16] = {
 	{0, 0, 0, 0, 1, 0, 1, 1, 2, 2, 0, 2, 3, 3, 3, 0},
 	{0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3},
@@ -134,7 +136,7 @@ screen_deo(Uint8 *ram, Uint8 *d, Uint8 port)
 		break;
 	case 0xe: {
 		Uint16 x = PEEK2(d + 0x8), y = PEEK2(d + 0xa);
-		Layer *layer = (d[0xf] & 0x40) ? &uxn_screen.fg : &uxn_screen.bg;
+		Layer *layer = (d[0xe] & 0x40) ? &uxn_screen.fg : &uxn_screen.bg;
 		if(d[0xe] & 0x80) {
 			Uint8 xflip = d[0xe] & 0x10, yflip = d[0xe] & 0x20;
 			screen_fill(&uxn_screen, layer, xflip ? 0 : x, yflip ? 0 : y, xflip ? x : uxn_screen.width, yflip ? y : uxn_screen.height, d[0xe] & 0x3);
