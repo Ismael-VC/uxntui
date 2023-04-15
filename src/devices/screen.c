@@ -37,8 +37,6 @@ static void
 screen_blit(UxnScreen *s, Uint8 *pixels, Uint16 x1, Uint16 y1, Uint8 *ram, Uint16 addr, Uint8 color, Uint8 flipx, Uint8 flipy, Uint8 twobpp)
 {
 	int v, h, width = s->width, height = s->height, opaque = (color % 5) || !color;
-	if(!color)
-		return screen_fill(s, pixels, x1, y1, x1 + 8, y1 + 8, 0);
 	for(v = 0; v < 8; v++) {
 		Uint16 c = ram[(addr + v) & 0xffff] | (twobpp ? (ram[(addr + v + 8) & 0xffff] << 8) : 0);
 		Uint16 y = y1 + (flipy ? 7 - v : v);
