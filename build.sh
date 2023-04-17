@@ -2,7 +2,7 @@
 
 RELEASE_FLAGS="-Os -DNDEBUG -g0 -s"
 DEBUG_FLAGS="-std=c89 -D_POSIX_C_SOURCE=199309L -DDEBUG -Wall -Wno-unknown-pragmas -Wpedantic -Wshadow -Wextra -Werror=implicit-int -Werror=incompatible-pointer-types -Werror=int-conversion -Wvla -g -Og -fsanitize=address -fsanitize=undefined"
-CORE_DEVICES="src/uxn.c src/devices/system.c src/devices/console.c src/devices/file.c src/devices/datetime.c"
+CORE_DEVICES="src/uxn.c src/devices/system.c src/devices/file.c src/devices/datetime.c"
 EMU_INC="${CORE_DEVICES} src/devices/screen.c src/devices/controller.c src/devices/mouse.c src/uxn11.c -o bin/uxn11 -lX11"
 CLI_INC="${CORE_DEVICES} src/uxncli.c -o bin/uxncli"
 

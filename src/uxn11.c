@@ -9,7 +9,6 @@
 
 #include "uxn.h"
 #include "devices/system.h"
-#include "devices/console.h"
 #include "devices/screen.h"
 #include "devices/controller.h"
 #include "devices/mouse.h"
@@ -213,8 +212,8 @@ main(int argc, char **argv)
 	/* console vector */
 	for(i = 2; i < argc; i++) {
 		char *p = argv[i];
-		while(*p) console_input(&u, *p++);
-		console_input(&u, '\n');
+		while(*p) console_input(&u, *p++, CONSOLE_ARG);
+		console_input(&u, '\n', i == argc ? CONSOLE_END : CONSOLE_EOA);
 	}
 	/* timer */
 	fds[0].fd = XConnectionNumber(display);
@@ -236,7 +235,7 @@ main(int argc, char **argv)
 			n = read(fds[2].fd, coninp, CONINBUFSIZE - 1);
 			coninp[n] = 0;
 			for(i = 0; i < n; i++)
-				console_input(&u, coninp[i]);
+				console_input(&u, coninp[i], CONSOLE_STD);
 		}
 		if(uxn_screen.fg.changed || uxn_screen.bg.changed)
 			emu_draw();

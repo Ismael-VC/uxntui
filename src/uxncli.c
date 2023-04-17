@@ -3,7 +3,6 @@
 
 #include "uxn.h"
 #include "devices/system.h"
-#include "devices/console.h"
 #include "devices/file.h"
 #include "devices/datetime.h"
 
@@ -46,23 +45,24 @@ int
 main(int argc, char **argv)
 {
 	Uxn u;
-	int i;
-	if(argc < 2)
+	int i = 1;
+	if(i == argc)
 		return system_error("usage", "uxncli game.rom args");
 	if(!uxn_boot(&u, (Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8))))
-		return system_error("boot", "Failed");
-	if(!system_load(&u, argv[1]))
-		return system_error("load", "Failed");
+		return system_error("Boot", "Failed");
+	if(!system_load(&u, argv[i++]))
+		return system_error("Load", "Failed");
+	u.dev[0x17] = i != argc;
 	if(!uxn_eval(&u, PAGE_PROGRAM))
 		return u.dev[0x0f] & 0x7f;
-	for(i = 2; i < argc; i++) {
+	for(; i < argc; i++) {
 		char *p = argv[i];
-		while(*p) console_input(&u, *p++);
-		console_input(&u, '\n');
+		while(*p) console_input(&u, *p++, CONSOLE_ARG);
+		console_input(&u, '\n', i == argc - 1 ? CONSOLE_END : CONSOLE_EOA);
 	}
 	while(!u.dev[0x0f]) {
 		int c = fgetc(stdin);
-		if(c != EOF) console_input(&u, (Uint8)c);
+		if(c != EOF) console_input(&u, (Uint8)c, CONSOLE_STD);
 	}
 	return u.dev[0x0f] & 0x7f;
 }
