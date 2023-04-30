@@ -35,6 +35,13 @@ else
 	gcc ${C_FLAGS} ${LD_FLAGS} ${DEBUG_FLAGS} ${CLI_INC} 
 fi
 
+if [ "${1}" = '--install' ];
+then
+	gcc ${C_FLAGS} ${LD_FLAGS} ${RELEASE_FLAGS} ${EMU_INC}
+	gcc ${C_FLAGS} ${LD_FLAGS} ${RELEASE_FLAGS} ${CLI_INC}
+	cp bin/uxn11 bin/uxnasm bin/uxncli $HOME/bin/
+fi
+
 bin/uxnasm etc/polycat.tal bin/polycat.rom
 bin/uxn11 bin/polycat.rom
 
