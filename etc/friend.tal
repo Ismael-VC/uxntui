@@ -1,0 +1,188 @@
+|00 @System &vector $2 &expansion $2 &friend $2 &metadata $2 &r $2 &g $2 &b $2 &debug $1 &halt $1
+|20 @Screen &vector $2 &width $2 &height $2 &auto $1 &pad $1 &x $2 &y $2 &addr $2 &pixel $1 &sprite $1
+
+|0100
+
+	( theme )
+	#f0f7 .System/r DEO2
+	#f00e .System/g DEO2
+	#f00c .System/b DEO2
+
+	;thread-a .System/friend DEO2
+	;thread-b .System/friend DEO2
+	;thread-c .System/friend DEO2
+
+	( wait for threads to finish )
+	#0000 .System/friend DEO2
+
+BRK
+
+@thread-a ( -> )
+
+	#0020 .Screen/x DEO2
+	#0028 .Screen/y DEO2
+	#1010 ;dafu10x10 #05 draw-fast
+
+BRK
+
+@thread-b ( -> )
+
+	#0070 .Screen/x DEO2
+	#0040 .Screen/y DEO2
+	#1010 ;dafu10x10 #0a draw-fast
+
+BRK
+
+@thread-c ( -> )
+
+	#00d0 .Screen/x DEO2
+	#0048 .Screen/y DEO2
+	#1010 ;dafu10x10 #0f draw-fast
+
+BRK
+
+@draw-fast ( w h addr* color -- )
+
+	,&color STR
+	.Screen/addr DEO2
+	SWP #01 SUB #40 SFT #06 ORA .Screen/auto DEO
+	#00 SWP SUB
+	&loop
+		( self modification )
+		[ LIT2 &color $1 -Screen/sprite ] DEO
+		INC DUP ?&loop
+	POP
+
+JMP2r
+
+@dafu10x10
+	0000 0000 0000 0000 0000 0000 0000 0000
+	0000 0000 0000 0000 0000 0000 0000 0000
+	0000 0000 0000 0001 0000 0000 010f 7fff
+	0000 002f ffff ffff 0000 00fd ffff ffff
+	0000 0000 e0fc ffff 0000 0000 0000 00e0
+	0000 0000 0000 0000 0000 0000 0000 0000
+	0000 0000 0000 0000 0000 0000 0000 0000
+	0000 0000 0000 0000 0000 0000 0000 0000
+	0000 0000 0000 0000 0000 0000 0000 0000
+	0000 0000 0000 0000 0000 0000 0107 071f
+	071f 3fff fffc f3cf ffff f8c7 3fff ffff
+	e82f fbfb fbfb fbfb 02ff ffff ffff ffff
+	bf41 feff ffff ffff fcff 1fe3 fcff ffff
+	00d0 fcff 7fd2 ffff 0000 00c0 f0f8 5efe
+	0000 0000 0000 0000 0000 0000 0000 0000
+	0000 0000 0000 0000 0000 0000 0000 0000
+	0000 0000 0000 0000 0000 0000 0000 0000
+	0000 0103 0f1f 3f7e 5f7e f9f3 cf9f 7fff
+	3f7f ffff ffff ffff ffff ffff ffff ffff
+	f9fb fbf9 fdf9 fdfd ffff ffff ffff ffff
+	ffff ffff ffff ffff ffff ffff ffff ffff
+	ffff ffff ffff ffff ffff ffff feff fefe
+	0000 0000 0000 0000 0000 0000 0000 0000
+	0000 0000 0000 0000 0000 0000 0000 0000
+	0000 0000 0000 0000 0001 002f 1f1f 1f1f
+	e907 ffff ffff ffff ffff ffff ffff ffff
+	ffff ffff ffff ffff ffff ffff ffff ffff
+	fdfd fdfd fcff fd45 ffff ffff ffff ed37
+	ffff ffff ffff b76c ffff ffff ffff ff0b
+	ffff ffff ffff ffff fefc fcfc f8fc f8f8
+	0000 0000 0000 0000 0000 0000 0000 0000
+	0000 0000 0000 0000 0000 0000 0000 0000
+	0000 0000 0000 0000 1f1f 1f0f 0f07 0703
+	ffff ffff ffff ffff ffff ffff fffe fdf5
+	ffff fceb 8fbf 7fff f48b 7fff ffff ffff
+	bffe fefa f8fc fdff ffff 7f3f 3f7f bfff
+	ffff ffff ffff ffff f8ff ffff ffff ffff
+	7fd7 ffff ffff ffff f0f0 f0e0 e0e0 e0e0
+	0000 0000 0000 0000 0000 0000 0000 0000
+	0000 0000 0000 0000 0000 0000 0000 0000
+	0000 0000 0000 0000 0301 0100 0000 0000
+	ffff fffc 7d33 3f1f ef9f 7fff ffff ffff
+	ffff ffff ffff f4cb ffff ffff e807 ffff
+	ffff ffa0 00c0 0197 ffff 5007 1f03 5eff
+	ffff a5ff ff6d bfff ffff 4de8 ff7f 6fff
+	ffff ffbf a7fe fefe f0e0 f0e0 f0e0 b0d0
+	0000 0000 0000 0000 0000 0000 0000 0000
+	0000 0000 0000 0000 0000 0000 0000 0000
+	0000 0000 0000 0000 0000 0000 0000 0000
+	1f0f 0f0f 0f0e 0e12 fefa f5cf bfff ffff
+	3fff ffff ffff ffff ffff ffff ffff ffff
+	f8e0 e0c0 e040 c040 7f7f 5f2f 7b1b 0f0f
+	ffff ffff ffff ffff ffff ffff ffff ffff
+	ffff fcfd fbf5 f9d4 50f0 f0e0 f0f0 e060
+	0000 0000 0000 0000 0000 0000 0000 0000
+	0000 0000 0000 0000 0000 0000 0000 0000
+	0000 0000 0000 0000 0000 0000 0000 0000
+	1a1a 150f 0d07 1100 7fff ffff fdff ffe1
+	ffff ffff baff ff55 ffff ffaa fdff fe00
+	c040 d708 f0eb a800 0fa6 7f2f 3fd0 021a
+	d7bf fff7 086a b8b0 feff e914 a000 0000
+	ab20 e078 0000 0000 e0c0 d6e1 4084 0204
+	0000 0000 0000 0000 0000 0000 0000 0000
+	0000 0000 0000 0000 0000 0000 0000 0000
+	0000 0000 0000 0000 0000 0000 0000 0000
+	0402 010a 0200 0000 7876 39b0 5078 9018
+	0892 71a9 2112 1210 aa00 ff01 7692 0000
+	a01e 3628 8488 4484 a5a0 0000 0080 8000
+	2003 070d 3815 0260 feff 7b69 9e60 0000
+	90e0 8080 0000 0000 c004 8020 8890 8888
+	0000 0000 0000 0000 0000 0000 0000 0000
+	0000 0000 0000 0000 0000 0000 0000 0000
+	0000 0000 0000 0000 0000 0000 0000 0000
+	0300 0000 0000 0000 2848 8008 4428 0c04
+	1211 1201 1d14 2a29 1200 0016 dd55 22a9
+	4084 44ca 8a0d 5800 0000 0800 a02e d105
+	1000 0000 0080 6a11 0000 0000 0000 8865
+	0100 0100 0101 005e 2080 2040 4000 0000
+	0000 0000 0000 0000 0000 0000 0000 0000
+	0000 0000 0000 0000 0000 0000 0000 0000
+	0000 0000 0000 0000 0000 0000 0000 0000
+	0000 0000 0000 0000 0600 0a05 0303 0300
+	50a0 8040 8000 8000 0000 0000 0000 0000
+	0000 0000 0000 0000 0000 0000 0000 0000
+	ad00 0000 0000 0000 510a 0000 0000 0000
+	2214 0002 0200 0406 0000 0000 0000 0080
+	0000 0000 0000 0000 0000 0000 0000 0000
+	0000 0000 0000 0000 0000 0000 0000 0000
+	0000 0000 0000 0000 0000 0000 0000 0000
+	0000 0000 0021 010f 0407 0812 2e5c de3e
+	4000 c060 f0f0 f878 0000 0000 0000 0000
+	0000 0000 0000 0000 0000 502d 0200 157f
+	0040 a000 0000 e0f8 0000 0000 0000 0000
+	060f 0f1f 1737 336b a01c e3f0 feff ffff
+	0000 407a 05c0 f0fc 0000 0000 807c 0300
+	0000 0000 0000 a05a 0000 0000 0000 0004
+	0000 0000 0000 030c 0001 0514 53a7 0f3f
+	265c 5df9 f3e7 c7cf fbfd fbfb fbfb fbfb
+	7c7e 7fbf bfff bfff 0000 0090 c0e0 f0f8
+	0101 0101 0001 0020 7fc8 ff1b c6f0 7f78
+	fc5c ec08 b858 30e0 0108 0001 0103 0707
+	6b5b dbdf bbbf bb7f ffff ffff ffff ffff
+	fefe fcfc f9f3 f3f7 6079 fffe fcfc f9f3
+	0540 823f 7fff ffff d02c 03f8 feff ffff
+	3040 800e 3f7f ffff 7f7f 7fff 7f7f 7f7f
+	9fdf 9f9f df9f 9fdf fbfb fbf3 fbfb fbfb
+	efff fff7 fffd ffff fefe ffff ffff ff7f
+	0000 80e0 f0fc ffff 1f02 0000 0001 01e1
+	c000 00a8 b050 590b 0f1f 1e7d 7dff ffff
+	7f7f ffff ffff ffff ffff ffff ffff ffff
+	e7ef cfdf 9f3f 7f3f f3e7 efcf dfbf bf3f
+	ffff ffff ffff ffff fffe fcf8 f0f0 e0c0
+	ffff ffff ffff ffff bfbf bfbf dfdf dfcf
+	9fcf 9fcf dfcf dfcf f7fb fbf7 fbfb fbfb
+	ffff ffff ffff ffff ffd7 f7fd feff ffff
+	ffff ffff 7f9e e8e0 ffff fff5 8000 0001
+	4f47 66a4 7056 4b43 fffe 8001 015f ffff
+	ffbf 1f7f ffff ffff fefe fcfe fdf9 fbfb
+	7fff feff fefe fcfe 7f7f 7f7f ffff ffff
+	ffff fffe fefc f8f8 8183 070f 1f3f 3f7f
+	ffff ffff 7f3f 9f8f efef eff7 f7f7 f7f7
+	dfcf efdf cfff cfef fbfb fbf9 fdfd fbfc
+	ffff fffe f4c0 8000 fffc e080 0000 0000
+	8000 0000 0000 0000 0506 0802 0300 0000
+	4925 2365 a2b2 1191 ffff ffff ff05 0000
+	ffff ffff ff7f 0307 fbfb ffff ffff ffff
+	fcfd fcfe fdfd fdfd ffff ffff ffff ffff
+	f0e0 e1c3 8387 0f1f ffff ffff ffff fffe
+
+

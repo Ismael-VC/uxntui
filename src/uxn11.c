@@ -38,7 +38,7 @@ char *rom_path;
 #define PAD 4
 #define CONINBUFSIZE 256
 
-Uint16 deo_mask[] = {0xff08, 0x0300, 0xc028, 0x8000, 0x8000, 0x8000, 0x8000, 0x0000, 0x0000, 0x0000, 0xa260, 0xa260, 0x0000, 0x0000, 0x0000, 0x0000};
+Uint16 deo_mask[] = {0xff28, 0x0300, 0xc028, 0x8000, 0x8000, 0x8000, 0x8000, 0x0000, 0x0000, 0x0000, 0xa260, 0xa260, 0x0000, 0x0000, 0x0000, 0x0000};
 Uint16 dei_mask[] = {0x0000, 0x0000, 0x003c, 0x0014, 0x0014, 0x0014, 0x0014, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x07ff, 0x0000, 0x0000, 0x0000};
 
 Uint8
@@ -93,9 +93,9 @@ hide_cursor(void)
 	Cursor blank;
 	Pixmap bitmap;
 	XColor black;
-	static char empty[] = {0, 0, 0, 0, 0, 0, 0, 0};
+	static char empty[] = {0};
 	black.red = black.green = black.blue = 0;
-	bitmap = XCreateBitmapFromData(display, window, empty, 8, 8);
+	bitmap = XCreateBitmapFromData(display, window, empty, 1, 1);
 	blank = XCreatePixmapCursor(display, bitmap, bitmap, &black, &black, 0, 0);
 	XDefineCursor(display, window, blank);
 	XFreeCursor(display, blank);
