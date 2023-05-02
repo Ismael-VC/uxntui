@@ -1,0 +1,15 @@
+|00 @System &vector $2 &expansion $2 &friend $2 &metadata $2 &r $2 &g $2 &b $2 &debug $1 &halt $1
+
+|0100
+
+	#ffff
+
+	#12 NIPk
+	
+
+	#010e DEO
+	#800f DEO
+
+BRK
+
+
