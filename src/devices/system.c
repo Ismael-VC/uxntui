@@ -78,38 +78,39 @@ system_inspect(Uxn *u)
 /* Friends */
 
 Uint8 *global_ram;
-Uint16 friends_tasks[0x80];
-pthread_t friends[0x80];
+Uint16 friends_tasks[MAX_FRIENDS];
+pthread_t friends[MAX_FRIENDS];
 int friends_count = 0;
-int friends_args[0x80];
 
 void *
-friend_task(void *x)
+friend_task(void *vector)
 {
 	Uxn friend;
 	uxn_boot(&friend, global_ram);
-	uxn_eval(&friend, friends_tasks[*((int *)x)]);
+	uxn_eval(&friend, *((Uint16 *)vector));
 	return NULL;
 }
 
 int
-spawn_friend(Uint16 task)
-{
-	if(friends_count >= 0x80)
-		return system_error("friends", "Too many threads");
-	friends_args[friends_count] = friends_count;
-	friends_tasks[friends_count] = task;
-	pthread_create(&friends[friends_count], NULL, friend_task, (void *)&friends_args[friends_count]);
-	return friends_count++;
-}
-
-void
 wait_friends(void)
 {
 	int i;
 	for(i = 0; i < friends_count; ++i)
 		pthread_join(friends[i], NULL);
-	friends_count = 0;
+	return friends_count = 0;
+}
+
+int
+spawn_friend(Uint8 *ram, Uint16 task)
+{
+	if(!task)
+		return wait_friends();
+	if(friends_count >= MAX_FRIENDS)
+		return system_error("friends", "Too many threads");
+	global_ram = ram;
+	friends_tasks[friends_count] = task;
+	pthread_create(&friends[friends_count], NULL, friend_task, (void *)&friends_tasks[friends_count]);
+	return friends_count++;
 }
 
 /* IO */
@@ -117,18 +118,12 @@ wait_friends(void)
 void
 system_deo(Uxn *u, Uint8 *d, Uint8 port)
 {
-	Uint16 v;
 	switch(port) {
 	case 0x3:
 		system_cmd(u->ram, PEEK2(d + 2));
 		break;
 	case 0x5:
-		v = PEEK2(d + 4);
-		global_ram = u->ram;
-		if(v)
-			spawn_friend(v);
-		else
-			wait_friends();
+		spawn_friend(u->ram, PEEK2(d + 4));
 		break;
 	case 0xe:
 		system_inspect(u);

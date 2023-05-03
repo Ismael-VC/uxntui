@@ -10,6 +10,7 @@ WITH REGARD TO THIS SOFTWARE.
 */
 
 #define RAM_PAGES 0x10
+#define MAX_FRIENDS 0x10
 
 #define CONSOLE_STD 0x1
 #define CONSOLE_ARG 0x2
