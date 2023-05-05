@@ -75,7 +75,7 @@ screen_resize(UxnScreen *p, Uint16 width, Uint16 height)
 		return;
 	bg = realloc(p->bg.pixels, width * height),
 	fg = realloc(p->fg.pixels, width * height);
-	pixels = realloc(p->pixels, width * height * sizeof(Uint32) * ZOOM * ZOOM);
+	pixels = realloc(p->pixels, width * height * sizeof(Uint32) * SCALE * SCALE);
 	if(!bg || !fg || !pixels)
 		return;
 	p->bg.pixels = bg;
@@ -91,12 +91,12 @@ void
 screen_redraw(UxnScreen *p)
 {
 	Uint8 *fg = p->fg.pixels, *bg = p->bg.pixels;
-	Uint32 i, j, x, y, w = p->width * ZOOM, h = p->height * ZOOM, palette[16], *pixels = p->pixels;
+	Uint32 i, j, x, y, w = p->width * SCALE, h = p->height * SCALE, palette[16], *pixels = p->pixels;
 	for(i = 0; i < 16; i++)
 		palette[i] = p->palette[(i >> 2) ? (i >> 2) : (i & 3)];
 	for(y = 0; y < h; y++)
 		for(x = 0; x < w; x++) {
-			j = ((x / ZOOM) + (y / ZOOM) * p->width);
+			j = ((x / SCALE) + (y / SCALE) * p->width);
 			pixels[x + y * w] = palette[fg[j] << 2 | bg[j]];
 		}
 	p->fg.changed = p->bg.changed = 0;

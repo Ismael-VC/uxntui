@@ -72,7 +72,7 @@ static void
 emu_draw(void)
 {
 	screen_redraw(&uxn_screen);
-	XPutImage(display, window, DefaultGC(display, 0), ximage, 0, 0, PAD, PAD, uxn_screen.width * ZOOM, uxn_screen.height * ZOOM);
+	XPutImage(display, window, DefaultGC(display, 0), ximage, 0, 0, PAD, PAD, uxn_screen.width * SCALE, uxn_screen.height * SCALE);
 }
 
 static int
@@ -166,7 +166,7 @@ emu_event(Uxn *u)
 	} break;
 	case MotionNotify: {
 		XMotionEvent *e = (XMotionEvent *)&ev;
-		mouse_pos(u, &u->dev[0x90], (e->x - PAD) / ZOOM, (e->y - PAD) / ZOOM);
+		mouse_pos(u, &u->dev[0x90], (e->x - PAD) / SCALE, (e->y - PAD) / SCALE);
 	} break;
 	}
 }
@@ -177,7 +177,7 @@ display_start(char *title)
 	Atom wmDelete;
 	display = XOpenDisplay(NULL);
 	visual = DefaultVisual(display, 0);
-	window = XCreateSimpleWindow(display, RootWindow(display, 0), 0, 0, uxn_screen.width * ZOOM + PAD * 2, uxn_screen.height * ZOOM + PAD * 2, 1, 0, 0);
+	window = XCreateSimpleWindow(display, RootWindow(display, 0), 0, 0, uxn_screen.width * SCALE + PAD * 2, uxn_screen.height * SCALE + PAD * 2, 1, 0, 0);
 	if(visual->class != TrueColor)
 		return system_error("init", "True-color visual failed");
 	XSelectInput(display, window, ButtonPressMask | ButtonReleaseMask | PointerMotionMask | ExposureMask | KeyPressMask | KeyReleaseMask);
@@ -185,7 +185,7 @@ display_start(char *title)
 	XSetWMProtocols(display, window, &wmDelete, 1);
 	XStoreName(display, window, title);
 	XMapWindow(display, window);
-	ximage = XCreateImage(display, visual, DefaultDepth(display, DefaultScreen(display)), ZPixmap, 0, (char *)uxn_screen.pixels, uxn_screen.width * ZOOM, uxn_screen.height * ZOOM, 32, 0);
+	ximage = XCreateImage(display, visual, DefaultDepth(display, DefaultScreen(display)), ZPixmap, 0, (char *)uxn_screen.pixels, uxn_screen.width * SCALE, uxn_screen.height * SCALE, 32, 0);
 	hide_cursor();
 	return 1;
 }

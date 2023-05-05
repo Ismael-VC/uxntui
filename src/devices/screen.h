@@ -10,7 +10,7 @@ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
 WITH REGARD TO THIS SOFTWARE.
 */
 
-#define ZOOM 2
+#define SCALE 2
 
 typedef struct Layer {
 	Uint8 *pixels, changed;
