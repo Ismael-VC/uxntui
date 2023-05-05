@@ -33,6 +33,7 @@ static Window window;
 
 char *rom_path;
 
+#define SCALE 1
 #define WIDTH (64 * 8)
 #define HEIGHT (40 * 8)
 #define PAD 4
@@ -59,7 +60,7 @@ uxn_deo(Uxn *u, Uint8 addr)
 	case 0x00:
 		system_deo(u, &u->dev[d], p);
 		if(p > 0x7 && p < 0xe)
-			screen_palette(&uxn_screen, &u->dev[0x8]);
+			screen_palette(&u->dev[0x8]);
 		break;
 	case 0x10: console_deo(&u->dev[d], p); break;
 	case 0x20: screen_deo(u->ram, &u->dev[d], p); break;
@@ -71,7 +72,7 @@ uxn_deo(Uxn *u, Uint8 addr)
 static void
 emu_draw(void)
 {
-	screen_redraw(&uxn_screen);
+	screen_redraw();
 	XPutImage(display, window, DefaultGC(display, 0), ximage, 0, 0, PAD, PAD, uxn_screen.width * SCALE, uxn_screen.height * SCALE);
 }
 
@@ -81,7 +82,7 @@ emu_start(Uxn *u, char *rom)
 	if(!system_load(u, rom))
 		return 0;
 	if(!uxn_screen.width || !uxn_screen.height)
-		screen_resize(&uxn_screen, WIDTH, HEIGHT);
+		screen_resize(WIDTH, HEIGHT);
 	if(!uxn_eval(u, PAGE_PROGRAM))
 		return system_error("boot", "Failed to start rom.");
 	return 1;
@@ -237,7 +238,7 @@ main(int argc, char **argv)
 			for(i = 0; i < n; i++)
 				console_input(&u, coninp[i], CONSOLE_STD);
 		}
-		if(uxn_screen.fg.changed || uxn_screen.bg.changed)
+		if(uxn_screen.x2)
 			emu_draw();
 	}
 	XDestroyImage(ximage);
