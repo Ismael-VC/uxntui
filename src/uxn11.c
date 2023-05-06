@@ -33,7 +33,6 @@ static Window window;
 
 char *rom_path;
 
-#define SCALE 1
 #define WIDTH (64 * 8)
 #define HEIGHT (40 * 8)
 #define PAD 4

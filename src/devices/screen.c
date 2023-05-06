@@ -84,7 +84,7 @@ screen_resize(Uint16 width, Uint16 height)
 		return;
 	bg = realloc(uxn_screen.bg, width * height),
 	fg = realloc(uxn_screen.fg, width * height);
-	pixels = realloc(uxn_screen.pixels, width * height * sizeof(Uint32));
+	pixels = realloc(uxn_screen.pixels, width * height * sizeof(Uint32) * SCALE * SCALE);
 	if(!bg || !fg || !pixels)
 		return;
 	uxn_screen.bg = bg;
@@ -101,17 +101,18 @@ screen_redraw(void)
 {
 	Uint8 *fg = uxn_screen.fg, *bg = uxn_screen.bg;
 	Uint32 palette[16], *pixels = uxn_screen.pixels;
-	int i, x, y, w = uxn_screen.width, h = uxn_screen.height;
-	int x1 = uxn_screen.x1;
-	int y1 = uxn_screen.y1;
-	int x2 = uxn_screen.x2 > w ? w : uxn_screen.x2;
-	int y2 = uxn_screen.y2 > h ? h : uxn_screen.y2;
+	int i, j, x, y, w = uxn_screen.width, h = uxn_screen.height;
+	int x1 = uxn_screen.x1 * SCALE;
+	int y1 = uxn_screen.y1 * SCALE;
+	int x2 = (uxn_screen.x2 > w ? w : uxn_screen.x2) * SCALE;
+	int y2 = (uxn_screen.y2 > h ? h : uxn_screen.y2) * SCALE;
 	for(i = 0; i < 16; i++)
 		palette[i] = uxn_screen.palette[(i >> 2) ? (i >> 2) : (i & 3)];
 	for(y = y1; y < y2; y++)
 		for(x = x1; x < x2; x++) {
-			i = x + y * w;
-			pixels[i] = palette[fg[i] << 2 | bg[i]];
+			i = x / SCALE + y / SCALE * w;
+			j = x + y * w * SCALE;
+			pixels[j] = palette[fg[i] << 2 | bg[i]];
 		}
 	uxn_screen.x1 = uxn_screen.y1 = 0xffff;
 	uxn_screen.x2 = uxn_screen.y2 = 0;
