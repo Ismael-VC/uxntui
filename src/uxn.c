@@ -28,7 +28,7 @@ WITH REGARD TO THIS SOFTWARE.
 */
 
 #define HALT(c) { return uxn_halt(u, ins, (c), pc - 1); }
-#define SET(mul, add) { if(mul > s->ptr) HALT(1) tmp = s->ptr + k * mul + add; if(tmp > 254) HALT(2) s->ptr = tmp; }
+#define SET(mul, add) { if(mul > s->ptr) HALT(1) tmp = (mul & k) + add + s->ptr; if(tmp > 254) HALT(2) s->ptr = tmp; }
 #define PUT(o, v) { s->dat[(Uint8)(s->ptr - 1 - (o))] = (v); }
 #define PUT2(o, v) { tmp = (v); s->dat[(Uint8)(s->ptr - o - 2)] = tmp >> 8; s->dat[(Uint8)(s->ptr - o - 1)] = tmp; }
 #define PUSH(x, v) { z = (x); if(z->ptr > 254) HALT(2) z->dat[z->ptr++] = (v); }
@@ -45,7 +45,7 @@ uxn_eval(Uxn *u, Uint16 pc)
 	if(!pc || u->dev[0x0f]) return 0;
 	for(;;) {
 		ins = ram[pc++] & 0xff;
-		k = !!(ins & 0x80);
+		k = ins & 0x80 ? 0xff : 0;
 		s = ins & 0x40 ? &u->rst : &u->wst;
 		opc = !(ins & 0x1f) ? (0 - (ins >> 5)) & 0xff : ins & 0x3f;
 		switch(opc) {
