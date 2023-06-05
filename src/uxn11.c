@@ -35,7 +35,7 @@ char *rom_path;
 
 #define WIDTH (64 * 8)
 #define HEIGHT (40 * 8)
-#define PAD 4
+#define PAD 0
 #define CONINBUFSIZE 256
 
 Uint16 deo_mask[] = {0xff28, 0x0300, 0xc028, 0x8000, 0x8000, 0x8000, 0x8000, 0x0000, 0x0000, 0x0000, 0xa260, 0xa260, 0x0000, 0x0000, 0x0000, 0x0000};
@@ -66,13 +66,6 @@ uxn_deo(Uxn *u, Uint8 addr)
 	case 0xa0: file_deo(0, u->ram, &u->dev[d], p); break;
 	case 0xb0: file_deo(1, u->ram, &u->dev[d], p); break;
 	}
-}
-
-static void
-emu_draw(void)
-{
-	screen_redraw();
-	XPutImage(display, window, DefaultGC(display, 0), ximage, 0, 0, PAD, PAD, uxn_screen.width * SCALE, uxn_screen.height * SCALE);
 }
 
 static int
@@ -125,7 +118,7 @@ emu_event(Uxn *u)
 	XNextEvent(display, &ev);
 	switch(ev.type) {
 	case Expose:
-		emu_draw();
+		XPutImage(display, window, DefaultGC(display, 0), ximage, 0, 0, 0, 0, uxn_screen.width, uxn_screen.height);
 		break;
 	case ClientMessage: {
 		XDestroyImage(ximage);
@@ -237,8 +230,11 @@ main(int argc, char **argv)
 			for(i = 0; i < n; i++)
 				console_input(&u, coninp[i], CONSOLE_STD);
 		}
-		if(uxn_screen.x2)
-			emu_draw();
+		if(uxn_screen.x2) {
+			int x1 = uxn_screen.x1, y1 = uxn_screen.y1, x2 = uxn_screen.x2, y2 = uxn_screen.y2;
+			screen_redraw();
+			XPutImage(display, window, DefaultGC(display, 0), ximage, x1, y1, x1, y1, x2 - x1, y2 - y1);
+		}
 	}
 	XDestroyImage(ximage);
 	return 0;

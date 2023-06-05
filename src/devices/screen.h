@@ -23,4 +23,4 @@ void screen_redraw(void);
 Uint8 screen_dei(Uxn *u, Uint8 addr);
 void screen_deo(Uint8 *ram, Uint8 *d, Uint8 port);
 
-#define SCALE 3
+#define SCALE 1
