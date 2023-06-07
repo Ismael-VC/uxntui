@@ -45,7 +45,8 @@ fi
 
 # bin/uxnasm etc/polycat.tal bin/polycat.rom
 # bin/uxn11 bin/polycat.rom
+# bin/uxnasm etc/friend.tal bin/friend.rom
 
-bin/uxnasm etc/friend.tal bin/friend.rom
-bin/uxn11 bin/friend.rom
+bin/uxnasm etc/mouse.tal bin/mouse.rom
+bin/uxn11 bin/mouse.rom
 

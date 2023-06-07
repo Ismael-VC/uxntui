@@ -35,11 +35,17 @@ char *rom_path;
 
 #define WIDTH (64 * 8)
 #define HEIGHT (40 * 8)
-#define PAD 0
+#define PAD 2
 #define CONINBUFSIZE 256
 
 Uint16 deo_mask[] = {0xff28, 0x0300, 0xc028, 0x8000, 0x8000, 0x8000, 0x8000, 0x0000, 0x0000, 0x0000, 0xa260, 0xa260, 0x0000, 0x0000, 0x0000, 0x0000};
 Uint16 dei_mask[] = {0x0000, 0x0000, 0x003c, 0x0014, 0x0014, 0x0014, 0x0014, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x07ff, 0x0000, 0x0000, 0x0000};
+
+static int
+clamp(int val, int min, int max)
+{
+	return (val >= min) ? (val <= max) ? val : max : min;
+}
 
 Uint8
 uxn_dei(Uxn *u, Uint8 addr)
@@ -118,7 +124,7 @@ emu_event(Uxn *u)
 	XNextEvent(display, &ev);
 	switch(ev.type) {
 	case Expose:
-		XPutImage(display, window, DefaultGC(display, 0), ximage, 0, 0, 0, 0, uxn_screen.width, uxn_screen.height);
+		XPutImage(display, window, DefaultGC(display, 0), ximage, 0, 0, PAD, PAD, uxn_screen.width, uxn_screen.height);
 		break;
 	case ClientMessage: {
 		XDestroyImage(ximage);
@@ -159,7 +165,9 @@ emu_event(Uxn *u)
 	} break;
 	case MotionNotify: {
 		XMotionEvent *e = (XMotionEvent *)&ev;
-		mouse_pos(u, &u->dev[0x90], (e->x - PAD) / SCALE, (e->y - PAD) / SCALE);
+		int x = clamp((e->x - PAD) / SCALE, 0, uxn_screen.width - 1);
+		int y = clamp((e->y - PAD) / SCALE, 0, uxn_screen.height - 1);
+		mouse_pos(u, &u->dev[0x90], x, y);
 	} break;
 	}
 }
@@ -233,7 +241,7 @@ main(int argc, char **argv)
 		if(uxn_screen.x2) {
 			int x1 = uxn_screen.x1, y1 = uxn_screen.y1, x2 = uxn_screen.x2, y2 = uxn_screen.y2;
 			screen_redraw();
-			XPutImage(display, window, DefaultGC(display, 0), ximage, x1, y1, x1, y1, x2 - x1, y2 - y1);
+			XPutImage(display, window, DefaultGC(display, 0), ximage, x1, y1, x1 + PAD, y1 + PAD, x2 - x1, y2 - y1);
 		}
 	}
 	XDestroyImage(ximage);
