@@ -28,12 +28,11 @@ cc ${RELEASE_FLAGS} src/uxnasm.c -o bin/uxnasm
 
 if [ "${1}" = '--debug' ];
 then
-	gcc ${C_FLAGS} ${LD_FLAGS} ${DEBUG_FLAGS} ${EMU_INC}
-	gcc ${C_FLAGS} ${LD_FLAGS} ${DEBUG_FLAGS} ${CLI_INC}
-
+	cc ${C_FLAGS} ${LD_FLAGS} ${DEBUG_FLAGS} ${EMU_INC}
+	cc ${C_FLAGS} ${LD_FLAGS} ${DEBUG_FLAGS} ${CLI_INC}
 else
-	gcc ${C_FLAGS} ${LD_FLAGS} ${RELEASE_FLAGS} ${EMU_INC}
-	gcc ${C_FLAGS} ${LD_FLAGS} ${RELEASE_FLAGS} ${CLI_INC}
+	cc ${C_FLAGS} ${LD_FLAGS} ${RELEASE_FLAGS} ${EMU_INC}
+	cc ${C_FLAGS} ${LD_FLAGS} ${RELEASE_FLAGS} ${CLI_INC}
 fi
 
 if [ "${1}" = '--install' ];
