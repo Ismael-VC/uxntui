@@ -20,7 +20,7 @@ If you wish to build the emulator without graphics mode:
 gcc -Os -DNDEBUG -g0 -s src/uxn.c src/devices/system.c src/devices/file.c src/devices/datetime.c src/uxncli.c -o bin/uxncli
 ```
 
-If do not wish to build it yourself, you can download linux binaries for [uxnasm](https://rabbits.srht.site/uxn11/uxnasm), [uxncli](https://rabbits.srht.site/uxn11/uxncli) and [uxn11](https://rabbits.srht.site/uxn11/uxn11).
+If do not wish to build it yourself, you can download linux binaries for [uxnasm](https://rabbits.srht.site/uxn11/bin/uxnasm), [uxncli](https://rabbits.srht.site/uxn11/bin/uxncli) and [uxn11](https://rabbits.srht.site/uxn11/bin/uxn11).
 
 [![builds.sr.ht status](https://builds.sr.ht/~rabbits/uxn11.svg)](https://builds.sr.ht/~rabbits/uxn11?)
 
