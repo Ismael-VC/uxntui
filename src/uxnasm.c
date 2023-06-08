@@ -482,7 +482,7 @@ main(int argc, char *argv[])
 {
 	FILE *src, *dst;
 	if(argc < 3)
-		return !error("usage", "input.tal output.rom");
+		return !error("usage", "uxnasm input.tal output.rom");
 	if(!(src = fopen(argv[1], "r")))
 		return !error("Invalid input", argv[1]);
 	if(!assemble(src))

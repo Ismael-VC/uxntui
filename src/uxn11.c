@@ -201,7 +201,7 @@ main(int argc, char **argv)
 	struct pollfd fds[3];
 	static const struct itimerspec screen_tspec = {{0, 16666666}, {0, 16666666}};
 	if(argc < 2)
-		return system_error("usage", "uxn11 game.rom args");
+		return system_error("usage", "uxn11 file.rom [args...]");
 	rom_path = argv[1];
 	if(!uxn_boot(&u, (Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8))))
 		return system_error("boot", "Failed");

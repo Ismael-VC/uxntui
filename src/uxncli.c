@@ -47,7 +47,7 @@ main(int argc, char **argv)
 	Uxn u;
 	int i = 1;
 	if(i == argc)
-		return system_error("usage", "uxncli game.rom args");
+		return system_error("usage", "uxncli file.rom [args..]");
 	if(!uxn_boot(&u, (Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8))))
 		return system_error("Boot", "Failed");
 	if(!system_load(&u, argv[i++]))
