@@ -47,6 +47,8 @@ fi
 # bin/uxn11 bin/polycat.rom
 # bin/uxnasm etc/friend.tal bin/friend.rom
 
+if [ "${1}" = '--norun' ]; then exit; fi
+
 bin/uxnasm etc/mouse.tal bin/mouse.rom
 bin/uxn11 bin/mouse.rom
 
