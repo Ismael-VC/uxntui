@@ -13,8 +13,9 @@ tasks:
 - build: |
     cd uxn11
     ./build.sh --norun
+    mv bin ../bin
 - upload: |
-    tar -czf out.tar.gz uxn11/bin
+    tar -czf out.tar.gz bin
     acurl() {
         set +x
         curl -H "Authorization: Bearer ${OAUTH2_TOKEN}" "${@}"
