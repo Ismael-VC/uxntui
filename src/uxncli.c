@@ -61,7 +61,8 @@ main(int argc, char **argv)
 		}
 		while(!u.dev[0x0f]) {
 			int c = fgetc(stdin);
-			if(c != EOF) console_input(&u, (Uint8)c, CONSOLE_STD);
+			if(c == EOF) break;
+			console_input(&u, (Uint8)c, CONSOLE_STD);
 		}
 	}
 	free(u.ram);
