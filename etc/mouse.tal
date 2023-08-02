@@ -44,6 +44,7 @@ BRK
 	( clear last cursor )
 	.pointer/x LDZ2 .Screen/x DEO2
 	.pointer/y LDZ2 .Screen/y DEO2
+	;fill-icn .Screen/addr DEO2
 	[ LIT2 40 -Screen/sprite ] DEO
 	draw-mouse
 	( draw new cursor )
@@ -128,6 +129,7 @@ JMP2r
 		DUP2 .Screen/x DEO2
 		.Screen/y DEO2
 	#16 .Screen/auto DEO
+	;fill-icn .Screen/addr DEO2
 	#40 .Screen/sprite DEOk DEO
 	( buttons )
 	#0300
@@ -189,22 +191,13 @@ JMP2r
 
 @clear-screen ( -- )
 
-	#00 .Screen/auto DEO
-
-	.Screen/height DEI2 #03 SFT2 NIP #00
-	&y
-		#00 OVR #30 SFT2 .Screen/y DEO2
-		.Screen/width DEI2 #03 SFT2 NIP #00
-		&x
-			#00 OVR #30 SFT2 .Screen/x DEO2
-			[ LIT2 00 -Screen/sprite ] DEO
-			INC GTHk ?&x
-		POP2
-		INC GTHk ?&y
-	POP2
+	#0000 DUP2 .Screen/x DEO2 .Screen/y DEO2
+	#80 .Screen/pixel DEO
 
 JMP2r
 
+@fill-icn [
+	ffff ffff ffff ffff ]
 @pointer-icn [
 	80c0 e0f0 f8e0 1000 ]
 @mouse-icn [

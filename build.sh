@@ -21,7 +21,6 @@ then
 	clang-format -i src/devices/*
 fi
 
-rm -f bin/*
 mkdir -p bin
 
 cc ${RELEASE_FLAGS} src/uxnasm.c -o bin/uxnasm
