@@ -125,7 +125,7 @@ system_deo(Uxn *u, Uint8 *d, Uint8 port)
 /* Errors */
 
 int
-uxn_halt(Uxn *u, Uint8 instr, Uint8 err, Uint16 addr)
+emu_halt(Uxn *u, Uint8 instr, Uint8 err, Uint16 addr)
 {
 	Uint8 *d = &u->dev[0];
 	Uint16 handler = PEEK2(d);

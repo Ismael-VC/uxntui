@@ -48,7 +48,7 @@ clamp(int val, int min, int max)
 }
 
 Uint8
-uxn_dei(Uxn *u, Uint8 addr)
+emu_dei(Uxn *u, Uint8 addr)
 {
 	switch(addr & 0xf0) {
 	case 0x20: return screen_dei(u, addr);
@@ -58,7 +58,7 @@ uxn_dei(Uxn *u, Uint8 addr)
 }
 
 void
-uxn_deo(Uxn *u, Uint8 addr)
+emu_deo(Uxn *u, Uint8 addr)
 {
 	Uint8 p = addr & 0x0f, d = addr & 0xf0;
 	switch(d) {

@@ -21,7 +21,7 @@ Uint16 deo_mask[] = {0xc028, 0x0300, 0xc028, 0x8000, 0x8000, 0x8000, 0x8000, 0x0
 Uint16 dei_mask[] = {0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x07ff, 0x0000, 0x0000, 0x0000};
 
 Uint8
-uxn_dei(Uxn *u, Uint8 addr)
+emu_dei(Uxn *u, Uint8 addr)
 {
 	switch(addr & 0xf0) {
 	case 0xc0: return datetime_dei(u, addr);
@@ -30,7 +30,7 @@ uxn_dei(Uxn *u, Uint8 addr)
 }
 
 void
-uxn_deo(Uxn *u, Uint8 addr)
+emu_deo(Uxn *u, Uint8 addr)
 {
 	Uint8 p = addr & 0x0f, d = addr & 0xf0;
 	switch(d) {

@@ -35,12 +35,13 @@ typedef struct {
 
 typedef struct {
 	Uint8 data[LENGTH];
+	Uint8 lambda_stack[0x100], lambda_ptr, lambda_count;
+	char scope[0x40], lambda[0x10];
 	unsigned int ptr, length;
-	Uint16 llen, mlen, rlen;
+	Uint16 label_len, macro_len, refs_len;
 	Label labels[0x400];
 	Macro macros[0x100];
 	Reference refs[0x800];
-	char scope[0x40];
 } Program;
 
 Program p;
@@ -87,7 +88,7 @@ static Macro *
 findmacro(char *name)
 {
 	int i;
-	for(i = 0; i < p.mlen; i++)
+	for(i = 0; i < p.macro_len; i++)
 		if(scmp(p.macros[i].name, name, 0x40))
 			return &p.macros[i];
 	return NULL;
@@ -97,7 +98,7 @@ static Label *
 findlabel(char *name)
 {
 	int i;
-	for(i = 0; i < p.llen; i++)
+	for(i = 0; i < p.label_len; i++)
 		if(scmp(p.labels[i].name, name, 0x40))
 			return &p.labels[i];
 	return NULL;
@@ -139,9 +140,9 @@ makemacro(char *name, FILE *f)
 		return error("Macro name is hex number", name);
 	if(findopcode(name) || scmp(name, "BRK", 4) || !slen(name))
 		return error("Macro name is invalid", name);
-	if(p.mlen == 0x100)
+	if(p.macro_len == 0x100)
 		return error("Macros limit exceeded", name);
-	m = &p.macros[p.mlen++];
+	m = &p.macros[p.macro_len++];
 	scpy(name, m->name, 0x40);
 	while(fscanf(f, "%63s", word) == 1) {
 		if(word[0] == '{') continue;
@@ -165,9 +166,9 @@ makelabel(char *name)
 		return error("Label name is hex number", name);
 	if(findopcode(name) || scmp(name, "BRK", 4) || !slen(name))
 		return error("Label name is invalid", name);
-	if(p.llen == 0x400)
+	if(p.label_len == 0x400)
 		return error("Labels limit exceeded", name);
-	l = &p.labels[p.llen++];
+	l = &p.labels[p.label_len++];
 	l->addr = p.ptr;
 	l->refs = 0;
 	scpy(name, l->name, 0x40);
@@ -179,9 +180,9 @@ makereference(char *scope, char *label, char rune, Uint16 addr)
 {
 	char subw[0x40], parent[0x40];
 	Reference *r;
-	if(p.rlen >= 0x800)
+	if(p.refs_len >= 0x800)
 		return error("References limit exceeded", label);
-	r = &p.refs[p.rlen++];
+	r = &p.refs[p.refs_len++];
 	if(label[0] == '&') {
 		if(!sublabel(subw, scope, label + 1))
 			return error("Invalid sublabel", label);
@@ -198,6 +199,15 @@ makereference(char *scope, char *label, char rune, Uint16 addr)
 	r->rune = rune;
 	r->addr = addr;
 	return 1;
+}
+
+static char *
+makelambda(int id)
+{
+	scpy("lambda", p.lambda, 0x07);
+	p.lambda[6] = '0' + (id >> 0x4);
+	p.lambda[7] = '0' + (id & 0xf);
+	return p.lambda;
 }
 
 static int
@@ -351,6 +361,14 @@ parse(char *w, FILE *f)
 		while((c = w[++i]))
 			if(!writebyte(c)) return 0;
 		break;
+	case '{': /* lambda start */
+		p.lambda_stack[p.lambda_ptr++] = p.lambda_count;
+		makereference(p.scope, makelambda(p.lambda_count++), ' ', p.ptr + 1);
+		return writebyte(0x60) && writeshort(0xffff, 0);
+	case '}': /* lambda end */
+		if(!makelabel(makelambda(p.lambda_stack[--p.lambda_ptr])))
+			return error("Invalid label", w);
+		return writebyte(0x6f);
 	case '[':
 	case ']':
 		if(slen(w) == 1) break; /* else fallthrough */
@@ -384,7 +402,7 @@ resolve(void)
 	Label *l;
 	int i;
 	Uint16 a;
-	for(i = 0; i < p.rlen; i++) {
+	for(i = 0; i < p.refs_len; i++) {
 		Reference *r = &p.refs[i];
 		switch(r->rune) {
 		case '_':
@@ -443,7 +461,7 @@ static void
 review(char *filename)
 {
 	int i;
-	for(i = 0; i < p.llen; i++)
+	for(i = 0; i < p.label_len; i++)
 		if(p.labels[i].name[0] >= 'A' && p.labels[i].name[0] <= 'Z')
 			continue; /* Ignore capitalized labels(devices) */
 		else if(!p.labels[i].refs)
@@ -453,8 +471,8 @@ review(char *filename)
 		filename,
 		p.length - TRIM,
 		(p.length - TRIM) / 652.80,
-		p.llen,
-		p.mlen);
+		p.label_len,
+		p.macro_len);
 }
 
 static void
@@ -467,7 +485,7 @@ writesym(char *filename)
 		return;
 	fp = fopen(scat(scpy(filename, symdst, slen(filename) + 1), ".sym"), "w");
 	if(fp != NULL) {
-		for(i = 0; i < p.llen; i++) {
+		for(i = 0; i < p.label_len; i++) {
 			Uint8 hb = p.labels[i].addr >> 8, lb = p.labels[i].addr & 0xff;
 			fwrite(&hb, 1, 1, fp);
 			fwrite(&lb, 1, 1, fp);
