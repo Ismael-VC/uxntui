@@ -25,8 +25,12 @@ static Uint8 blending[4][16] = {
 	{2, 3, 1, 2, 2, 3, 1, 2, 2, 3, 1, 2, 2, 3, 1, 2}};
 
 static void
-screen_change(int x1, int y1, int x2, int y2)
+screen_change(Uint16 x1, Uint16 y1, Uint16 x2, Uint16 y2)
 {
+	if(x1 > uxn_screen.width && x2 > x1) return;
+	if(y1 > uxn_screen.height && y2 > y1) return;
+	if(x1 > x2) x1 = 0;
+	if(y1 > y2) y1 = 0;
 	if(x1 < uxn_screen.x1) uxn_screen.x1 = x1;
 	if(y1 < uxn_screen.y1) uxn_screen.y1 = y1;
 	if(x2 > uxn_screen.x2) uxn_screen.x2 = x2;
@@ -45,7 +49,7 @@ screen_fill(Uint8 *layer, int x1, int y1, int x2, int y2, int color)
 static void
 screen_blit(Uint8 *layer, Uint8 *ram, Uint16 addr, int x1, int y1, int color, int flipx, int flipy, int twobpp)
 {
-	int v, h, width = uxn_screen.width, height = uxn_screen.height, opaque = (color % 5) || !color;
+	int v, h, width = uxn_screen.width, height = uxn_screen.height, opaque = (color % 5);
 	for(v = 0; v < 8; v++) {
 		Uint16 c = ram[(addr + v) & 0xffff] | (twobpp ? (ram[(addr + v + 8) & 0xffff] << 8) : 0);
 		Uint16 y = y1 + (flipy ? 7 - v : v);
@@ -79,21 +83,30 @@ void
 screen_resize(Uint16 width, Uint16 height)
 {
 	Uint8 *bg, *fg;
-	Uint32 *pixels;
+	Uint32 *pixels = NULL;
 	if(width < 0x8 || height < 0x8 || width >= 0x400 || height >= 0x400)
 		return;
-	bg = realloc(uxn_screen.bg, width * height),
-	fg = realloc(uxn_screen.fg, width * height);
-	pixels = realloc(uxn_screen.pixels, width * height * sizeof(Uint32) * SCALE * SCALE);
-	if(!bg || !fg || !pixels)
+	if(uxn_screen.width == width && uxn_screen.height == height)
 		return;
+	bg = malloc(width * height),
+	fg = malloc(width * height);
+	if(bg && fg)
+		pixels = realloc(uxn_screen.pixels, width * height * sizeof(Uint32));
+	if(!bg || !fg || !pixels) {
+		free(bg);
+		free(fg);
+		return;
+	}
+	free(uxn_screen.bg);
+	free(uxn_screen.fg);
 	uxn_screen.bg = bg;
 	uxn_screen.fg = fg;
 	uxn_screen.pixels = pixels;
 	uxn_screen.width = width;
 	uxn_screen.height = height;
-	screen_fill(uxn_screen.bg, 0, 0, uxn_screen.width, uxn_screen.height, 0);
-	screen_fill(uxn_screen.fg, 0, 0, uxn_screen.width, uxn_screen.height, 0);
+	screen_fill(uxn_screen.bg, 0, 0, width, height, 0);
+	screen_fill(uxn_screen.fg, 0, 0, width, height, 0);
+	emu_resize(width, height);
 }
 
 void
@@ -101,21 +114,19 @@ screen_redraw(void)
 {
 	Uint8 *fg = uxn_screen.fg, *bg = uxn_screen.bg;
 	Uint32 palette[16], *pixels = uxn_screen.pixels;
-	int i, j, x, y, w = uxn_screen.width, h = uxn_screen.height;
-	int x1 = uxn_screen.x1 * SCALE;
-	int y1 = uxn_screen.y1 * SCALE;
-	int x2 = (uxn_screen.x2 > w ? w : uxn_screen.x2) * SCALE;
-	int y2 = (uxn_screen.y2 > h ? h : uxn_screen.y2) * SCALE;
+	int i, x, y, w = uxn_screen.width, h = uxn_screen.height;
+	int x1 = uxn_screen.x1;
+	int y1 = uxn_screen.y1;
+	int x2 = uxn_screen.x2 > w ? w : uxn_screen.x2;
+	int y2 = uxn_screen.y2 > h ? h : uxn_screen.y2;
 	for(i = 0; i < 16; i++)
 		palette[i] = uxn_screen.palette[(i >> 2) ? (i >> 2) : (i & 3)];
 	for(y = y1; y < y2; y++)
 		for(x = x1; x < x2; x++) {
-			i = x / SCALE + y / SCALE * w;
-			j = x + y * w * SCALE;
-			pixels[j] = palette[fg[i] << 2 | bg[i]];
+			i = x + y * w;
+			pixels[i] = palette[fg[i] << 2 | bg[i]];
 		}
-	uxn_screen.x1 = uxn_screen.y1 = 0xffff;
-	uxn_screen.x2 = uxn_screen.y2 = 0;
+	uxn_screen.x1 = uxn_screen.y1 = uxn_screen.x2 = uxn_screen.y2 = 0;
 }
 
 Uint8

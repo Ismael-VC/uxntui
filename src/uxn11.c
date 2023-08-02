@@ -36,6 +36,7 @@ char *rom_path;
 #define WIDTH (64 * 8)
 #define HEIGHT (40 * 8)
 #define PAD 2
+#define SCALE 1
 #define CONINBUFSIZE 256
 
 Uint16 deo_mask[] = {0xff28, 0x0300, 0xc028, 0x8000, 0x8000, 0x8000, 0x8000, 0x0000, 0x0000, 0x0000, 0xa260, 0xa260, 0x0000, 0x0000, 0x0000, 0x0000};
@@ -72,6 +73,11 @@ emu_deo(Uxn *u, Uint8 addr)
 	case 0xa0: file_deo(0, u->ram, &u->dev[d], p); break;
 	case 0xb0: file_deo(1, u->ram, &u->dev[d], p); break;
 	}
+}
+
+int
+emu_resize(int width, int height) {
+
 }
 
 static int
