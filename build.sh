@@ -46,6 +46,7 @@ fi
 
 if [ "${1}" = '--norun' ]; then exit; fi
 
-bin/uxnasm etc/mouse.tal bin/mouse.rom
-bin/uxn11 bin/mouse.rom
+# bin/uxnasm etc/mouse.tal bin/res.rom
+bin/uxnasm etc/pict.tal bin/res.rom
+bin/uxn11 bin/res.rom
 

@@ -76,8 +76,8 @@ emu_deo(Uxn *u, Uint8 addr)
 }
 
 int
-emu_resize(int width, int height) {
-
+emu_resize(int width, int height)
+{
 }
 
 static int
