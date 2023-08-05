@@ -46,24 +46,6 @@ screen_fill(Uint8 *layer, int x1, int y1, int x2, int y2, int color)
 			layer[x + y * width] = color;
 }
 
-static void
-screen_blit(Uint8 *layer, Uint8 *ram, Uint16 addr, int x1, int y1, int color, int flipx, int flipy, int twobpp)
-{
-	int v, h, width = uxn_screen.width, height = uxn_screen.height, opaque = (color % 5);
-	for(v = 0; v < 8; v++) {
-		Uint16 c = ram[(addr + v) & 0xffff] | (twobpp ? (ram[(addr + v + 8) & 0xffff] << 8) : 0);
-		Uint16 y = y1 + (flipy ? 7 - v : v);
-		for(h = 7; h >= 0; --h, c >>= 1) {
-			Uint8 ch = (c & 1) | ((c >> 7) & 2);
-			if(opaque || ch) {
-				Uint16 x = x1 + (flipx ? 7 - h : h);
-				if(x < width && y < height)
-					layer[x + y * width] = blending[ch][color];
-			}
-		}
-	}
-}
-
 void
 screen_palette(Uint8 *addr)
 {
@@ -185,15 +167,28 @@ screen_deo(Uint8 *ram, Uint8 *d, Uint8 port)
 		Uint8 length = move >> 4;
 		Uint8 twobpp = !!(ctrl & 0x80);
 		Uint8 *layer = (ctrl & 0x40) ? uxn_screen.fg : uxn_screen.bg;
-		Uint8 color = ctrl & 0xf;
+		Uint8 color = ctrl & 0xf, opaque = color % 5;
 		Uint16 x = PEEK2(d + 0x8), dx = (move & 0x1) << 3;
 		Uint16 y = PEEK2(d + 0xa), dy = (move & 0x2) << 2;
 		Uint16 addr = PEEK2(d + 0xc), addr_incr = (move & 0x4) << (1 + twobpp);
 		int flipx = (ctrl & 0x10), fx = flipx ? -1 : 1;
 		int flipy = (ctrl & 0x20), fy = flipy ? -1 : 1;
+		int v, h, width = uxn_screen.width, height = uxn_screen.height;
 		Uint16 dyx = dy * fx, dxy = dx * fy;
 		for(i = 0; i <= length; i++) {
-			screen_blit(layer, ram, addr, x + dyx * i, y + dxy * i, color, flipx, flipy, twobpp);
+			Uint16 x1 = x + dyx * i, y1 = y + dxy * i;
+			for(v = 0; v < 8; v++) {
+				Uint16 c = ram[(addr + v) & 0xffff] | (twobpp ? (ram[(addr + v + 8) & 0xffff] << 8) : 0);
+				Uint16 y = y1 + (flipy ? 7 - v : v);
+				for(h = 7; h >= 0; --h, c >>= 1) {
+					Uint8 ch = (c & 1) | ((c >> 7) & 2);
+					if(opaque || ch) {
+						Uint16 x = x1 + (flipx ? 7 - h : h);
+						if(x < width && y < height)
+							layer[x + y * width] = blending[ch][color];
+					}
+				}
+			}
 			addr += addr_incr;
 		}
 		screen_change(x, y, x + dyx * length + 8, y + dxy * length + 8);
