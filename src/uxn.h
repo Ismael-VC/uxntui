@@ -15,6 +15,8 @@ WITH REGARD TO THIS SOFTWARE.
 
 #define POKE2(d, v) { (d)[0] = (v) >> 8; (d)[1] = (v); }
 #define PEEK2(d) ((d)[0] << 8 | (d)[1])
+#define DEO(p, value) { u->dev[p] = value; if((deo_mask[p >> 4] >> (p & 0xf)) & 0x1) emu_deo(u, p); }
+#define DEI(p) ((dei_mask[(p) >> 4] >> ((p) & 0xf)) & 0x1 ? emu_dei(u, (p)) : u->dev[(p)])
 
 /* clang-format on */
 
