@@ -498,9 +498,12 @@ writesym(char *filename)
 int
 main(int argc, char *argv[])
 {
+	int i = 1;
 	FILE *src, *dst;
-	if(argc < 3)
-		return !error("usage", "uxnasm input.tal output.rom");
+	if(i == argc)
+		return error("usage", "uxnasm [-v] input.tal output.rom");
+	if(argv[i][0] == '-' && argv[i][1] == 'v')
+		return !fprintf(stdout, "Uxnasm - Uxntal Assembler, 8 Aug 2023\n");
 	if(!(src = fopen(argv[1], "r")))
 		return !error("Invalid input", argv[1]);
 	if(!assemble(src))

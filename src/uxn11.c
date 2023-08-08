@@ -207,7 +207,7 @@ main(int argc, char **argv)
 	struct pollfd fds[3];
 	static const struct itimerspec screen_tspec = {{0, 16666666}, {0, 16666666}};
 	if(i == argc)
-		return system_error("usage", "uxn11 [-v][-2x][-3x] file.rom [args...]");
+		return system_error("usage", "uxn11 [-v] file.rom [args...]");
 	/* Connect Varvara */
 	system_connect(0x0, SYSTEM_VERSION, SYSTEM_DEIMASK, SYSTEM_DEOMASK);
 	system_connect(0x1, CONSOLE_VERSION, CONSOLE_DEIMASK, CONSOLE_DEOMASK);
@@ -220,8 +220,6 @@ main(int argc, char **argv)
 	/* Read flags */
 	if(argv[i][0] == '-' && argv[i][1] == 'v')
 		return system_version("Uxn11 - Graphical Varvara Emulator", "8 Aug 2023");
-
-
 
 	rom_path = argv[1];
 	if(!uxn_boot(&u, (Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8))))

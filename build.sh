@@ -36,8 +36,7 @@ fi
 
 if [ "${1}" = '--install' ];
 then
-	cp bin/uxn11 bin/uxn11
-	cp bin/uxnemu bin/uxnasm bin/uxncli $HOME/bin/
+	cp bin/uxn11 bin/uxnasm bin/uxncli $HOME/bin/
 fi
 
 # bin/uxnasm etc/polycat.tal bin/polycat.rom
@@ -48,11 +47,13 @@ if [ "${1}" = '--norun' ]; then exit; fi
 
 # Test usage
 
+./bin/uxnasm
 ./bin/uxncli
 ./bin/uxn11
 
 # Test version
 
+./bin/uxnasm -v
 ./bin/uxncli -v
 ./bin/uxn11 -v
 
