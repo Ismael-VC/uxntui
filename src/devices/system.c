@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <pthread.h>
 
 #include "../uxn.h"
 #include "system.h"
@@ -75,33 +74,24 @@ system_inspect(Uxn *u)
 	system_print(&u->rst, "rst");
 }
 
-static Uint8 *global_ram, friends_count = 0;
-static Uint16 friends_tasks[MAX_FRIENDS];
-static pthread_t friends[MAX_FRIENDS];
-
-static void *
-friend_task(void *vector)
+void
+system_connect(Uint8 device, Uint8 ver, Uint16 dei, Uint16 deo)
 {
-	Uxn friend;
-	uxn_boot(&friend, global_ram);
-	uxn_eval(&friend, *((Uint16 *)vector));
-	return NULL;
+	dev_vers[device] = ver;
+	dei_mask[device] = dei;
+	deo_mask[device] = deo;
 }
 
-static void
-system_friend(Uint8 *ram, Uint16 task)
+int
+system_version(char *name, char *date)
 {
-	if(!task) {
-		while(friends_count)
-			pthread_join(friends[--friends_count], NULL);
-	} else if(friends_count >= MAX_FRIENDS) {
-		system_error("friends", "Too many threads");
-	} else {
-		global_ram = ram;
-		friends_tasks[friends_count] = task;
-		pthread_create(&friends[friends_count], NULL, friend_task, (void *)&friends_tasks[friends_count]);
-		friends_count++;
-	}
+	int i;
+	printf("%s, %s.\n", name, date);
+	printf("Device Version Dei  Deo\n");
+	for(i = 0; i < 0x10; i++)
+		if(dev_vers[i])
+			printf("%6x %7d %04x %04x\n", i, dev_vers[i], dei_mask[i], deo_mask[i]);
+	return 0;
 }
 
 /* IO */
@@ -114,7 +104,11 @@ system_deo(Uxn *u, Uint8 *d, Uint8 port)
 		system_cmd(u->ram, PEEK2(d + 2));
 		break;
 	case 0x5:
-		system_friend(u->ram, PEEK2(d + 4));
+		if(PEEK2(d + 4)) {
+			Uxn friend;
+			uxn_boot(&friend, u->ram);
+			uxn_eval(&friend, PEEK2(d + 4));
+		}
 		break;
 	case 0xe:
 		system_inspect(u);
@@ -141,30 +135,4 @@ emu_halt(Uxn *u, Uint8 instr, Uint8 err, Uint16 addr)
 		fprintf(stderr, "%s %s, by %02x at 0x%04x.\n", (instr & 0x40) ? "Return-stack" : "Working-stack", errors[err - 1], instr, addr);
 	}
 	return 0;
-}
-
-/* Console */
-
-int
-console_input(Uxn *u, char c, int type)
-{
-	Uint8 *d = &u->dev[0x10];
-	d[0x2] = c;
-	d[0x7] = type;
-	return uxn_eval(u, PEEK2(d));
-}
-
-void
-console_deo(Uint8 *d, Uint8 port)
-{
-	switch(port) {
-	case 0x8:
-		fputc(d[port], stdout);
-		fflush(stdout);
-		return;
-	case 0x9:
-		fputc(d[port], stderr);
-		fflush(stderr);
-		return;
-	}
 }

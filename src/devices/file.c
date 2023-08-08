@@ -126,10 +126,11 @@ static char *
 retry_realpath(const char *file_name)
 {
 	char *r, p[PATH_MAX] = {'\0'}, *x;
+	int fnlen;
 	if(file_name == NULL) {
 		errno = EINVAL;
 		return NULL;
-	} else if(strlen(file_name) >= PATH_MAX) {
+	} else if((fnlen = strlen(file_name)) >= PATH_MAX) {
 		errno = ENAMETOOLONG;
 		return NULL;
 	}
@@ -137,6 +138,10 @@ retry_realpath(const char *file_name)
 		/* TODO: use a macro instead of '/' for absolute path first character so that other systems can work */
 		/* if a relative path, prepend cwd */
 		getcwd(p, sizeof(p));
+		if(strlen(p) + strlen(DIR_SEP_STR) + fnlen >= PATH_MAX) {
+			errno = ENAMETOOLONG;
+			return NULL;
+		}
 		strcat(p, DIR_SEP_STR); /* TODO: use a macro instead of '/' for the path delimiter */
 	}
 	strcat(p, file_name);

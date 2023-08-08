@@ -9,6 +9,7 @@
 
 #include "uxn.h"
 #include "devices/system.h"
+#include "devices/console.h"
 #include "devices/screen.h"
 #include "devices/controller.h"
 #include "devices/mouse.h"
@@ -39,8 +40,7 @@ char *rom_path;
 #define SCALE 1
 #define CONINBUFSIZE 256
 
-Uint16 deo_mask[] = {0xff28, 0x0300, 0xc028, 0x8000, 0x8000, 0x8000, 0x8000, 0x0000, 0x0000, 0x0000, 0xa260, 0xa260, 0x0000, 0x0000, 0x0000, 0x0000};
-Uint16 dei_mask[] = {0x0000, 0x0000, 0x003c, 0x0014, 0x0014, 0x0014, 0x0014, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x07ff, 0x0000, 0x0000, 0x0000};
+Uint16 dev_vers[0x10], dei_mask[0x10], deo_mask[0x10];
 
 static int
 clamp(int val, int min, int max)
@@ -201,13 +201,28 @@ int
 main(int argc, char **argv)
 {
 	Uxn u;
-	int i, n;
+	int i = 1, n;
 	char expirations[8];
 	char coninp[CONINBUFSIZE];
 	struct pollfd fds[3];
 	static const struct itimerspec screen_tspec = {{0, 16666666}, {0, 16666666}};
-	if(argc < 2)
-		return system_error("usage", "uxn11 file.rom [args...]");
+	if(i == argc)
+		return system_error("usage", "uxn11 [-v][-2x][-3x] file.rom [args...]");
+	/* Connect Varvara */
+	system_connect(0x0, SYSTEM_VERSION, SYSTEM_DEIMASK, SYSTEM_DEOMASK);
+	system_connect(0x1, CONSOLE_VERSION, CONSOLE_DEIMASK, CONSOLE_DEOMASK);
+	system_connect(0x2, SCREEN_VERSION, SCREEN_DEIMASK, SCREEN_DEOMASK);
+	system_connect(0x8, CONTROL_VERSION, CONTROL_DEIMASK, CONTROL_DEOMASK);
+	system_connect(0x9, MOUSE_VERSION, MOUSE_DEIMASK, MOUSE_DEOMASK);
+	system_connect(0xa, FILE_VERSION, FILE_DEIMASK, FILE_DEOMASK);
+	system_connect(0xb, FILE_VERSION, FILE_DEIMASK, FILE_DEOMASK);
+	system_connect(0xc, DATETIME_VERSION, DATETIME_DEIMASK, DATETIME_DEOMASK);
+	/* Read flags */
+	if(argv[i][0] == '-' && argv[i][1] == 'v')
+		return system_version("Uxn11 - Graphical Varvara Emulator", "8 Aug 2023");
+
+
+
 	rom_path = argv[1];
 	if(!uxn_boot(&u, (Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8))))
 		return system_error("boot", "Failed");

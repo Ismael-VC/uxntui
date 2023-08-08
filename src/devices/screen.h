@@ -1,6 +1,5 @@
 /*
-Copyright (c) 2021 Devine Lu Linvega
-Copyright (c) 2021 Andrew Alderwick
+Copyright (c) 2021 Devine Lu Linvega, Andrew Alderwick
 
 Permission to use, copy, modify, and distribute this software for any
 purpose with or without fee is hereby granted, provided that the above
@@ -9,6 +8,10 @@ copyright notice and this permission notice appear in all copies.
 THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
 WITH REGARD TO THIS SOFTWARE.
 */
+
+#define SCREEN_VERSION 1
+#define SCREEN_DEIMASK 0x003c
+#define SCREEN_DEOMASK 0xc028
 
 typedef struct UxnScreen {
 	int width, height, x1, y1, x2, y2;

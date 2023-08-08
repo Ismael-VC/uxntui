@@ -2,7 +2,7 @@
 
 RELEASE_FLAGS="-DNDEBUG -O2 -g0 -s"
 DEBUG_FLAGS="-std=c89 -D_POSIX_C_SOURCE=199309L -DDEBUG -Wall -Wno-unknown-pragmas -Wpedantic -Wshadow -Wextra -Werror=implicit-int -Werror=incompatible-pointer-types -Werror=int-conversion -Wvla -g -Og -fsanitize=address -fsanitize=undefined"
-CORE_DEVICES="src/uxn.c src/devices/system.c src/devices/file.c src/devices/datetime.c -lpthread"
+CORE_DEVICES="src/uxn.c src/devices/system.c src/devices/console.c src/devices/file.c src/devices/datetime.c -lpthread"
 EMU_INC="${CORE_DEVICES} src/devices/screen.c src/devices/controller.c src/devices/mouse.c src/uxn11.c -o bin/uxn11 -lX11"
 CLI_INC="${CORE_DEVICES} src/uxncli.c -o bin/uxncli"
 
@@ -36,7 +36,7 @@ fi
 
 if [ "${1}" = '--install' ];
 then
-	cp bin/uxn11 bin/uxnemu
+	cp bin/uxn11 bin/uxn11
 	cp bin/uxnemu bin/uxnasm bin/uxncli $HOME/bin/
 fi
 
@@ -45,6 +45,16 @@ fi
 # bin/uxnasm etc/friend.tal bin/friend.rom
 
 if [ "${1}" = '--norun' ]; then exit; fi
+
+# Test usage
+
+./bin/uxncli
+./bin/uxn11
+
+# Test version
+
+./bin/uxncli -v
+./bin/uxn11 -v
 
 # bin/uxnasm etc/mouse.tal bin/res.rom
 bin/uxnasm etc/pict.tal bin/res.rom
