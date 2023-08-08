@@ -143,7 +143,7 @@ emu_event(Uxn *u)
 		char buf[7];
 		XLookupString((XKeyPressedEvent *)&ev, buf, 7, &sym, 0);
 		if(sym == XK_F2)
-			system_inspect(u);
+			u->dev[0x0e] = !u->dev[0x0e];
 		if(sym == XK_F4)
 			if(!emu_start(u, "boot.rom"))
 				emu_start(u, rom_path);
@@ -247,6 +247,8 @@ main(int argc, char **argv)
 		if(uxn_screen.x2) {
 			int x1 = uxn_screen.x1, y1 = uxn_screen.y1, x2 = uxn_screen.x2, y2 = uxn_screen.y2;
 			screen_redraw();
+			if(u.dev[0x0e])
+				screen_debugger(&u);
 			XPutImage(display, window, DefaultGC(display, 0), ximage, x1, y1, x1 + PAD, y1 + PAD, x2 - x1, y2 - y1);
 		}
 	}

@@ -12,7 +12,7 @@ WITH REGARD TO THIS SOFTWARE.
 */
 
 #define HALT(c)    { return emu_halt(u, ins, (c), pc - 1); }
-#define FLIP       { s = (ins & 0x40) ? &u->wst : &u->rst; }
+#define FLIP       { s = ins & 0x40 ? &u->wst : &u->rst; }
 #define JUMP(x)    { if(m2) pc = (x); else pc += (Sint8)(x); }
 #define POKE(x, y) { if(m2) { POKE2(ram + x, y) } else { ram[(x)] = (y); } }
 #define PEEK(o, x) { if(m2) { o = PEEK2(ram + x); } else o = ram[(x)]; }
@@ -23,7 +23,7 @@ WITH REGARD TO THIS SOFTWARE.
 #define POP2(o)    { if((tsp = *sp) <= 0x01) HALT(1) o = PEEK2(&s->dat[tsp - 2]); *sp = tsp - 2; }
 #define POPx(o)    { if(m2) { POP2(o) } else { POP1(o) } }
 #define DEVW(p, y) { if(m2) { DEO(p, y >> 8) DEO((p + 1), y) } else { DEO(p, y) } }
-#define DEVR(o, p) { if(m2) { o = ((DEI(p) << 8) + DEI(p + 1)); } else { o = DEI(p); } }
+#define DEVR(o, p) { if(m2) { o = DEI(p) << 8 | DEI(p + 1); } else { o = DEI(p); } }
 
 int
 uxn_eval(Uxn *u, Uint16 pc)
@@ -47,7 +47,7 @@ uxn_eval(Uxn *u, Uint16 pc)
 		case -0x2: /* JMI   */ pc += PEEK2(ram + pc) + 2; break;
 		case -0x3: /* JSI   */ PUSH2(pc + 2) pc += PEEK2(ram + pc) + 2; break;
 		case -0x4: /* LIT   */
-		case -0x6: /* LITr  */ a = ram[pc++]; PUSH1(a) break;
+		case -0x6: /* LITr  */ PUSH1(ram[pc++]) break;
 		case -0x5: /* LIT2  */
 		case -0x7: /* LIT2r */ PUSH2(PEEK2(ram + pc)) pc += 2; break;
 		/* ALU */
