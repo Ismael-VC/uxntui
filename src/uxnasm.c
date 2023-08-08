@@ -175,6 +175,15 @@ makelabel(char *name)
 	return 1;
 }
 
+static char *
+makelambda(int id)
+{
+	scpy("lambda", p.lambda, 0x07);
+	p.lambda[6] = '0' + (id >> 0x4);
+	p.lambda[7] = '0' + (id & 0xf);
+	return p.lambda;
+}
+
 static int
 makereference(char *scope, char *label, char rune, Uint16 addr)
 {
@@ -183,7 +192,10 @@ makereference(char *scope, char *label, char rune, Uint16 addr)
 	if(p.refs_len >= 0x800)
 		return error("References limit exceeded", label);
 	r = &p.refs[p.refs_len++];
-	if(label[0] == '&') {
+	if(label[0] == '{') {
+		p.lambda_stack[p.lambda_ptr++] = p.lambda_count;
+		scpy(makelambda(p.lambda_count++), r->name, 0x40);
+	} else if(label[0] == '&') {
 		if(!sublabel(subw, scope, label + 1))
 			return error("Invalid sublabel", label);
 		scpy(subw, r->name, 0x40);
@@ -199,15 +211,6 @@ makereference(char *scope, char *label, char rune, Uint16 addr)
 	r->rune = rune;
 	r->addr = addr;
 	return 1;
-}
-
-static char *
-makelambda(int id)
-{
-	scpy("lambda", p.lambda, 0x07);
-	p.lambda[6] = '0' + (id >> 0x4);
-	p.lambda[7] = '0' + (id & 0xf);
-	return p.lambda;
 }
 
 static int
@@ -361,14 +364,10 @@ parse(char *w, FILE *f)
 		while((c = w[++i]))
 			if(!writebyte(c)) return 0;
 		break;
-	case '{': /* lambda start */
-		p.lambda_stack[p.lambda_ptr++] = p.lambda_count;
-		makereference(p.scope, makelambda(p.lambda_count++), ' ', p.ptr + 1);
-		return writebyte(0x60) && writeshort(0xffff, 0);
 	case '}': /* lambda end */
 		if(!makelabel(makelambda(p.lambda_stack[--p.lambda_ptr])))
 			return error("Invalid label", w);
-		return writebyte(0x6f);
+		break;
 	case '[':
 	case ']':
 		if(slen(w) == 1) break; /* else fallthrough */
@@ -498,11 +497,10 @@ writesym(char *filename)
 int
 main(int argc, char *argv[])
 {
-	int i = 1;
 	FILE *src, *dst;
-	if(i == argc)
+	if(argc == 1)
 		return error("usage", "uxnasm [-v] input.tal output.rom");
-	if(argv[i][0] == '-' && argv[i][1] == 'v')
+	if(argv[1][0] == '-' && argv[1][1] == 'v')
 		return !fprintf(stdout, "Uxnasm - Uxntal Assembler, 8 Aug 2023.\n");
 	if(!(src = fopen(argv[1], "r")))
 		return !error("Invalid input", argv[1]);
