@@ -16,16 +16,22 @@ WITH REGARD TO THIS SOFTWARE.
 #define JUMP(x)      { if(m2) pc = (x); else pc += (Sint8)(x); }
 #define POKE(x, y)   { if(m2) { POKE2(ram + x, y) } else { ram[(x)] = (y); } }
 #define PEEK(o, x)   { if(m2) { o = PEEK2(ram + x); } else o = ram[(x)]; }
+#define DEVW(p, y)   { if(m2) { DEO(p, y >> 8) DEO((p + 1), y) } else { DEO(p, y) } }
+#define DEVR(o, p)   { if(m2) { o = DEI(p) << 8 | DEI(p + 1); } else { o = DEI(p); } }
+
 #define PUSH1(y)     { if(s->ptr == 0xff) HALT(2) s->dat[s->ptr++] = (y); }
 #define PUSH2(y)     { if((tsp = s->ptr) >= 0xfe) HALT(2) t = (y); POKE2(&s->dat[tsp], t); s->ptr = tsp + 2; }
 #define PUSHx(y)     { if(m2) { PUSH2(y) } else { PUSH1(y) } }
-#define PUSHxx(y, z) { if(m2) { PUSH2(y) PUSH2(z) } else { PUSH1(y) PUSH1(z) } }
+#define PUSH11(y, z) { if(s->ptr >= 0xfe) HALT(2) s->dat[s->ptr++] = (y); s->dat[s->ptr++] = (z); }
+#define PUSH22(y, z) { if((tsp = s->ptr) >= 0xfc) HALT(2) POKE2(&s->dat[tsp], (y)); POKE2(&s->dat[tsp+2], (z)); s->ptr = tsp + 4; }
+#define PUSHxx(y, z) { if(m2) { PUSH22(y, z) } else { PUSH11(y, z) } }
+
 #define POP1(o)      { if(*sp == 0x00) HALT(1) o = s->dat[--*sp]; }
 #define POP2(o)      { if((tsp = *sp) <= 0x01) HALT(1) o = PEEK2(&s->dat[tsp - 2]); *sp = tsp - 2; }
 #define POPx(o)      { if(m2) { POP2(o) } else { POP1(o) } }
-#define POPxx(o, p)  { if(m2) { POP2(o) POP2(p) } else { POP1(o) POP1(p) } }
-#define DEVW(p, y)   { if(m2) { DEO(p, y >> 8) DEO((p + 1), y) } else { DEO(p, y) } }
-#define DEVR(o, p)   { if(m2) { o = DEI(p) << 8 | DEI(p + 1); } else { o = DEI(p); } }
+#define POP11(o, p)  { if(*sp <= 0x01) HALT(1) o = s->dat[--*sp]; p = s->dat[--*sp]; }
+#define POP22(o, p)  { if((tsp = *sp) <= 0x03) HALT(1) o = PEEK2(&s->dat[tsp - 2]); p = PEEK2(&s->dat[tsp - 4]); *sp = tsp - 4; }
+#define POPxx(o, p)  { if(m2) { POP22(o, p) } else { POP11(o, p) } }
 
 int
 uxn_eval(Uxn *u, Uint16 pc)
