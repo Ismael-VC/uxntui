@@ -11,19 +11,21 @@ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
 WITH REGARD TO THIS SOFTWARE.
 */
 
-#define HALT(c)    { return emu_halt(u, ins, (c), pc - 1); }
-#define FLIP       { s = ins & 0x40 ? &u->wst : &u->rst; }
-#define JUMP(x)    { if(m2) pc = (x); else pc += (Sint8)(x); }
-#define POKE(x, y) { if(m2) { POKE2(ram + x, y) } else { ram[(x)] = (y); } }
-#define PEEK(o, x) { if(m2) { o = PEEK2(ram + x); } else o = ram[(x)]; }
-#define PUSH1(y)   { if(s->ptr == 0xff) HALT(2) s->dat[s->ptr++] = (y); }
-#define PUSH2(y)   { if((tsp = s->ptr) >= 0xfe) HALT(2) t = (y); POKE2(&s->dat[tsp], t); s->ptr = tsp + 2; }
-#define PUSHx(y)   { if(m2) { PUSH2(y) } else { PUSH1(y) } }
-#define POP1(o)    { if(*sp == 0x00) HALT(1) o = s->dat[--*sp]; }
-#define POP2(o)    { if((tsp = *sp) <= 0x01) HALT(1) o = PEEK2(&s->dat[tsp - 2]); *sp = tsp - 2; }
-#define POPx(o)    { if(m2) { POP2(o) } else { POP1(o) } }
-#define DEVW(p, y) { if(m2) { DEO(p, y >> 8) DEO((p + 1), y) } else { DEO(p, y) } }
-#define DEVR(o, p) { if(m2) { o = DEI(p) << 8 | DEI(p + 1); } else { o = DEI(p); } }
+#define HALT(c)      { return emu_halt(u, ins, (c), pc - 1); }
+#define FLIP         { s = ins & 0x40 ? &u->wst : &u->rst; }
+#define JUMP(x)      { if(m2) pc = (x); else pc += (Sint8)(x); }
+#define POKE(x, y)   { if(m2) { POKE2(ram + x, y) } else { ram[(x)] = (y); } }
+#define PEEK(o, x)   { if(m2) { o = PEEK2(ram + x); } else o = ram[(x)]; }
+#define PUSH1(y)     { if(s->ptr == 0xff) HALT(2) s->dat[s->ptr++] = (y); }
+#define PUSH2(y)     { if((tsp = s->ptr) >= 0xfe) HALT(2) t = (y); POKE2(&s->dat[tsp], t); s->ptr = tsp + 2; }
+#define PUSHx(y)     { if(m2) { PUSH2(y) } else { PUSH1(y) } }
+#define PUSHxx(y, z) { if(m2) { PUSH2(y) PUSH2(z) } else { PUSH1(y) PUSH1(z) } }
+#define POP1(o)      { if(*sp == 0x00) HALT(1) o = s->dat[--*sp]; }
+#define POP2(o)      { if((tsp = *sp) <= 0x01) HALT(1) o = PEEK2(&s->dat[tsp - 2]); *sp = tsp - 2; }
+#define POPx(o)      { if(m2) { POP2(o) } else { POP1(o) } }
+#define POPxx(o, p)  { if(m2) { POP2(o) POP2(p) } else { POP1(o) POP1(p) } }
+#define DEVW(p, y)   { if(m2) { DEO(p, y >> 8) DEO((p + 1), y) } else { DEO(p, y) } }
+#define DEVR(o, p)   { if(m2) { o = DEI(p) << 8 | DEI(p + 1); } else { o = DEI(p); } }
 
 int
 uxn_eval(Uxn *u, Uint16 pc)
@@ -53,15 +55,15 @@ uxn_eval(Uxn *u, Uint16 pc)
 		/* ALU */
 		case 0x01: /* INC */ POPx(a) PUSHx(a + 1) break;
 		case 0x02: /* POP */ POPx(a) break;
-		case 0x03: /* NIP */ POPx(a) POPx(b) PUSHx(a) break;
-		case 0x04: /* SWP */ POPx(a) POPx(b) PUSHx(a) PUSHx(b) break;
-		case 0x05: /* ROT */ POPx(a) POPx(b) POPx(c) PUSHx(b) PUSHx(a) PUSHx(c) break;
-		case 0x06: /* DUP */ POPx(a) PUSHx(a) PUSHx(a) break;
-		case 0x07: /* OVR */ POPx(a) POPx(b) PUSHx(b) PUSHx(a) PUSHx(b) break;
-		case 0x08: /* EQU */ POPx(a) POPx(b) PUSH1(b == a) break;
-		case 0x09: /* NEQ */ POPx(a) POPx(b) PUSH1(b != a) break;
-		case 0x0a: /* GTH */ POPx(a) POPx(b) PUSH1(b > a) break;
-		case 0x0b: /* LTH */ POPx(a) POPx(b) PUSH1(b < a) break;
+		case 0x03: /* NIP */ POPxx(a, b) PUSHx(a) break;
+		case 0x04: /* SWP */ POPxx(a, b) PUSHxx(a, b) break;
+		case 0x05: /* ROT */ POPxx(a, b) POPx(c) PUSHxx(b, a) PUSHx(c) break;
+		case 0x06: /* DUP */ POPx(a) PUSHxx(a, a) break;
+		case 0x07: /* OVR */ POPxx(a, b) PUSHxx(b, a) PUSHx(b) break;
+		case 0x08: /* EQU */ POPxx(a, b) PUSH1(b == a) break;
+		case 0x09: /* NEQ */ POPxx(a, b) PUSH1(b != a) break;
+		case 0x0a: /* GTH */ POPxx(a, b) PUSH1(b > a) break;
+		case 0x0b: /* LTH */ POPxx(a, b) PUSH1(b < a) break;
 		case 0x0c: /* JMP */ POPx(a) JUMP(a) break;
 		case 0x0d: /* JCN */ POPx(a) POP1(b) if(b) JUMP(a) break;
 		case 0x0e: /* JSR */ POPx(a) FLIP PUSH2(pc) JUMP(a) break;
@@ -74,13 +76,13 @@ uxn_eval(Uxn *u, Uint16 pc)
 		case 0x15: /* STA */ POP2(a) POPx(b) POKE(a, b) break;
 		case 0x16: /* DEI */ POP1(a) DEVR(b, a) PUSHx(b) break;
 		case 0x17: /* DEO */ POP1(a) POPx(b) DEVW(a, b) break;
-		case 0x18: /* ADD */ POPx(a) POPx(b) PUSHx(b + a) break;
-		case 0x19: /* SUB */ POPx(a) POPx(b) PUSHx(b - a) break;
-		case 0x1a: /* MUL */ POPx(a) POPx(b) PUSHx((Uint32)b * a) break;
-		case 0x1b: /* DIV */ POPx(a) POPx(b) if(!a) HALT(3) PUSHx(b / a) break;
-		case 0x1c: /* AND */ POPx(a) POPx(b) PUSHx(b & a) break;
-		case 0x1d: /* ORA */ POPx(a) POPx(b) PUSHx(b | a) break;
-		case 0x1e: /* EOR */ POPx(a) POPx(b) PUSHx(b ^ a) break;
+		case 0x18: /* ADD */ POPxx(a, b) PUSHx(b + a) break;
+		case 0x19: /* SUB */ POPxx(a, b) PUSHx(b - a) break;
+		case 0x1a: /* MUL */ POPxx(a, b) PUSHx((Uint32)b * a) break;
+		case 0x1b: /* DIV */ POPxx(a, b) if(!a) HALT(3) PUSHx(b / a) break;
+		case 0x1c: /* AND */ POPxx(a, b) PUSHx(b & a) break;
+		case 0x1d: /* ORA */ POPxx(a, b) PUSHx(b | a) break;
+		case 0x1e: /* EOR */ POPxx(a, b) PUSHx(b ^ a) break;
 		case 0x1f: /* SFT */ POP1(a) POPx(b) PUSHx(b >> (a & 0xf) << (a >> 4)) break;
 		}
 	}
