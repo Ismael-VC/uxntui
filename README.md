@@ -9,7 +9,7 @@ An emulator for the [Uxn stack-machine](https://wiki.xxiivv.com/site/uxn.html), 
 All you need is X11.
 
 ```sh
-gcc -Os -DNDEBUG -g0 -s src/uxn.c src/devices/system.c src/devices/screen.c src/devices/controller.c src/devices/mouse.c src/devices/file.c src/devices/datetime.c src/uxn11.c -o bin/uxn11 -lX11
+gcc -Os -DNDEBUG -g0 -s src/uxn.c src/devices/system.c src/devices/console.c src/devices/screen.c src/devices/controller.c src/devices/mouse.c src/devices/file.c src/devices/datetime.c src/uxn11.c -o bin/uxn11 -lX11
 ```
 
 ### Terminal
@@ -17,7 +17,7 @@ gcc -Os -DNDEBUG -g0 -s src/uxn.c src/devices/system.c src/devices/screen.c src/
 If you wish to build the emulator without graphics mode:
 
 ```sh
-gcc -Os -DNDEBUG -g0 -s src/uxn.c src/devices/system.c src/devices/file.c src/devices/datetime.c src/uxncli.c -o bin/uxncli
+gcc -Os -DNDEBUG -g0 -s src/uxn.c src/devices/system.c src/devices/console.c src/devices/file.c src/devices/datetime.c src/uxncli.c -o bin/uxncli
 ```
 
 If do not wish to build it yourself, you can download linux binaries for [uxnasm](https://rabbits.srht.site/uxn11/bin/uxnasm), [uxncli](https://rabbits.srht.site/uxn11/bin/uxncli) and [uxn11](https://rabbits.srht.site/uxn11/bin/uxn11).
@@ -39,16 +39,14 @@ The file device is _sandboxed_, meaning that it should not be able to read or wr
 - `00` system
 - `10` console
 - `20` screen
-- `30` audio(missing)
-- `70` midi(missing)
 - `80` controller
 - `90` mouse
-- `a0` file(sandboxed)
+- `a0` file
 - `c0` datetime
 
 ## Emulator Controls
 
-- `F2` print non-empty stacks
+- `F2` toggle on-screen debugger
 - `F4` load boot.rom, or reload rom
 
 ### Buttons
