@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "../uxn.h"
 #include "screen.h"
@@ -126,7 +127,8 @@ screen_redraw(void)
 			i = x + y * w;
 			pixels[i] = palette[fg[i] << 2 | bg[i]];
 		}
-	uxn_screen.x1 = uxn_screen.y1 = uxn_screen.x2 = uxn_screen.y2 = 0;
+	uxn_screen.x1 = uxn_screen.y1 = 0xffff;
+	uxn_screen.x2 = uxn_screen.y2 = 0;
 }
 
 /* clang-format off */
