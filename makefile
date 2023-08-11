@@ -13,18 +13,18 @@ dest:
 rom:
 	./bin/uxnasm etc/polycat.tal bin/polycat.rom
 
-uxnasm: 
+uxnasm: src/uxnasm.c
 	cc ${RELEASE_flags} src/uxnasm.c -o bin/uxnasm 
-uxncli: 
+uxncli: ${CLI_src} src/uxncli.c
 	gcc ${RELEASE_flags} ${CLI_src} src/uxncli.c -o bin/uxncli
-uxn11: 
+uxn11: ${EMU_src} src/uxn11.c
 	gcc ${RELEASE_flags} ${EMU_src} src/uxn11.c -lX11 -o bin/uxn11 
 
-uxnasm-debug: 
+uxnasm-debug: src/uxnasm.c
 	cc ${DEBUG_flags} src/uxnasm.c -o bin/uxnasm 
-uxncli-debug: 
+uxncli-debug: ${CLI_src} src/uxncli.c
 	gcc ${DEBUG_flags} ${CLI_src} src/uxncli.c -o bin/uxncli
-uxn11-debug: 
+uxn11-debug: ${EMU_src} src/uxn11.c
 	gcc ${DEBUG_flags} ${EMU_src} src/uxn11.c -lX11 -o bin/uxn11 
 
 run: uxnasm uxncli uxn11 rom
