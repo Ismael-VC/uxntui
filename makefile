@@ -14,6 +14,18 @@ dest:
 	mkdir -p bin
 rom:
 	./bin/uxnasm etc/polycat.tal bin/polycat.rom
+run: uxnasm uxncli uxn11 rom
+	./bin/uxn11 bin/polycat.rom
+test: uxnasm uxncli uxn11
+	./bin/uxnasm && ./bin/uxncli && ./bin/uxn11 && ./bin/uxnasm -v && ./bin/uxncli -v && ./bin/uxn11 -v
+install: uxnasm uxncli uxn11
+	cp bin/uxn11 bin/uxnasm bin/uxncli ~/bin/
+uninstall:
+	rm -f ~/bin/uxn11 ~/bin/uxnasm ~/bin/uxncli
+format:
+	clang-format -i src/uxnasm.c src/uxncli.c src/uxn11.c src/devices/*
+clean:
+	rm -f bin/uxnasm bin/uxncli bin/uxn11 bin/polycat.rom bin/polycat.rom.sym
 
 uxnasm: src/uxnasm.c
 	cc ${RELEASE_flags} src/uxnasm.c -o bin/uxnasm 
@@ -28,16 +40,3 @@ uxncli-debug: ${CLI_src} src/uxncli.c
 	gcc ${DEBUG_flags} ${CLI_src} src/uxncli.c -o bin/uxncli
 uxn11-debug: ${EMU_src} src/uxn11.c
 	gcc ${DEBUG_flags} ${EMU_src} src/uxn11.c -lX11 -o bin/uxn11 
-
-run: uxnasm uxncli uxn11 rom
-	./bin/uxn11 bin/polycat.rom
-test: uxnasm uxncli uxn11
-	./bin/uxnasm && ./bin/uxncli && ./bin/uxn11 && ./bin/uxnasm -v && ./bin/uxncli -v && ./bin/uxn11 -v
-install: uxnasm uxncli uxn11
-	cp bin/uxn11 bin/uxnasm bin/uxncli ~/bin/
-uninstall:
-	rm -f ~/bin/uxn11 ~/bin/uxnasm ~/bin/uxncli
-format:
-	clang-format -i src/uxnasm.c src/uxncli.c src/uxn11.c src/devices/*
-clean:
-	rm -f bin/uxnasm bin/uxncli bin/uxn11 bin/polycat.rom bin/polycat.rom.sym
