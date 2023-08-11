@@ -7,16 +7,15 @@ DEBUG_flags=-std=c89 -D_POSIX_C_SOURCE=199309L -DDEBUG -Wall -Wno-unknown-pragma
 
 .PHONY: all debug dest rom run test install uninstall format clean
 
-all: dest uxnasm uxncli uxn11
-debug: dest uxnasm-debug uxncli-debug uxn11-debug
+all: dest bin/uxnasm bin/uxncli bin/uxn11
 
 dest:
 	mkdir -p bin
 rom:
 	./bin/uxnasm etc/polycat.tal bin/polycat.rom
-run: uxnasm uxncli uxn11 rom
+run: bin/uxnasm bin/uxncli bin/uxn11 rom
 	./bin/uxn11 bin/polycat.rom
-test: uxnasm uxncli uxn11
+test: bin/uxnasm bin/uxncli bin/uxn11
 	./bin/uxnasm && ./bin/uxncli && ./bin/uxn11 && ./bin/uxnasm -v && ./bin/uxncli -v && ./bin/uxn11 -v
 install: uxnasm uxncli uxn11
 	cp bin/uxn11 bin/uxnasm bin/uxncli ~/bin/
@@ -27,16 +26,9 @@ format:
 clean:
 	rm -f bin/uxnasm bin/uxncli bin/uxn11 bin/polycat.rom bin/polycat.rom.sym
 
-uxnasm: src/uxnasm.c
+bin/uxnasm: src/uxnasm.c
 	cc ${RELEASE_flags} src/uxnasm.c -o bin/uxnasm 
-uxncli: ${CLI_src} src/uxncli.c
+bin/uxncli: ${CLI_src} src/uxncli.c
 	gcc ${RELEASE_flags} ${CLI_src} src/uxncli.c -o bin/uxncli
-uxn11: ${EMU_src} src/uxn11.c
+bin/uxn11: ${EMU_src} src/uxn11.c
 	gcc ${RELEASE_flags} ${EMU_src} src/uxn11.c -lX11 -o bin/uxn11 
-
-uxnasm-debug: src/uxnasm.c
-	cc ${DEBUG_flags} src/uxnasm.c -o bin/uxnasm 
-uxncli-debug: ${CLI_src} src/uxncli.c
-	gcc ${DEBUG_flags} ${CLI_src} src/uxncli.c -o bin/uxncli
-uxn11-debug: ${EMU_src} src/uxn11.c
-	gcc ${DEBUG_flags} ${EMU_src} src/uxn11.c -lX11 -o bin/uxn11 
