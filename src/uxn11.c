@@ -86,12 +86,7 @@ emu_resize(int width, int height)
 static int
 emu_start(Uxn *u, char *rom)
 {
-	if(!system_load(u, rom))
-		return 0;
-	if(!uxn_screen.width || !uxn_screen.height)
-		screen_resize(WIDTH, HEIGHT);
-	if(!uxn_eval(u, PAGE_PROGRAM))
-		return system_error("boot", "Failed to start rom.");
+
 	return 1;
 }
 
@@ -182,8 +177,15 @@ emu_event(Uxn *u)
 }
 
 static int
-display_start(char *title)
+emu_run(Uxn *u, char *rom)
 {
+	int i = 1, n;
+	char expirations[8];
+	char coninp[CONINBUFSIZE];
+	struct pollfd fds[3];
+	static const struct itimerspec screen_tspec = {{0, 16666666}, {0, 16666666}};
+
+	/* display */
 	Atom wmDelete;
 	display = XOpenDisplay(NULL);
 	visual = DefaultVisual(display, 0);
@@ -193,21 +195,10 @@ display_start(char *title)
 	XSelectInput(display, window, ButtonPressMask | ButtonReleaseMask | PointerMotionMask | ExposureMask | KeyPressMask | KeyReleaseMask);
 	wmDelete = XInternAtom(display, "WM_DELETE_WINDOW", True);
 	XSetWMProtocols(display, window, &wmDelete, 1);
-	XStoreName(display, window, title);
+	XStoreName(display, window, rom);
 	XMapWindow(display, window);
 	ximage = XCreateImage(display, visual, DefaultDepth(display, DefaultScreen(display)), ZPixmap, 0, (char *)uxn_screen.pixels, uxn_screen.width * SCALE, uxn_screen.height * SCALE, 32, 0);
 	hide_cursor();
-	return 1;
-}
-
-static int
-emu_run(Uxn *u, char *rom)
-{
-	int i = 1, n;
-	char expirations[8];
-	char coninp[CONINBUFSIZE];
-	struct pollfd fds[3];
-	static const struct itimerspec screen_tspec = {{0, 16666666}, {0, 16666666}};
 
 	/* timer */
 	fds[0].fd = XConnectionNumber(display);
@@ -242,6 +233,13 @@ emu_run(Uxn *u, char *rom)
 	return 1;
 }
 
+static int
+emu_end(Uxn *u)
+{
+	XDestroyImage(ximage);
+	return u->dev[0x0f] & 0x7f;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -266,10 +264,13 @@ main(int argc, char **argv)
 	if(!uxn_boot(&u, (Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8))))
 		return system_error("boot", "Failed");
 	/* start sequence */
-	if(!emu_start(&u, rom_path))
-		return system_error("start", rom_path);
-	if(!display_start(rom_path))
-		return system_error("display", "Failed");
+	screen_resize(WIDTH, HEIGHT);
+
+	if(!system_load(&u, rom_path))
+		return 0;
+	if(!uxn_eval(&u, PAGE_PROGRAM))
+		return system_error("boot", "Failed to start rom.");
+
 	/* console vector */
 	for(i = 2; i < argc; i++) {
 		char *p = argv[i];
@@ -277,6 +278,5 @@ main(int argc, char **argv)
 		console_input(&u, '\n', i == argc ? CONSOLE_END : CONSOLE_EOA);
 	}
 	emu_run(&u, rom_path);
-	XDestroyImage(ximage);
-	return 0;
+	return emu_end(&u);
 }
