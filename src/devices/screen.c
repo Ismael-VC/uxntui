@@ -149,11 +149,15 @@ screen_redraw(Uxn *u)
 {
 	Uint8 *fg = uxn_screen.fg, *bg = uxn_screen.bg;
 	Uint32 palette[16], *pixels = uxn_screen.pixels;
-	int i, x, y, w = uxn_screen.width, h = uxn_screen.height;
-	int x1 = uxn_screen.x1;
-	int y1 = uxn_screen.y1;
-	int x2 = uxn_screen.x2 > w ? w : uxn_screen.x2;
-	int y2 = uxn_screen.y2 > h ? h : uxn_screen.y2;
+	int i, x, y, w = uxn_screen.width, h = uxn_screen.height, x1, y1, x2, y2;
+	if(u->dev[0x0e]) {
+		screen_change(0, 0, w, h);
+		screen_debugger(u);
+	}
+	x1 = uxn_screen.x1;
+	y1 = uxn_screen.y1;
+	x2 = uxn_screen.x2 > w ? w : uxn_screen.x2;
+	y2 = uxn_screen.y2 > h ? h : uxn_screen.y2;
 	for(i = 0; i < 16; i++)
 		palette[i] = uxn_screen.palette[(i >> 2) ? (i >> 2) : (i & 3)];
 	for(y = y1; y < y2; y++)
@@ -163,8 +167,6 @@ screen_redraw(Uxn *u)
 		}
 	uxn_screen.x1 = uxn_screen.y1 = 0xffff;
 	uxn_screen.x2 = uxn_screen.y2 = 0;
-	if(u->dev[0x0e])
-		screen_debugger(u);
 }
 
 Uint8
