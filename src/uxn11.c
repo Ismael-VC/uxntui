@@ -78,6 +78,9 @@ emu_deo(Uxn *u, Uint8 addr)
 int
 emu_resize(int width, int height)
 {
+	(void)width;
+	(void)height;
+	return 1;
 }
 
 static int
@@ -197,15 +200,53 @@ display_start(char *title)
 	return 1;
 }
 
-int
-main(int argc, char **argv)
+static int
+emu_run(Uxn *u, char *rom)
 {
-	Uxn u;
 	int i = 1, n;
 	char expirations[8];
 	char coninp[CONINBUFSIZE];
 	struct pollfd fds[3];
 	static const struct itimerspec screen_tspec = {{0, 16666666}, {0, 16666666}};
+
+	/* timer */
+	fds[0].fd = XConnectionNumber(display);
+	fds[1].fd = timerfd_create(CLOCK_MONOTONIC, 0);
+	timerfd_settime(fds[1].fd, 0, &screen_tspec, NULL);
+	fds[2].fd = STDIN_FILENO;
+	fds[0].events = fds[1].events = fds[2].events = POLLIN;
+	/* main loop */
+	while(!u->dev[0x0f]) {
+		if(poll(fds, 3, 1000) <= 0)
+			continue;
+		while(XPending(display))
+			emu_event(u);
+		if(poll(&fds[1], 1, 0)) {
+			read(fds[1].fd, expirations, 8);   /* Indicate we handled the timer */
+			uxn_eval(u, PEEK2(u->dev + 0x20)); /* Call the vector once, even if the timer fired multiple times */
+		}
+		if((fds[2].revents & POLLIN) != 0) {
+			n = read(fds[2].fd, coninp, CONINBUFSIZE - 1);
+			coninp[n] = 0;
+			for(i = 0; i < n; i++)
+				console_input(u, coninp[i], CONSOLE_STD);
+		}
+		if(uxn_screen.x2) {
+			int x1 = uxn_screen.x1, y1 = uxn_screen.y1, x2 = uxn_screen.x2, y2 = uxn_screen.y2;
+			screen_redraw();
+			if(u->dev[0x0e])
+				screen_debugger(u);
+			XPutImage(display, window, DefaultGC(display, 0), ximage, x1, y1, x1 + PAD, y1 + PAD, x2 - x1, y2 - y1);
+		}
+	}
+	return 1;
+}
+
+int
+main(int argc, char **argv)
+{
+	Uxn u;
+	int i = 1;
 	if(i == argc)
 		return system_error("usage", "uxn11 [-v] file.rom [args...]");
 	/* Connect Varvara */
@@ -219,7 +260,7 @@ main(int argc, char **argv)
 	system_connect(0xc, DATETIME_VERSION, DATETIME_DEIMASK, DATETIME_DEOMASK);
 	/* Read flags */
 	if(argv[i][0] == '-' && argv[i][1] == 'v')
-		return system_version("Uxn11 - Graphical Varvara Emulator", "10 Aug 2023");
+		return system_version("Uxn11 - Graphical Varvara Emulator", "16 Aug 2023");
 
 	rom_path = argv[1];
 	if(!uxn_boot(&u, (Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8))))
@@ -235,36 +276,7 @@ main(int argc, char **argv)
 		while(*p) console_input(&u, *p++, CONSOLE_ARG);
 		console_input(&u, '\n', i == argc ? CONSOLE_END : CONSOLE_EOA);
 	}
-	/* timer */
-	fds[0].fd = XConnectionNumber(display);
-	fds[1].fd = timerfd_create(CLOCK_MONOTONIC, 0);
-	timerfd_settime(fds[1].fd, 0, &screen_tspec, NULL);
-	fds[2].fd = STDIN_FILENO;
-	fds[0].events = fds[1].events = fds[2].events = POLLIN;
-	/* main loop */
-	while(!u.dev[0x0f]) {
-		if(poll(fds, 3, 1000) <= 0)
-			continue;
-		while(XPending(display))
-			emu_event(&u);
-		if(poll(&fds[1], 1, 0)) {
-			read(fds[1].fd, expirations, 8);   /* Indicate we handled the timer */
-			uxn_eval(&u, PEEK2(&u.dev[0x20])); /* Call the vector once, even if the timer fired multiple times */
-		}
-		if((fds[2].revents & POLLIN) != 0) {
-			n = read(fds[2].fd, coninp, CONINBUFSIZE - 1);
-			coninp[n] = 0;
-			for(i = 0; i < n; i++)
-				console_input(&u, coninp[i], CONSOLE_STD);
-		}
-		if(uxn_screen.x2) {
-			int x1 = uxn_screen.x1, y1 = uxn_screen.y1, x2 = uxn_screen.x2, y2 = uxn_screen.y2;
-			screen_redraw();
-			if(u.dev[0x0e])
-				screen_debugger(&u);
-			XPutImage(display, window, DefaultGC(display, 0), ximage, x1, y1, x1 + PAD, y1 + PAD, x2 - x1, y2 - y1);
-		}
-	}
+	emu_run(&u, rom_path);
 	XDestroyImage(ximage);
 	return 0;
 }

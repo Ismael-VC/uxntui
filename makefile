@@ -3,7 +3,7 @@ CLI_src=src/uxn.c src/devices/system.c src/devices/console.c src/devices/file.c 
 EMU_src=${CLI_src} src/devices/screen.c src/devices/controller.c src/devices/mouse.c
 
 RELEASE_flags=-DNDEBUG -O2 -g0 -s
-DEBUG_flags=-std=c89 -D_POSIX_C_SOURCE=199309L -DDEBUG -Wall -Wno-unknown-pragmas -Wpedantic -Wshadow -Wextra -Werror=implicit-int -Werror=incompatible-pointer-types -Werror=int-conversion -Wvla -g -Og -fsanitize=address -fsanitize=undefined
+RELEASE_flags=-std=c89 -D_POSIX_C_SOURCE=199309L -DDEBUG -Wall -Wno-unknown-pragmas -Wpedantic -Wshadow -Wextra -Werror=implicit-int -Werror=incompatible-pointer-types -Werror=int-conversion -Wvla -g -Og -fsanitize=address -fsanitize=undefined
 
 .PHONY: all debug dest rom run test install uninstall format clean
 
