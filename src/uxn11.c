@@ -29,7 +29,6 @@ WITH REGARD TO THIS SOFTWARE.
 
 static XImage *ximage;
 static Display *display;
-static Visual *visual;
 static Window window;
 
 #define WIDTH (64 * 8)
@@ -81,12 +80,14 @@ emu_resize(int width, int height)
 	return 1;
 }
 
-static int
-emu_start(Uxn *u, char *rom)
+static void
+emu_restart(Uxn *u, char *rom, int soft)
 {
-	(void)u;
-	(void)rom;
-	return 1;
+	screen_resize(WIDTH, HEIGHT);
+	screen_fill(uxn_screen.bg, 0, 0, uxn_screen.width, uxn_screen.height, 0);
+	screen_fill(uxn_screen.fg, 0, 0, uxn_screen.width, uxn_screen.height, 0);
+	system_reboot(u, rom, soft);
+	/* set window title */
 }
 
 static void
@@ -141,9 +142,10 @@ emu_event(Uxn *u)
 		XLookupString((XKeyPressedEvent *)&ev, buf, 7, &sym, 0);
 		if(sym == XK_F2)
 			u->dev[0x0e] = !u->dev[0x0e];
-		if(sym == XK_F4)
-			if(!emu_start(u, "boot.rom"))
-				emu_start(u, boot_rom);
+		else if(sym == XK_F4)
+			emu_restart(u, boot_rom, 0);
+		else if(sym == XK_F5)
+			emu_restart(u, boot_rom, 1);
 		controller_down(u, &u->dev[0x80], get_button(sym));
 		controller_key(u, &u->dev[0x80], sym < 0x80 ? sym : (Uint8)buf[0]);
 	} break;
@@ -193,6 +195,7 @@ emu_run(Uxn *u, char *rom)
 
 	/* display */
 	Atom wmDelete;
+	static Visual *visual;
 	display = XOpenDisplay(NULL);
 	visual = DefaultVisual(display, 0);
 	window = XCreateSimpleWindow(display, RootWindow(display, 0), 0, 0, uxn_screen.width * SCALE + PAD * 2, uxn_screen.height * SCALE + PAD * 2, 1, 0, 0);
@@ -230,9 +233,7 @@ emu_run(Uxn *u, char *rom)
 		}
 		if(uxn_screen.x2) {
 			int x1 = uxn_screen.x1, y1 = uxn_screen.y1, x2 = uxn_screen.x2, y2 = uxn_screen.y2;
-			screen_redraw();
-			if(u->dev[0x0e])
-				screen_debugger(u);
+			screen_redraw(u);
 			XPutImage(display, window, DefaultGC(display, 0), ximage, x1, y1, x1 + PAD, y1 + PAD, x2 - x1, y2 - y1);
 		}
 	}
@@ -243,6 +244,8 @@ static int
 emu_end(Uxn *u)
 {
 	XDestroyImage(ximage);
+	close(0);
+	free(u->ram);
 	return u->dev[0x0f] & 0x7f;
 }
 
