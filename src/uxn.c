@@ -117,14 +117,3 @@ uxn_eval(Uxn *u, Uint16 pc)
 		}
 	}
 }
-
-int
-uxn_boot(Uxn *u, Uint8 *ram)
-{
-	Uint32 i;
-	char *cptr = (char *)u;
-	for(i = 0; i < sizeof(*u); i++)
-		cptr[i] = 0;
-	u->ram = ram;
-	return 1;
-}

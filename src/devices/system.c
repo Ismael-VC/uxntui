@@ -15,10 +15,26 @@ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
 WITH REGARD TO THIS SOFTWARE.
 */
 
+char *boot_rom;
+
 static const char *errors[] = {
 	"underflow",
 	"overflow",
 	"division by zero"};
+
+static int
+system_load(Uxn *u, char *filename)
+{
+	int l, i = 0;
+	FILE *f = fopen(filename, "rb");
+	if(!f)
+		return 0;
+	l = fread(&u->ram[PAGE_PROGRAM], 0x10000 - PAGE_PROGRAM, 1, f);
+	while(l && ++i < RAM_PAGES)
+		l = fread(u->ram + 0x10000 * i, 0x10000, 1, f);
+	fclose(f);
+	return 1;
+}
 
 static void
 system_print(Stack *s, char *name)
@@ -32,39 +48,12 @@ system_print(Stack *s, char *name)
 	fprintf(stderr, "\n");
 }
 
-static void
-system_cmd(Uint8 *ram, Uint16 addr)
-{
-	if(ram[addr] == 0x1) {
-		Uint16 i, length = PEEK2(ram + addr + 1);
-		Uint16 a_page = PEEK2(ram + addr + 1 + 2), a_addr = PEEK2(ram + addr + 1 + 4);
-		Uint16 b_page = PEEK2(ram + addr + 1 + 6), b_addr = PEEK2(ram + addr + 1 + 8);
-		int src = (a_page % RAM_PAGES) * 0x10000, dst = (b_page % RAM_PAGES) * 0x10000;
-		for(i = 0; i < length; i++)
-			ram[dst + (Uint16)(b_addr + i)] = ram[src + (Uint16)(a_addr + i)];
-	}
-}
-
 int
 system_error(char *msg, const char *err)
 {
 	fprintf(stderr, "%s: %s\n", msg, err);
 	fflush(stderr);
 	return 0;
-}
-
-int
-system_load(Uxn *u, char *filename)
-{
-	int l, i = 0;
-	FILE *f = fopen(filename, "rb");
-	if(!f)
-		return 0;
-	l = fread(&u->ram[PAGE_PROGRAM], 0x10000 - PAGE_PROGRAM, 1, f);
-	while(l && ++i < RAM_PAGES)
-		l = fread(u->ram + 0x10000 * i, 0x10000, 1, f);
-	fclose(f);
-	return 1;
 }
 
 void
@@ -94,6 +83,32 @@ system_version(char *name, char *date)
 	return 0;
 }
 
+void
+system_reboot(Uxn *u, char *rom, int soft)
+{
+	int i;
+	for(i = 0x100 * soft; i < 0x10000; i++)
+		u->ram[i] = 0;
+	for(i = 0x0; i < 0x100; i++)
+		u->dev[i] = 0;
+	u->wst.ptr = 0;
+	u->rst.ptr = 0;
+	if(system_load(u, boot_rom))
+		if(uxn_eval(u, PAGE_PROGRAM))
+			boot_rom = rom;
+}
+
+int
+system_init(Uxn *u, Uint8 *ram, char *rom)
+{
+	u->ram = ram;
+	if(!system_load(u, rom))
+		if(!system_load(u, "boot.rom"))
+			return system_error("Init", "Failed to load rom.");
+	boot_rom = rom;
+	return 1;
+}
+
 /* IO */
 
 void
@@ -101,13 +116,15 @@ system_deo(Uxn *u, Uint8 *d, Uint8 port)
 {
 	switch(port) {
 	case 0x3:
-		system_cmd(u->ram, PEEK2(d + 2));
-		break;
-	case 0x5:
-		if(PEEK2(d + 4)) {
-			Uxn friend;
-			uxn_boot(&friend, u->ram);
-			uxn_eval(&friend, PEEK2(d + 4));
+		Uint8 *ram = u->ram;
+		Uint16 addr = PEEK2(d + 2);
+		if(ram[addr] == 0x1) {
+			Uint16 i, length = PEEK2(ram + addr + 1);
+			Uint16 a_page = PEEK2(ram + addr + 1 + 2), a_addr = PEEK2(ram + addr + 1 + 4);
+			Uint16 b_page = PEEK2(ram + addr + 1 + 6), b_addr = PEEK2(ram + addr + 1 + 8);
+			int src = (a_page % RAM_PAGES) * 0x10000, dst = (b_page % RAM_PAGES) * 0x10000;
+			for(i = 0; i < length; i++)
+				ram[dst + (Uint16)(b_addr + i)] = ram[src + (Uint16)(a_addr + i)];
 		}
 		break;
 	case 0xe:

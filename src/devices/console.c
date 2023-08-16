@@ -25,6 +25,16 @@ console_input(Uxn *u, char c, int type)
 }
 
 void
+console_listen(Uxn *u, int i, int argc, char **argv)
+{
+	for(; i < argc; i++) {
+		char *p = argv[i];
+		while(*p) console_input(u, *p++, CONSOLE_ARG);
+		console_input(u, '\n', i == argc - 1 ? CONSOLE_END : CONSOLE_EOA);
+	}
+}
+
+void
 console_deo(Uint8 *d, Uint8 port)
 {
 	switch(port) {

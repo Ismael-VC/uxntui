@@ -38,7 +38,7 @@ screen_change(Uint16 x1, Uint16 y1, Uint16 x2, Uint16 y2)
 	if(y2 > uxn_screen.y2) uxn_screen.y2 = y2;
 }
 
-static void
+void
 screen_fill(Uint8 *layer, int x1, int y1, int x2, int y2, int color)
 {
 	int x, y, width = uxn_screen.width, height = uxn_screen.height;

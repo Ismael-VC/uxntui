@@ -32,8 +32,6 @@ static Display *display;
 static Visual *visual;
 static Window window;
 
-char *rom_path;
-
 #define WIDTH (64 * 8)
 #define HEIGHT (40 * 8)
 #define PAD 2
@@ -86,7 +84,8 @@ emu_resize(int width, int height)
 static int
 emu_start(Uxn *u, char *rom)
 {
-
+	(void)u;
+	(void)rom;
 	return 1;
 }
 
@@ -144,7 +143,7 @@ emu_event(Uxn *u)
 			u->dev[0x0e] = !u->dev[0x0e];
 		if(sym == XK_F4)
 			if(!emu_start(u, "boot.rom"))
-				emu_start(u, rom_path);
+				emu_start(u, boot_rom);
 		controller_down(u, &u->dev[0x80], get_button(sym));
 		controller_key(u, &u->dev[0x80], sym < 0x80 ? sym : (Uint8)buf[0]);
 	} break;
@@ -174,6 +173,13 @@ emu_event(Uxn *u)
 		mouse_pos(u, &u->dev[0x90], x, y);
 	} break;
 	}
+}
+
+static int
+emu_init(void)
+{
+	screen_resize(WIDTH, HEIGHT);
+	return 1;
 }
 
 static int
@@ -259,24 +265,15 @@ main(int argc, char **argv)
 	/* Read flags */
 	if(argv[i][0] == '-' && argv[i][1] == 'v')
 		return system_version("Uxn11 - Graphical Varvara Emulator", "16 Aug 2023");
-
-	rom_path = argv[1];
-	if(!uxn_boot(&u, (Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8))))
-		return system_error("boot", "Failed");
-	/* start sequence */
-	screen_resize(WIDTH, HEIGHT);
-
-	if(!system_load(&u, rom_path))
-		return 0;
-	if(!uxn_eval(&u, PAGE_PROGRAM))
-		return system_error("boot", "Failed to start rom.");
-
-	/* console vector */
-	for(i = 2; i < argc; i++) {
-		char *p = argv[i];
-		while(*p) console_input(&u, *p++, CONSOLE_ARG);
-		console_input(&u, '\n', i == argc ? CONSOLE_END : CONSOLE_EOA);
+	if(!emu_init())
+		return system_error("Init", "Failed to initialize varvara.");
+	if(!system_init(&u, (Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8)), argv[i++]))
+		return system_error("Init", "Failed to initialize uxn.");
+	/* Game Loop */
+	u.dev[0x17] = argc - i;
+	if(uxn_eval(&u, PAGE_PROGRAM)) {
+		console_listen(&u, i, argc, argv);
+		emu_run(&u, boot_rom);
 	}
-	emu_run(&u, rom_path);
 	return emu_end(&u);
 }
