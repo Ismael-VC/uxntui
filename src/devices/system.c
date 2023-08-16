@@ -114,10 +114,12 @@ system_init(Uxn *u, Uint8 *ram, char *rom)
 void
 system_deo(Uxn *u, Uint8 *d, Uint8 port)
 {
+	Uint8 *ram;
+	Uint16 addr;
 	switch(port) {
 	case 0x3:
-		Uint8 *ram = u->ram;
-		Uint16 addr = PEEK2(d + 2);
+		ram = u->ram;
+		addr = PEEK2(d + 2);
 		if(ram[addr] == 0x1) {
 			Uint16 i, length = PEEK2(ram + addr + 1);
 			Uint16 a_page = PEEK2(ram + addr + 1 + 2), a_addr = PEEK2(ram + addr + 1 + 4);

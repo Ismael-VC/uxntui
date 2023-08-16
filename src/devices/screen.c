@@ -85,6 +85,7 @@ draw_byte(Uint8 v, Uint16 x, Uint16 y, Uint8 color)
 {
 	screen_blit(uxn_screen.fg, icons, v >> 4 << 3, x, y, color, 0, 0, 0);
 	screen_blit(uxn_screen.fg, icons, (v & 0xf) << 3, x + 8, y, color, 0, 0, 0);
+	screen_change(x, y, x + 0x10, y + 0x8);
 }
 
 static void
@@ -147,26 +148,21 @@ screen_resize(Uint16 width, Uint16 height)
 void
 screen_redraw(Uxn *u)
 {
+	int i, j, o, y;
 	Uint8 *fg = uxn_screen.fg, *bg = uxn_screen.bg;
+	Uint16 w = uxn_screen.width, h = uxn_screen.height;
+	Uint16 x1 = uxn_screen.x1, y1 = uxn_screen.y1;
+	Uint16 x2 = uxn_screen.x2 > w ? w : uxn_screen.x2, y2 = uxn_screen.y2 > h ? h : uxn_screen.y2;
 	Uint32 palette[16], *pixels = uxn_screen.pixels;
-	int i, x, y, w = uxn_screen.width, h = uxn_screen.height, x1, y1, x2, y2;
-	x1 = uxn_screen.x1;
-	y1 = uxn_screen.y1;
-	x2 = uxn_screen.x2 > w ? w : uxn_screen.x2;
-	y2 = uxn_screen.y2 > h ? h : uxn_screen.y2;
 	uxn_screen.x1 = uxn_screen.y1 = 0xffff;
 	uxn_screen.x2 = uxn_screen.y2 = 0;
-	if(u->dev[0x0e]) {
-		screen_change(0, 0, w, h);
+	if(u->dev[0x0e])
 		screen_debugger(u);
-	}
 	for(i = 0; i < 16; i++)
 		palette[i] = uxn_screen.palette[(i >> 2) ? (i >> 2) : (i & 3)];
 	for(y = y1; y < y2; y++)
-		for(x = x1; x < x2; x++) {
-			i = x + y * w;
+		for(o = y * w, i = x1 + o, j = x2 + o; i < j; i++)
 			pixels[i] = palette[fg[i] << 2 | bg[i]];
-		}
 }
 
 Uint8
