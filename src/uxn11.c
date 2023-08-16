@@ -90,6 +90,17 @@ emu_restart(Uxn *u, char *rom, int soft)
 	/* set window title */
 }
 
+static int
+emu_end(Uxn *u)
+{
+	free(u->ram);
+	XDestroyImage(ximage);
+	XDestroyWindow(display, window);
+	XCloseDisplay(display);
+	exit(0);
+	return u->dev[0x0f] & 0x7f;
+}
+
 static void
 hide_cursor(void)
 {
@@ -131,10 +142,7 @@ emu_event(Uxn *u)
 		XPutImage(display, window, DefaultGC(display, 0), ximage, 0, 0, PAD, PAD, uxn_screen.width, uxn_screen.height);
 		break;
 	case ClientMessage: {
-		XDestroyImage(ximage);
-		XDestroyWindow(display, window);
-		XCloseDisplay(display);
-		exit(0);
+		emu_end(u);
 	} break;
 	case KeyPress: {
 		KeySym sym;
@@ -180,6 +188,9 @@ emu_event(Uxn *u)
 static int
 emu_init(void)
 {
+	display = XOpenDisplay(NULL);
+	if(!display)
+		return system_error("X11", "Could not open display");
 	screen_resize(WIDTH, HEIGHT);
 	return 1;
 }
@@ -196,7 +207,6 @@ emu_run(Uxn *u, char *rom)
 	/* display */
 	Atom wmDelete;
 	static Visual *visual;
-	display = XOpenDisplay(NULL);
 	visual = DefaultVisual(display, 0);
 	window = XCreateSimpleWindow(display, RootWindow(display, 0), 0, 0, uxn_screen.width * SCALE + PAD * 2, uxn_screen.height * SCALE + PAD * 2, 1, 0, 0);
 	if(visual->class != TrueColor)
@@ -238,15 +248,6 @@ emu_run(Uxn *u, char *rom)
 		}
 	}
 	return 1;
-}
-
-static int
-emu_end(Uxn *u)
-{
-	XDestroyImage(ximage);
-	close(0);
-	free(u->ram);
-	return u->dev[0x0f] & 0x7f;
 }
 
 int
