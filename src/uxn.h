@@ -11,10 +11,10 @@ WITH REGARD TO THIS SOFTWARE.
 
 /* clang-format off */
 
-#define POKE2(d, v) { (d)[0] = (v) >> 8; (d)[1] = (v); }
-#define PEEK2(d) ((d)[0] << 8 | (d)[1])
-#define DEO(p, v) { u->dev[p] = v; if((deo_mask[p >> 4] >> (p & 0xf)) & 0x1) emu_deo(u, p); }
-#define DEI(p) ((dei_mask[(p) >> 4] >> ((p) & 0xf)) & 0x1 ? emu_dei(u, (p)) : u->dev[(p)])
+#define POKE2(d, v) { *(d) = (v) >> 8; (d)[1] = (v); }
+#define PEEK2(d) (*(d) << 8 | (d)[1])
+#define DEI(p) (u->dei_masks[p] ? emu_dei(u, (p)) : u->dev[(p)])
+#define DEO(p, v) { u->dev[p] = v; if(u->deo_masks[p]) emu_deo(u, p); }
 
 /* clang-format on */
 
@@ -27,14 +27,12 @@ typedef signed short Sint16;
 typedef unsigned int Uint32;
 
 typedef struct {
-	Uint8 dat[255], ptr;
+	Uint8 dat[0x100], ptr;
 } Stack;
 
 typedef struct Uxn {
-	Uint8 *ram, dev[256];
+	Uint8 *ram, dev[0x100], dei_masks[0x100], deo_masks[0x100];
 	Stack wst, rst;
-	Uint8 (*dei)(struct Uxn *u, Uint8 addr);
-	void (*deo)(struct Uxn *u, Uint8 addr);
 } Uxn;
 
 /* required functions */
