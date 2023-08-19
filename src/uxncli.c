@@ -24,6 +24,7 @@ Uint8
 emu_dei(Uxn *u, Uint8 addr)
 {
 	switch(addr & 0xf0) {
+	case 0x00: return system_dei(u, addr);
 	case 0xc0: return datetime_dei(u, addr);
 	}
 	return u->dev[addr];
@@ -73,7 +74,7 @@ main(int argc, char **argv)
 	system_connect(&u, 0xc, DATETIME_VERSION, DATETIME_DEIMASK, DATETIME_DEOMASK);
 	/* Read flags */
 	if(argv[i][0] == '-' && argv[i][1] == 'v')
-		return system_version(&u, "Uxncli - Console Varvara Emulator", "17 Aug 2023");
+		return system_version(&u, "Uxncli - Console Varvara Emulator", "19 Aug 2023");
 	if(!system_init(&u, (Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8)), argv[i++]))
 		return system_error("Init", "Failed to initialize uxn.");
 	/* Game Loop */

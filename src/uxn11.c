@@ -49,6 +49,7 @@ Uint8
 emu_dei(Uxn *u, Uint8 addr)
 {
 	switch(addr & 0xf0) {
+	case 0x00: return system_dei(u, addr);
 	case 0x20: return screen_dei(u, addr);
 	case 0xc0: return datetime_dei(u, addr);
 	}

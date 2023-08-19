@@ -9,9 +9,9 @@ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
 WITH REGARD TO THIS SOFTWARE.
 */
 
-#define SYSTEM_VERSION 1
-#define SYSTEM_DEIMASK 0x0000
-#define SYSTEM_DEOMASK 0xff08
+#define SYSTEM_VERSION 2
+#define SYSTEM_DEIMASK 0x0030
+#define SYSTEM_DEOMASK 0xff38
 
 #define RAM_PAGES 0x10
 
@@ -24,4 +24,5 @@ int system_version(Uxn *u, char *emulator, char *date);
 int system_error(char *msg, const char *err);
 int system_init(Uxn *u, Uint8 *ram, char *rom);
 
+Uint8 system_dei(Uxn *u, Uint8 addr);
 void system_deo(Uxn *u, Uint8 *d, Uint8 port);
