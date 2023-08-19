@@ -89,8 +89,7 @@ system_version(Uxn *u, char *name, char *date)
 }
 
 void
-system_reboot(Uxn *u, char *rom, int soft)
-{
+system_boot(Uxn *u, int soft){
 	int i;
 	for(i = 0x100 * soft; i < 0x10000; i++)
 		u->ram[i] = 0;
@@ -98,6 +97,12 @@ system_reboot(Uxn *u, char *rom, int soft)
 		u->dev[i] = 0;
 	u->wst.ptr = 0;
 	u->rst.ptr = 0;
+}
+
+void
+system_reboot(Uxn *u, char *rom, int soft)
+{
+	system_boot(u, soft);
 	if(system_load(u, boot_rom))
 		if(uxn_eval(u, PAGE_PROGRAM))
 			boot_rom = rom;
@@ -107,6 +112,7 @@ int
 system_init(Uxn *u, Uint8 *ram, char *rom)
 {
 	u->ram = ram;
+	system_boot(u, 0);
 	if(!system_load(u, rom))
 		if(!system_load(u, "boot.rom"))
 			return system_error("Init", "Failed to load rom.");
