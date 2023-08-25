@@ -16,7 +16,7 @@ WITH REGARD TO THIS SOFTWARE.
 */
 
 pthread_t threads[8];
-static int args[8];
+static int tids[8];
 static Uint16 link_vectors[8];
 static Uint8 *link_ram;
 
@@ -26,26 +26,27 @@ static void
 {
 	int tid = *((int *)x);
 	Uxn u;
+	Uint16 vector = link_vectors[tid];
 	u.ram = link_ram;
-	printf("eval %d #%04x\n", tid, link_vectors[tid]);
+	u.wst.ptr = u.rst.ptr = 0;
 	uxn_eval(&u, link_vectors[tid]);
+	threads[tid] = 0;
+	link_vectors[tid] = 0;
 	return NULL;
 }
 
 static void
 link_init(Uint8 *ram, int id, Uint16 vector)
 {
-	printf("init %d #%04x\n", id, vector);
-	args[id] = id;
+	tids[id] = id;
 	link_vectors[id] = vector;
 	link_ram = ram;
-	pthread_create(&threads[id], NULL, link_eval, (void *)&args[id]);
+	pthread_create(&threads[id], NULL, link_eval, (void *)&tids[id]);
 }
 
 static void
 link_wait(int id)
 {
-	printf("wait %d\n", id);
 	pthread_join(threads[id], NULL);
 	threads[id] = 0;
 }
@@ -53,18 +54,17 @@ link_wait(int id)
 Uint8
 link_dei(Uxn *u, Uint8 addr)
 {
+	/* TODO: return non-zero if active */
 	return 0;
 }
 
 void
 link_deo(Uint8 *ram, Uint8 *d, Uint8 port)
 {
-	if(port & 0x1) {
-		Uint8 id = port >> 0x1;
-		Uint16 vector = PEEK2(d + port - 1);
-		if(threads[id])
-			link_wait(id);
-		if(vector)
-			link_init(ram, id, vector);
-	}
+	Uint8 id = port >> 0x1;
+	Uint16 vector = PEEK2(d + port - 1);
+	if(threads[id])
+		link_wait(id);
+	if(vector)
+		link_init(ram, id, vector);
 }

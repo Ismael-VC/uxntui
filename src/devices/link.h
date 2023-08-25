@@ -14,4 +14,4 @@ WITH REGARD TO THIS SOFTWARE.
 #define LINK_DEOMASK 0xaaaa
 
 Uint8 link_dei(Uxn *u, Uint8 addr);
-void link_deo(Uxn *u, Uint8 *d, Uint8 port);
+void link_deo(Uint8 *ram, Uint8 *d, Uint8 port);
