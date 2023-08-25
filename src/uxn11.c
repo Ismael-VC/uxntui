@@ -15,6 +15,7 @@
 #include "devices/mouse.h"
 #include "devices/file.h"
 #include "devices/datetime.h"
+#include "devices/link.h"
 
 /*
 Copyright (c) 2022 Devine Lu Linvega
@@ -70,6 +71,7 @@ emu_deo(Uxn *u, Uint8 addr)
 	case 0x20: screen_deo(u->ram, &u->dev[d], p); break;
 	case 0xa0: file_deo(0, u->ram, &u->dev[d], p); break;
 	case 0xb0: file_deo(1, u->ram, &u->dev[d], p); break;
+	case 0xf0: link_deo(u, &u->dev[d], p); break;
 	}
 }
 

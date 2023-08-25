@@ -6,6 +6,7 @@
 #include "devices/console.h"
 #include "devices/file.h"
 #include "devices/datetime.h"
+#include "devices/link.h"
 
 /*
 Copyright (c) 2021-2023 Devine Lu Linvega, Andrew Alderwick
@@ -39,6 +40,7 @@ emu_deo(Uxn *u, Uint8 addr)
 	case 0x10: console_deo(&u->dev[d], p); break;
 	case 0xa0: file_deo(0, u->ram, &u->dev[d], p); break;
 	case 0xb0: file_deo(1, u->ram, &u->dev[d], p); break;
+	case 0xf0: link_deo(u, &u->dev[d], p); break;
 	}
 }
 
