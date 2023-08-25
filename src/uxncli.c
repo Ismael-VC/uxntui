@@ -6,7 +6,6 @@
 #include "devices/console.h"
 #include "devices/file.h"
 #include "devices/datetime.h"
-#include "devices/link.h"
 
 /*
 Copyright (c) 2021-2023 Devine Lu Linvega, Andrew Alderwick
@@ -18,8 +17,6 @@ copyright notice and this permission notice appear in all copies.
 THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
 WITH REGARD TO THIS SOFTWARE.
 */
-
-Uint16 dev_vers[0x10], dei_mask[0x10], deo_mask[0x10];
 
 Uint8
 emu_dei(Uxn *u, Uint8 addr)
@@ -40,7 +37,6 @@ emu_deo(Uxn *u, Uint8 addr)
 	case 0x10: console_deo(&u->dev[d], p); break;
 	case 0xa0: file_deo(0, u->ram, &u->dev[d], p); break;
 	case 0xb0: file_deo(1, u->ram, &u->dev[d], p); break;
-	case 0xf0: link_deo(u, &u->dev[d], p); break;
 	}
 }
 
@@ -69,14 +65,14 @@ main(int argc, char **argv)
 	if(i == argc)
 		return system_error("usage", "uxncli [-v] file.rom [args..]");
 	/* Connect Varvara */
-	system_connect(&u, 0x0, SYSTEM_VERSION, SYSTEM_DEIMASK, SYSTEM_DEOMASK);
-	system_connect(&u, 0x1, CONSOLE_VERSION, CONSOLE_DEIMASK, CONSOLE_DEOMASK);
-	system_connect(&u, 0xa, FILE_VERSION, FILE_DEIMASK, FILE_DEOMASK);
-	system_connect(&u, 0xb, FILE_VERSION, FILE_DEIMASK, FILE_DEOMASK);
-	system_connect(&u, 0xc, DATETIME_VERSION, DATETIME_DEIMASK, DATETIME_DEOMASK);
+	system_connect(0x0, SYSTEM_VERSION, SYSTEM_DEIMASK, SYSTEM_DEOMASK);
+	system_connect(0x1, CONSOLE_VERSION, CONSOLE_DEIMASK, CONSOLE_DEOMASK);
+	system_connect(0xa, FILE_VERSION, FILE_DEIMASK, FILE_DEOMASK);
+	system_connect(0xb, FILE_VERSION, FILE_DEIMASK, FILE_DEOMASK);
+	system_connect(0xc, DATETIME_VERSION, DATETIME_DEIMASK, DATETIME_DEOMASK);
 	/* Read flags */
 	if(argv[i][0] == '-' && argv[i][1] == 'v')
-		return system_version(&u, "Uxncli - Console Varvara Emulator", "19 Aug 2023");
+		return system_version("Uxncli - Console Varvara Emulator", "19 Aug 2023");
 	if(!system_init(&u, (Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8)), argv[i++]))
 		return system_error("Init", "Failed to initialize uxn.");
 	/* Game Loop */

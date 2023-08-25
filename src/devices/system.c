@@ -16,6 +16,8 @@ WITH REGARD TO THIS SOFTWARE.
 */
 
 char *boot_rom;
+Uint8 dei_masks[0x100], deo_masks[0x100];
+Uint16 dev_vers[0x10], dei_mask[0x10], deo_mask[0x10];
 
 static const char *errors[] = {
 	"underflow",
@@ -64,12 +66,12 @@ system_inspect(Uxn *u)
 }
 
 void
-system_connect(Uxn *u, Uint8 device, Uint8 ver, Uint16 dei, Uint16 deo)
+system_connect(Uint8 device, Uint8 ver, Uint16 dei, Uint16 deo)
 {
 	int i, d = (device << 0x4);
 	for(i = 0; i < 0x10; i++) {
-		u->dei_masks[d + i] = (dei >> i) & 0x1;
-		u->deo_masks[d + i] = (deo >> i) & 0x1;
+		dei_masks[d + i] = (dei >> i) & 0x1;
+		deo_masks[d + i] = (deo >> i) & 0x1;
 	}
 	dev_vers[device] = ver;
 	dei_mask[device] = dei;
@@ -77,7 +79,7 @@ system_connect(Uxn *u, Uint8 device, Uint8 ver, Uint16 dei, Uint16 deo)
 }
 
 int
-system_version(Uxn *u, char *name, char *date)
+system_version(char *name, char *date)
 {
 	int i;
 	printf("%s, %s.\n", name, date);

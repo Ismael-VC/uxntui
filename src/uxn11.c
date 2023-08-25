@@ -38,8 +38,6 @@ static Window window;
 #define SCALE 1
 #define CONINBUFSIZE 256
 
-Uint16 dev_vers[0x10], dei_mask[0x10], deo_mask[0x10];
-
 static int
 clamp(int val, int min, int max)
 {
@@ -261,17 +259,17 @@ main(int argc, char **argv)
 	if(i == argc)
 		return system_error("usage", "uxn11 [-v] file.rom [args...]");
 	/* Connect Varvara */
-	system_connect(&u, 0x0, SYSTEM_VERSION, SYSTEM_DEIMASK, SYSTEM_DEOMASK);
-	system_connect(&u, 0x1, CONSOLE_VERSION, CONSOLE_DEIMASK, CONSOLE_DEOMASK);
-	system_connect(&u, 0x2, SCREEN_VERSION, SCREEN_DEIMASK, SCREEN_DEOMASK);
-	system_connect(&u, 0x8, CONTROL_VERSION, CONTROL_DEIMASK, CONTROL_DEOMASK);
-	system_connect(&u, 0x9, MOUSE_VERSION, MOUSE_DEIMASK, MOUSE_DEOMASK);
-	system_connect(&u, 0xa, FILE_VERSION, FILE_DEIMASK, FILE_DEOMASK);
-	system_connect(&u, 0xb, FILE_VERSION, FILE_DEIMASK, FILE_DEOMASK);
-	system_connect(&u, 0xc, DATETIME_VERSION, DATETIME_DEIMASK, DATETIME_DEOMASK);
+	system_connect(0x0, SYSTEM_VERSION, SYSTEM_DEIMASK, SYSTEM_DEOMASK);
+	system_connect(0x1, CONSOLE_VERSION, CONSOLE_DEIMASK, CONSOLE_DEOMASK);
+	system_connect(0x2, SCREEN_VERSION, SCREEN_DEIMASK, SCREEN_DEOMASK);
+	system_connect(0x8, CONTROL_VERSION, CONTROL_DEIMASK, CONTROL_DEOMASK);
+	system_connect(0x9, MOUSE_VERSION, MOUSE_DEIMASK, MOUSE_DEOMASK);
+	system_connect(0xa, FILE_VERSION, FILE_DEIMASK, FILE_DEOMASK);
+	system_connect(0xb, FILE_VERSION, FILE_DEIMASK, FILE_DEOMASK);
+	system_connect(0xc, DATETIME_VERSION, DATETIME_DEIMASK, DATETIME_DEOMASK);
 	/* Read flags */
 	if(argv[i][0] == '-' && argv[i][1] == 'v')
-		return system_version(&u, "Uxn11 - Graphical Varvara Emulator", "17 Aug 2023");
+		return system_version("Uxn11 - Graphical Varvara Emulator", "17 Aug 2023");
 	if(!emu_init())
 		return system_error("Init", "Failed to initialize varvara.");
 	if(!system_init(&u, (Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8)), argv[i++]))
