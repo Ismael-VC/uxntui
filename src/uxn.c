@@ -43,7 +43,7 @@ uxn_eval(Uxn *u, Uint16 pc)
 		k = ins & 0x80 ? 0xff : 0;
 		s = ins & 0x40 ? &u->rst : &u->wst;
 		ptr = s->dat + s->ptr - 1;
-		switch(!(ins & 0x1f) ? (0 - (ins >> 5)) & 0xff : ins & 0x3f) {
+		switch(ins & 0x1f ? ins & 0x3f : (0 - (ins >> 5)) & 0xff) {
 			/* IMM */
 			case 0x00: /* BRK   */                          return 1;
 			case 0xff: /* JCI   */                          if(!s->dat[--s->ptr]) { pc += 2; break; } /* else fallthrough */
