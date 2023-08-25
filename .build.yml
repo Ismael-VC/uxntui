@@ -12,7 +12,7 @@ sources:
 tasks:
 - build: |
     cd uxn11
-    ./build.sh --norun
+    make
 - upload: |
     tar -czf out.tar.gz uxn11/bin
     acurl() {
