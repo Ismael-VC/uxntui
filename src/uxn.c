@@ -42,14 +42,14 @@ uxn_eval(Uxn *u, Uint16 pc)
 		int k = ins & 0x80 ? 0xff : 0;
 		Stack *s = ins & 0x40 ? &u->rst : &u->wst;
 		Uint8 *ptr = s->dat + s->ptr - 1;
-		switch(ins & 0x1f ? ins & 0x3f : (0 - (ins >> 5))) {
+		switch(ins & 0x1f ? ins & 0x3f : ins << 4) {
 			/* IMM */
-			case -0:   /* BRK  */                           return 1;
-			case -1:   /* JCI  */                           if(!s->dat[--s->ptr]) { pc += 2; break; } /* else fallthrough */
-			case -2:   /* JMI  */                           pc += PEEK2(ram + pc) + 2; break;
-			case -3:   /* JSI  */                 SET(0, 2) PUT2(pc + 2) pc += PEEK2(ram + pc) + 2; break;
-			case -4:   /* LITr */ case -6:        SET(0, 1) PUT1(ram[pc++]) break;
-			case -5:   /* LIT2r*/ case -7:        SET(0, 2) PUT2(PEEK2(ram + pc)) pc += 2; break;
+			case 0x000: /* BRK  */                          return 1;
+			case 0x200: /* JCI  */                          if(!s->dat[--s->ptr]) { pc += 2; break; } /* else fallthrough */
+			case 0x400: /* JMI  */                          pc += PEEK2(ram + pc) + 2; break;
+			case 0x600: /* JSI  */                SET(0, 2) PUT2(pc + 2) pc += PEEK2(ram + pc) + 2; break;
+			case 0x800: /* LIT  */ case 0xc00:    SET(0, 1) PUT1(ram[pc++]) break;
+			case 0xa00: /* LIT2 */ case 0xe00:    SET(0, 2) PUT2(PEEK2(ram + pc)) pc += 2; break;
 			/* ALU */
 			case 0x01: /* INC  */ t=T;            SET(1, 0) PUT1(t + 1) break;
 			case 0x21: /* INC2 */ t=T2;           SET(2, 0) PUT2(t + 1) break;
