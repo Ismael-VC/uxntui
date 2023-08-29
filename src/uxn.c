@@ -34,23 +34,22 @@ WITH REGARD TO THIS SOFTWARE.
 int
 uxn_eval(Uxn *u, Uint16 pc)
 {
-	int t, n, l, k, r;
-	Uint8 *ram = u->ram, *ptr, ins;
-	Stack *s;
+	int t, n, l, r;
+	Uint8 *ram = u->ram;
 	if(!pc || u->dev[0x0f]) return 0;
 	for(;;) {
-		ins = ram[pc++];
-		k = ins & 0x80 ? 0xff : 0;
-		s = ins & 0x40 ? &u->rst : &u->wst;
-		ptr = s->dat + s->ptr - 1;
-		switch(ins & 0x1f ? ins & 0x3f : (0 - (ins >> 5)) & 0xff) {
+		int ins = ram[pc++];
+		int k = ins & 0x80 ? 0xff : 0;
+		Stack *s = ins & 0x40 ? &u->rst : &u->wst;
+		Uint8 *ptr = s->dat + s->ptr - 1;
+		switch(ins & 0x1f ? ins & 0x3f : (0 - (ins >> 5))) {
 			/* IMM */
-			case 0x00: /* BRK   */                          return 1;
-			case 0xff: /* JCI   */                          if(!s->dat[--s->ptr]) { pc += 2; break; } /* else fallthrough */
-			case 0xfe: /* JMI   */                          pc += PEEK2(ram + pc) + 2; break;
-			case 0xfd: /* JSI   */                SET(0, 2) PUT2(pc + 2) pc += PEEK2(ram + pc) + 2; break;
-			case 0xfc: /* LITr */ case 0xfa:      SET(0, 1) PUT1(ram[pc++]) break;
-			case 0xfb: /* LIT2r*/ case 0xf9:      SET(0, 2) PUT2(PEEK2(ram + pc)) pc += 2; break;
+			case -0:   /* BRK  */                           return 1;
+			case -1:   /* JCI  */                           if(!s->dat[--s->ptr]) { pc += 2; break; } /* else fallthrough */
+			case -2:   /* JMI  */                           pc += PEEK2(ram + pc) + 2; break;
+			case -3:   /* JSI  */                 SET(0, 2) PUT2(pc + 2) pc += PEEK2(ram + pc) + 2; break;
+			case -4:   /* LITr */ case -6:        SET(0, 1) PUT1(ram[pc++]) break;
+			case -5:   /* LIT2r*/ case -7:        SET(0, 2) PUT2(PEEK2(ram + pc)) pc += 2; break;
 			/* ALU */
 			case 0x01: /* INC  */ t=T;            SET(1, 0) PUT1(t + 1) break;
 			case 0x21: /* INC2 */ t=T2;           SET(2, 0) PUT2(t + 1) break;

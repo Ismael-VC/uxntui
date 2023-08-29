@@ -270,7 +270,7 @@ main(int argc, char **argv)
 	system_connect(0xf, LINK_VERSION, LINK_DEIMASK, LINK_DEOMASK);
 	/* Read flags */
 	if(argv[i][0] == '-' && argv[i][1] == 'v')
-		return system_version("Uxn11 - Graphical Varvara Emulator", "25 Aug 2023");
+		return system_version("Uxn11 - Graphical Varvara Emulator", "29 Aug 2023");
 	if(!emu_init())
 		return system_error("Init", "Failed to initialize varvara.");
 	if(!system_init(&u, (Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8)), argv[i++]))
