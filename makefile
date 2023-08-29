@@ -16,8 +16,8 @@ rom:
 run: bin/uxnasm bin/uxncli bin/uxn11 rom
 	@ ./bin/uxn11 bin/polycat.rom
 cli: bin/uxnasm bin/uxncli
-	@ ./bin/uxnasm etc/link.tal bin/link.rom
-	@ ./bin/uxncli bin/link.rom
+	@ ./bin/uxnasm etc/opctest.tal bin/opctest.rom
+	@ ./bin/uxncli bin/opctest.rom
 test: bin/uxnasm bin/uxncli bin/uxn11
 	@ ./bin/uxnasm && ./bin/uxncli && ./bin/uxn11 && ./bin/uxnasm -v && ./bin/uxncli -v && ./bin/uxn11 -v
 install: bin/uxnasm bin/uxncli bin/uxn11
