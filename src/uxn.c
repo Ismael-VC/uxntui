@@ -18,20 +18,19 @@ WITH REGARD TO THIS SOFTWARE.
 */
 
 #define T *ptr
-#define N *(ptr-1)
-#define L *(ptr-2)
-#define T2 PEEK2((ptr-1))
-#define H2 PEEK2((ptr-2))
-#define N2 PEEK2((ptr-3))
-#define L2 PEEK2((ptr-5))
-
-#define HALT(c)   { return emu_halt(u, ins, c, pc - 1); }
-#define FLIP      { s = ins & 0x40 ? &u->wst : &u->rst; }
-#define SET(x, y) { r = s->ptr; if(x > r) HALT(1) r += (x & k) + y; if(r > 254) HALT(2) ptr = s->dat + r - 1; s->ptr = r; }
-#define PUT1(a)         { *(ptr) = a; }
-#define PUT1x2(a, b)    { *(ptr) = a; *(ptr - 1) = b; }
-#define PUT1x3(a, b, c) { *(ptr) = a; *(ptr - 1) = b; *(ptr - 2) = c; }
-#define PUT2(a)         { POKE2(ptr - 1, a) }
+#define N *(ptr - 1)
+#define L *(ptr - 2)
+#define T2 PEEK2((ptr - 1))
+#define H2 PEEK2((ptr - 2))
+#define N2 PEEK2((ptr - 3))
+#define L2 PEEK2((ptr - 5))
+#define HALT(c)         { return emu_halt(u, ins, c, pc - 1); }
+#define FLIP            { s = ins & 0x40 ? &u->wst : &u->rst; }
+#define SET(x, y)       { r = s->ptr; if(x > r) HALT(1) r += (x & k) + y; if(r > 254) HALT(2) ptr = s->dat + r - 1; s->ptr = r; }
+#define PUT1(a)         { *ptr = a; }
+#define PUT1x2(a, b)    { *ptr = a; *(ptr - 1) = b; }
+#define PUT1x3(a, b, c) { *ptr = a; *(ptr - 1) = b; *(ptr - 2) = c; }
+#define PUT2(a)         { r = (a); POKE2(ptr - 1, r) }
 #define PUT2x2(a, b)    { POKE2(ptr - 1, a) POKE2(ptr - 3, b) }
 #define PUT2x3(a, b, c) { POKE2(ptr - 1, a) POKE2(ptr - 3, b) POKE2(ptr - 5, c) }
 
