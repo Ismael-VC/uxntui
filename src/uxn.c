@@ -48,7 +48,7 @@ uxn_eval(Uxn *u, Uint16 pc)
 		switch(ins & 0x1f ? ins & 0x3f : ins << 4) {
 			/* IMM */
 			case 0x000: /* BRK  */                          return 1;
-			case 0x200: /* JCI  */                          if(!s->dat[--s->ptr]) { pc += 2; break; } /* else fallthrough */
+			case 0x200: /* JCI  */ t=T;           SET(0,-1) if(!t) { pc += 2; break; } /* else fallthrough */
 			case 0x400: /* JMI  */                          pc += PEEK2(ram + pc) + 2; break;
 			case 0x600: /* JSI  */                SET(0, 2) PUT2(pc + 2) pc += PEEK2(ram + pc) + 2; break;
 			case 0x800: /* LIT  */ case 0xc00:    SET(0, 1) PUT1(ram[pc++]) break;
