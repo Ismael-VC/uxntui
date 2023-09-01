@@ -33,7 +33,7 @@ WITH REGARD TO THIS SOFTWARE.
 
 #define HALT(c)   { return emu_halt(u, ins, c, pc - 1); }
 #define FLIP      { s = ins & 0x40 ? &u->wst : &u->rst; }
-#define SET(x, y) { r = s->ptr; if(x > r) HALT(1) r += (x & k) + y; if(r > 254) HALT(2) ptr = s->dat + r - 1; s->ptr = r; }
+#define SET(x, y) { r = s->ptr; if(x > r) HALT(1) r += y; if(ins & 0x80) r += x; if(r > 254) HALT(2) ptr = s->dat + r - 1; s->ptr = r; }
 #define SHIFT(y)  { r = s->ptr + y; if(r > 254) HALT(2) ptr = s->dat + r - 1; s->ptr = r; }
 
 int
@@ -44,7 +44,6 @@ uxn_eval(Uxn *u, Uint16 pc)
 	if(!pc || u->dev[0x0f]) return 0;
 	for(;;) {
 		int ins = ram[pc++];
-		int k = ins & 0x80 ? 0xff : 0;
 		Stack *s = ins & 0x40 ? &u->rst : &u->wst;
 		Uint8 *ptr = s->dat + s->ptr - 1, *rr;
 		switch(ins & 0x1f ? ins & 0x3f : ins << 4) {
