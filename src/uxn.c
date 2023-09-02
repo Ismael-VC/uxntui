@@ -17,7 +17,7 @@ WITH REGARD TO THIS SOFTWARE.
 [   L2   ][   N2   ][   T2   ] <
 */
 
-#define T *ptr
+#define T *(ptr)
 #define N *(ptr - 1)
 #define L *(ptr - 2)
 #define X *(ptr - 3)
@@ -31,21 +31,20 @@ WITH REGARD TO THIS SOFTWARE.
 #define N2_(v) { r = (v); L = r; X = r >> 8; }
 #define L2_(v) { r = (v); Y = r; Z = r >> 8; }
 
-#define HALT(c)   { return emu_halt(u, ins, c, pc - 1); }
 #define FLIP      { s = ins & 0x40 ? &u->wst : &u->rst; }
-#define SET(x, y) { r = s->ptr; if(x > r) HALT(1) r += y; if(ins & 0x80) r += x; if(r > 254) HALT(2) ptr = s->dat + r - 1; s->ptr = r; }
-#define SHIFT(y)  { r = s->ptr + y; if(r > 254) HALT(2) ptr = s->dat + r - 1; s->ptr = r; }
+#define SHIFT(y)  { r = s->ptr + (y); ptr = s->dat + r - 1; s->ptr = r; }
+#define SET(x, y) { SHIFT((ins & 0x80) ? x + y : y) }
 
 int
 uxn_eval(Uxn *u, Uint16 pc)
 {
 	int t, n, l, r;
-	Uint8 *ram = u->ram;
+	Uint8 *ram = u->ram, *rr;
 	if(!pc || u->dev[0x0f]) return 0;
 	for(;;) {
 		int ins = ram[pc++];
 		Stack *s = ins & 0x40 ? &u->rst : &u->wst;
-		Uint8 *ptr = s->dat + s->ptr - 1, *rr;
+		Uint8 *ptr = s->dat + s->ptr - 1;
 		switch(ins & 0x1f ? ins & 0x3f : ins << 4) {
 			/* IMM */
 			case 0x000: /* BRK  */                          return 1;
@@ -107,8 +106,8 @@ uxn_eval(Uxn *u, Uint16 pc)
 			case 0x39: /* SUB2 */ t=T2;n=N2;      SET(4,-2) T2_(n - t) break;
 			case 0x1a: /* MUL  */ t=T;n=N;        SET(2,-1) T = n * t; break;
 			case 0x3a: /* MUL2 */ t=T2;n=N2;      SET(4,-2) T2_(n * t) break;
-			case 0x1b: /* DIV  */ t=T;n=N;        SET(2,-1) if(!t) HALT(3) T = n / t; break;
-			case 0x3b: /* DIV2 */ t=T2;n=N2;      SET(4,-2) if(!t) HALT(3) T2_(n / t) break;
+			case 0x1b: /* DIV  */ t=T;n=N;        SET(2,-1) T = t ? n / t : 0; break;
+			case 0x3b: /* DIV2 */ t=T2;n=N2;      SET(4,-2) T2_(t ? n / t : 0) break;
 			case 0x1c: /* AND  */ t=T;n=N;        SET(2,-1) T = n & t; break;
 			case 0x3c: /* AND2 */ t=T2;n=N2;      SET(4,-2) T2_(n & t) break;
 			case 0x1d: /* ORA  */ t=T;n=N;        SET(2,-1) T = n | t; break;

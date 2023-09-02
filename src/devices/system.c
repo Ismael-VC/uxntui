@@ -19,11 +19,6 @@ char *boot_rom;
 Uint8 dei_masks[0x100], deo_masks[0x100];
 Uint16 dev_vers[0x10], dei_mask[0x10], deo_mask[0x10];
 
-static const char *errors[] = {
-	"underflow",
-	"overflow",
-	"division by zero"};
-
 static int
 system_load(Uxn *u, char *filename)
 {
@@ -163,25 +158,4 @@ system_deo(Uxn *u, Uint8 *d, Uint8 port)
 		system_inspect(u);
 		break;
 	}
-}
-
-/* Errors */
-
-int
-emu_halt(Uxn *u, Uint8 instr, Uint8 err, Uint16 addr)
-{
-	Uint8 *d = &u->dev[0];
-	Uint16 handler = PEEK2(d);
-	if(handler) {
-		u->wst.ptr = 4;
-		u->wst.dat[0] = addr >> 0x8;
-		u->wst.dat[1] = addr & 0xff;
-		u->wst.dat[2] = instr;
-		u->wst.dat[3] = err;
-		return uxn_eval(u, handler);
-	} else {
-		system_inspect(u);
-		fprintf(stderr, "%s %s, by %02x at 0x%04x.\n", (instr & 0x40) ? "Return-stack" : "Working-stack", errors[err - 1], instr, addr);
-	}
-	return 0;
 }
