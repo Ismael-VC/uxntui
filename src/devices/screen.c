@@ -214,11 +214,9 @@ screen_deo(Uint8 *ram, Uint8 *d, Uint8 port)
 			Uint16 height = uxn_screen.height;
 			if(x < width && y < height)
 				layer[x + y * width] = color;
-			x += 1;
-			y += 1;
-			screen_change(x, y, x, y);
-			if(d[0x6] & 0x1) POKE2(port_x, x);
-			if(d[0x6] & 0x2) POKE2(port_y, y);
+			screen_change(x, y, x + 1, y + 1);
+			if(d[0x6] & 0x1) POKE2(port_x, x + 1);
+			if(d[0x6] & 0x2) POKE2(port_y, y + 1);
 		}
 		break;
 	}

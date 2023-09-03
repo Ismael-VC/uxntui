@@ -31,8 +31,11 @@ WITH REGARD TO THIS SOFTWARE.
 #define N2_(v) { r = (v); L = r; X = r >> 8; }
 #define L2_(v) { r = (v); Y = r; Z = r >> 8; }
 
+#define DEI(p) (dei_masks[p] ? emu_dei(u, (p)) : u->dev[(p)])
+#define DEO(p, v) { u->dev[p] = v; if(deo_masks[p]) emu_deo(u, p); }
+
 #define FLIP      { s = ins & 0x40 ? &u->wst : &u->rst; }
-#define SHIFT(y)  { r = s->ptr + (y); ptr = s->dat + r - 1; s->ptr = r; }
+#define SHIFT(y)  { s->ptr += (y); ptr = s->dat + s->ptr - 1; }
 #define SET(x, y) { SHIFT((ins & 0x80) ? x + y : y) }
 
 int
