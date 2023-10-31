@@ -76,15 +76,17 @@ static Uint8 icons[] = {
 	0x82, 0x7e, 0x02, 0x82, 0x7c, 0x00, 0x7c, 0x82, 0x02, 0x7e, 0x82, 0x82, 0x7e, 0x00, 0xfc, 
 	0x82, 0x82, 0xfc, 0x82, 0x82, 0xfc, 0x00, 0x7c, 0x82, 0x80, 0x80, 0x80, 0x82, 0x7c, 0x00, 
 	0xfc, 0x82, 0x82, 0x82, 0x82, 0x82, 0xfc, 0x00, 0x7c, 0x82, 0x80, 0xf0, 0x80, 0x82, 0x7c,
-	0x00, 0x7c, 0x82, 0x80, 0xf0, 0x80, 0x80, 0x80};
+	0x00, 0x7c, 0x82, 0x80, 0xf0, 0x80, 0x80, 0x80 };
+static Uint8 arrow[] = {
+	0x00, 0x00, 0x00, 0xfe, 0x7c, 0x38, 0x10, 0x00 };
 
 /* clang-format on */
 
 static void
-draw_byte(Uint8 v, Uint16 x, Uint16 y, Uint8 color)
+draw_byte(Uint8 b, Uint16 x, Uint16 y, Uint8 color)
 {
-	screen_blit(uxn_screen.fg, icons, v >> 4 << 3, x, y, color, 0, 0, 0);
-	screen_blit(uxn_screen.fg, icons, (v & 0xf) << 3, x + 8, y, color, 0, 0, 0);
+	screen_blit(uxn_screen.fg, icons, (b >> 4) << 3, x, y, color, 0, 0, 0);
+	screen_blit(uxn_screen.fg, icons, (b & 0xf) << 3, x + 8, y, color, 0, 0, 0);
 	screen_change(x, y, x + 0x10, y + 0x8);
 }
 
@@ -92,10 +94,19 @@ static void
 screen_debugger(Uxn *u)
 {
 	int i;
-	for(i = 0; i < u->wst.ptr; i++)
-		draw_byte(u->wst.dat[i], i * 0x18 + 0x8, uxn_screen.height - 0x18, 0x2);
-	for(i = 0; i < u->rst.ptr; i++)
-		draw_byte(u->rst.dat[i], i * 0x18 + 0x8, uxn_screen.height - 0x10, 0x3);
+	for(i = 0; i < 0x08; i++) {
+		Uint8 pos = u->wst.ptr - 4 + i;
+		draw_byte(u->wst.dat[pos], i * 0x18 + 0x8, uxn_screen.height - 0x18, i > 4 ? 0x01 : !pos ? 0xc :
+				i == 4                                                                           ? 0x8 :
+                                                                                                   0x2);
+	}
+	for(i = 0; i < 0x08; i++) {
+		Uint8 pos = u->rst.ptr - 4 + i;
+		draw_byte(u->rst.dat[pos], i * 0x18 + 0x8, uxn_screen.height - 0x10, i > 4 ? 0x01 : !pos ? 0xc :
+				i == 4                                                                           ? 0x8 :
+                                                                                                   0x2);
+	}
+	screen_blit(uxn_screen.fg, arrow, 0, 0x68, uxn_screen.height - 0x20, 3, 0, 0, 0);
 	for(i = 0; i < 0x40; i++)
 		draw_byte(u->ram[i], (i & 0x7) * 0x18 + 0x8, ((i >> 3) << 3) + 0x8, 1 + !!u->ram[i]);
 }

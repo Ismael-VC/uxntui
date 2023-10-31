@@ -501,17 +501,21 @@ main(int argc, char *argv[])
 	if(argc == 1)
 		return error("usage", "uxnasm [-v] input.tal output.rom");
 	if(argv[1][0] == '-' && argv[1][1] == 'v')
-		return !fprintf(stdout, "Uxnasm - Uxntal Assembler, 8 Aug 2023.\n");
+		return !fprintf(stdout, "Uxnasm - Uxntal Assembler, 27 Oct 2023.\n");
 	if(!(src = fopen(argv[1], "r")))
 		return !error("Invalid input", argv[1]);
 	if(!assemble(src))
 		return !error("Assembly", "Failed to assemble rom.");
-	if(!(dst = fopen(argv[2], "wb")))
+	if(scmp(argv[2], "-", 2))
+		dst = stdout;
+	else if(!(dst = fopen(argv[2], "wb")))
 		return !error("Invalid Output", argv[2]);
 	if(p.length <= TRIM)
 		return !error("Assembly", "Output rom is empty.");
 	fwrite(p.data + TRIM, p.length - TRIM, 1, dst);
-	review(argv[2]);
-	writesym(argv[2]);
+	if(!scmp(argv[2], "-", 2)) {
+		review(argv[2]);
+		writesym(argv[2]);
+	}
 	return 0;
 }

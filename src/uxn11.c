@@ -259,16 +259,6 @@ main(int argc, char **argv)
 	int i = 1;
 	if(i == argc)
 		return system_error("usage", "uxn11 [-v] file.rom [args...]");
-	/* Connect Varvara */
-	system_connect(0x0, SYSTEM_VERSION, SYSTEM_DEIMASK, SYSTEM_DEOMASK);
-	system_connect(0x1, CONSOLE_VERSION, CONSOLE_DEIMASK, CONSOLE_DEOMASK);
-	system_connect(0x2, SCREEN_VERSION, SCREEN_DEIMASK, SCREEN_DEOMASK);
-	system_connect(0x8, CONTROL_VERSION, CONTROL_DEIMASK, CONTROL_DEOMASK);
-	system_connect(0x9, MOUSE_VERSION, MOUSE_DEIMASK, MOUSE_DEOMASK);
-	system_connect(0xa, FILE_VERSION, FILE_DEIMASK, FILE_DEOMASK);
-	system_connect(0xb, FILE_VERSION, FILE_DEIMASK, FILE_DEOMASK);
-	system_connect(0xc, DATETIME_VERSION, DATETIME_DEIMASK, DATETIME_DEOMASK);
-	system_connect(0xf, LINK_VERSION, LINK_DEIMASK, LINK_DEOMASK);
 	/* Read flags */
 	if(argv[i][0] == '-' && argv[i][1] == 'v')
 		return system_version("Uxn11 - Graphical Varvara Emulator", "31 Oct 2023");

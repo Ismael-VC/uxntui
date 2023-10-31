@@ -38,10 +38,7 @@
 	#05 .Screen/auto DEO
 	draw-polycat
 
-	;&mmu #02 DEO2
-
 BRK
-	&mmu 01 1234 4567 789a 2345 6789
 
 @draw-polycat ( -- )
 
@@ -69,6 +66,7 @@ JMP2r
 	.cat/timer LDZ INC [ DUP ] .cat/timer STZ
 		#04 SFT draw-tail
 	draw-cursor
+	.Mouse/state DEI #00 EQU ?{ #ff #00 .Mouse/state DEO }
 
 BRK
 

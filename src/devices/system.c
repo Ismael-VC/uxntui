@@ -16,8 +16,7 @@ WITH REGARD TO THIS SOFTWARE.
 */
 
 char *boot_rom;
-Uint8 dei_masks[0x100], deo_masks[0x100];
-Uint16 dev_vers[0x10], dei_mask[0x10], deo_mask[0x10];
+Uint16 dev_vers[0x10];
 
 static int
 system_load(Uxn *u, char *filename)
@@ -60,28 +59,10 @@ system_inspect(Uxn *u)
 	system_print(&u->rst, "rst");
 }
 
-void
-system_connect(Uint8 device, Uint8 ver, Uint16 dei, Uint16 deo)
-{
-	int i, d = (device << 0x4);
-	for(i = 0; i < 0x10; i++) {
-		dei_masks[d + i] = (dei >> i) & 0x1;
-		deo_masks[d + i] = (deo >> i) & 0x1;
-	}
-	dev_vers[device] = ver;
-	dei_mask[device] = dei;
-	deo_mask[device] = deo;
-}
-
 int
 system_version(char *name, char *date)
 {
-	int i;
 	printf("%s, %s.\n", name, date);
-	printf("Device Version Dei  Deo\n");
-	for(i = 0; i < 0x10; i++)
-		if(dev_vers[i])
-			printf("%6x %7d %04x %04x\n", i, dev_vers[i], dei_mask[i], deo_mask[i]);
 	return 0;
 }
 

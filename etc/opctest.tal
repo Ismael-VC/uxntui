@@ -1,4 +1,5 @@
 ( Opcode Tester )
+( Source: https://git.sr.ht/~rabbits/uxn-utils/tree/main/item/cli/opctest/opctest.tal )
 
 |0013
 
@@ -10,7 +11,7 @@
 		> LIT2: Puts a short on the stack
 		> #18 DEO: Write a letter in terminal )
 
-	LIT2 "kO #18 DEO #18 DEO #0a18 DEO
+	[ LIT2 "kO ] #18 DEO #18 DEO #0a18 DEO
 
 	( part 2
 		> LITr: Put a byte on return stack
@@ -18,14 +19,14 @@
 		> STH: Move a byte from working stack to return stack
 		> STH2r: Move a short from return stack to working stack )
 
-	LITr "k LIT "O STH STH2r #18 DEO #18 DEO #0a18 DEO
+	[ LITr "k ] [ LIT "O ] STH STH2r #18 DEO #18 DEO #0a18 DEO
 
 	( part 3
 		> LIT2r: Put a short on return stack
 		> DUP: Duplicate byte
 		> ADDr: Add bytes on return stack )
 
-	LIT2r "k 4d #01 DUP STH ADDr STH ADDr STH2r #18 DEO #18 DEO #0a18 DEO
+	[ LIT2r "k 4d ] #01 DUP STH ADDr STH ADDr STH2r #18 DEO #18 DEO #0a18 DEO
 
 	( part 4
 		> JSI: Subroutine to relative absolute address
@@ -46,7 +47,7 @@
 		> LDA2k: Non-destructive load short from absolute address
 		> STA2: Store short at absolute address )
 
-	LIT2r 0000
+	[ LIT2r 0000 ]
 	;tests/end ;tests
 	&l
 		run-test STH ADDr
@@ -56,7 +57,7 @@
 
 	( halt )
 
-	#010f DEO
+	#800f DEO
 
 BRK
 
@@ -64,7 +65,7 @@ BRK
 
 	LDA2k JSR2 DUP ?&pass
 		;Dict/failed pstr
-		[ LIT2 &name $2 ] pstr #0a18 DEO JMP2r
+		[ LIT2 &name $2 ] pstr/ #0a18 DEO JMP2r
 		&pass
 
 JMP2r
@@ -77,8 +78,9 @@ JMP2r
 
 @pstr ( str* -- )
 
-	LDAk ?&w POP2 JMP2r
-	&w LDAk #18 DEO INC2 LDAk ?&w
+	&w ( -- )
+		LDAk #18 DEO
+		INC2 & LDAk ?&w
 	POP2
 
 JMP2r
@@ -106,8 +108,8 @@ JMP2r
 	=op-mul/a =op-mul/b =op-mul/c =op-mul/d
 	=op-mul/e =op-mul/f =op-mul/g =op-mul/h ]
 =op-div [
-	=op-div/a =op-div/b =op-div/c =op-div/d
-	=op-div/e =op-div/f =op-div/g =op-div/h ]
+	=op-div/a =op-div/b =op-div/c =op-div/d =op-div/e
+	=op-div/f =op-div/g =op-div/h =op-div/i =op-div/j ]
 =op-inc [
 	=op-inc/a =op-inc/b =op-inc/c =op-inc/d
 	=op-inc/e =op-inc/f =op-inc/g =op-inc/h ]
@@ -226,10 +228,12 @@ JMP2r
 	&b #20 #20 DIV [ #01 ] EQU JMP2r
 	&c #34 #01 DIV [ #34 ] EQU JMP2r
 	&d #02 #ef DIV [ #00 ] EQU JMP2r
-	&e #1000 #0040 DIV2 [ #0040 ] EQU2 JMP2r
-	&f #abcd #1234 DIV2 [ #0009 ] EQU2 JMP2r
-	&g #8000 #0200 DIV2 [ #0040 ] EQU2 JMP2r
-	&h #2222 #0003 DIV2 [ #0b60 ] EQU2 JMP2r
+	&e #02 #00 DIV [ #00 ] EQU JMP2r
+	&f #1000 #0040 DIV2 [ #0040 ] EQU2 JMP2r
+	&g #abcd #1234 DIV2 [ #0009 ] EQU2 JMP2r
+	&h #8000 #0200 DIV2 [ #0040 ] EQU2 JMP2r
+	&i #2222 #0003 DIV2 [ #0b60 ] EQU2 JMP2r
+	&j #0202 #0000 DIV2 [ #0000 ] EQU2 JMP2r
 @op-inc ;Dict/inc !set
 	&a #01 INC [ #02 ] EQU JMP2r
 	&b #ff INC [ #00 ] EQU JMP2r
@@ -346,16 +350,15 @@ JMP2r
 
 @special ( routine* -- f )
 
-	( test the stack order )
+	( test that the stack order is LIFO )
 	DUP2 STH2kr EQU2
 	ROT ROT DUP2r STHr STHr SWP EQU2 AND
 
 JMP2r
 
 @routine ( a b -- c ) ADD JMP2r
-@subroutine ( -- ) LIT2 "kO #18 DEO #18 DEO #0a18 DEO JMP2r
+@subroutine ( -- ) [ LIT2 "kO ] #18 DEO #18 DEO #0a18 DEO JMP2r
 @Absolute &byte $1 &short $2
-@phex ( short* -- ) SWP phex/b &b ( byte -- ) DUP #04 SFT phex/c &c ( char -- ) #0f AND DUP #09 GTH #27 MUL ADD #30 ADD #18 DEO JMP2r
 
 @Dict [
 	&ok "Ok $1
