@@ -29,9 +29,10 @@ emu_dei(Uxn *u, Uint8 addr)
 }
 
 void
-emu_deo(Uxn *u, Uint8 addr)
+emu_deo(Uxn *u, Uint8 addr, Uint8 value)
 {
 	Uint8 p = addr & 0x0f, d = addr & 0xf0;
+	u->dev[addr] = value;
 	switch(d) {
 	case 0x00: system_deo(u, &u->dev[d], p); break;
 	case 0x10: console_deo(&u->dev[d], p); break;
@@ -45,7 +46,10 @@ emu_run(Uxn *u)
 {
 	while(!u->dev[0x0f]) {
 		int c = fgetc(stdin);
-		if(c == EOF) { console_input(u, 0x00, CONSOLE_END); break; }
+		if(c == EOF) {
+			console_input(u, 0x00, CONSOLE_END);
+			break;
+		}
 		console_input(u, (Uint8)c, CONSOLE_STD);
 	}
 }
@@ -60,7 +64,7 @@ emu_end(Uxn *u)
 int
 main(int argc, char **argv)
 {
-	Uxn u;
+	Uxn u = {0};
 	int i = 1;
 	if(i == argc)
 		return system_error("usage", "uxncli [-v] file.rom [args..]");
@@ -72,7 +76,7 @@ main(int argc, char **argv)
 	system_connect(0xc, DATETIME_VERSION, DATETIME_DEIMASK, DATETIME_DEOMASK);
 	/* Read flags */
 	if(argv[i][0] == '-' && argv[i][1] == 'v')
-		return system_version("Uxncli - Console Varvara Emulator", "5 Sep 2023");
+		return system_version("Uxncli - Console Varvara Emulator", "30 Oct 2023");
 	if(!system_init(&u, (Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8)), argv[i++]))
 		return system_error("Init", "Failed to initialize uxn.");
 	/* Game Loop */

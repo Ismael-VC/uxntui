@@ -56,9 +56,10 @@ emu_dei(Uxn *u, Uint8 addr)
 }
 
 void
-emu_deo(Uxn *u, Uint8 addr)
+emu_deo(Uxn *u, Uint8 addr, Uint8 value)
 {
 	Uint8 p = addr & 0x0f, d = addr & 0xf0;
+	u->dev[addr] = value;
 	switch(d) {
 	case 0x00:
 		system_deo(u, &u->dev[d], p);
@@ -254,7 +255,7 @@ emu_run(Uxn *u, char *rom)
 int
 main(int argc, char **argv)
 {
-	Uxn u;
+	Uxn u = {0};
 	int i = 1;
 	if(i == argc)
 		return system_error("usage", "uxn11 [-v] file.rom [args...]");
@@ -270,7 +271,7 @@ main(int argc, char **argv)
 	system_connect(0xf, LINK_VERSION, LINK_DEIMASK, LINK_DEOMASK);
 	/* Read flags */
 	if(argv[i][0] == '-' && argv[i][1] == 'v')
-		return system_version("Uxn11 - Graphical Varvara Emulator", "2 Sep 2023");
+		return system_version("Uxn11 - Graphical Varvara Emulator", "31 Oct 2023");
 	if(!emu_init())
 		return system_error("Init", "Failed to initialize varvara.");
 	if(!system_init(&u, (Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8)), argv[i++]))
