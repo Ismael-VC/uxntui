@@ -13,14 +13,14 @@ WITH REGARD TO THIS SOFTWARE.
 
 #define FLIP     { s = ins & 0x40 ? &u->wst : &u->rst; }
 #define JUMP(x)  { if(m2) pc = (x); else pc += (Sint8)(x); }
-#define PUSH1(y) { s->dat[s->ptr++] = (y); }
-#define PUSH2(y) { tt = (y); s->dat[s->ptr++] = tt >> 0x8; s->dat[s->ptr++] = tt; }
-#define PUSHx(y) { if(m2) { PUSH2(y) } else PUSH1(y) }
 #define POP1(o)  { o = s->dat[--*sp]; }
 #define POP2(o)  { o = s->dat[--*sp] | (s->dat[--*sp] << 0x8); }
 #define POPx(o)  { if(m2) { POP2(o) } else POP1(o) }
-#define POKE(x, y, r) { if(m2) { r = (x); ram[r++] = y >> 8; ram[r] = y; } else ram[(x)] = (y); }
+#define PUSH1(y) { s->dat[s->ptr++] = (y); }
+#define PUSH2(y) { tt = (y); s->dat[s->ptr++] = tt >> 0x8; s->dat[s->ptr++] = tt; }
+#define PUSHx(y) { if(m2) { PUSH2(y) } else PUSH1(y) }
 #define PEEK(o, x, r) { if(m2) { r = (x); o = ram[r++] << 8 | ram[r]; } else o = ram[(x)]; }
+#define POKE(x, y, r) { if(m2) { r = (x); ram[r++] = y >> 8; ram[r] = y; } else ram[(x)] = (y); }
 #define DEVR(o, p)    { if(m2) { o = (emu_dei(u, p) << 8) | emu_dei(u, p + 1); } else o = emu_dei(u, p); }
 #define DEVW(p, y)    { if(m2) { emu_deo(u, p, y >> 8); emu_deo(u, p + 1, y); } else emu_deo(u, p, y); }
 
@@ -31,8 +31,7 @@ uxn_eval(Uxn *u, Uint16 pc)
 	Uint16 tt, a, b, c;
 	if(!pc || u->dev[0x0f]) return 0;
 	for(;;) {
-		Uint8 ins = ram[pc++], opc = ins & 0x1f;
-		Uint8 m2 = ins & 0x20;
+		Uint8 ins = ram[pc++], opc = ins & 0x1f, m2 = ins & 0x20;
 		Stack *s = ins & 0x40 ? &u->rst : &u->wst;
 		if(ins & 0x80)
 			kp = s->ptr, sp = &kp;
@@ -48,7 +47,7 @@ uxn_eval(Uxn *u, Uint16 pc)
 		case -0x4: /* LIT   */
 		case -0x6: /* LITr  */ PUSH1(ram[pc++]) break;
 		case -0x5: /* LIT2  */
-		case -0x7: /* LIT2r */ PUSH2(PEEK2(ram + pc)) pc += 2; break;
+		case -0x7: /* LIT2r */ PUSH1(ram[pc++]) PUSH1(ram[pc++]) break;
 		/* ALU */
 		case 0x01: /* INC */ POPx(a) PUSHx(a + 1) break;
 		case 0x02: /* POP */ POPx(a) break;
