@@ -1,5 +1,4 @@
 ( Opcode Tester )
-( Source: https://git.sr.ht/~rabbits/uxn-utils/tree/main/item/cli/opctest/opctest.tal )
 
 |0013
 
@@ -7,15 +6,20 @@
 
 |0100
 
+@on-reset ( -> )
+
 	( part 1
 		> LIT2: Puts a short on the stack
-		> #18 DEO: Write a letter in terminal )
+		> LIT: Puts a byte on the stack
+		> #18 DEO: Write a letter in terminal
+		> ;meta: Push short
+		> #06 DEO: Write to metadata ports )
 
 	[ LIT2 "kO ] #18 DEO #18 DEO #0a18 DEO
+	;meta #06 DEO2
 
 	( part 2
 		> LITr: Put a byte on return stack
-		> LIT: Puts a byte on the stack
 		> STH: Move a byte from working stack to return stack
 		> STH2r: Move a short from return stack to working stack )
 
@@ -50,22 +54,76 @@
 	[ LIT2r 0000 ]
 	;tests/end ;tests
 	&l
-		run-test STH ADDr
+		run-test [ LITr 00 ] STH ADD2r
 		INC2 INC2 GTH2k ?&l
 	POP2 POP2
-	STH2r ;Dict/done pstr
+	STH2r ;tests/end ;tests SUB2 #01 SFT2
+	EQU2 ;Dict/opctests test-part
 
-	( halt )
+	( Part 7
+		> Testing that stacks are circular and wrapping
+		> Storing 12 at -1 and 34 at 0 )
 
-	#800f DEO
+	POP #12 #34 ADD #46 EQU STH
+	POP #1234 ADD #46 EQU STH
+	POP2 #1111 #2222 ADD2 #3333 EQU2
+	STHr AND STHr AND
+	;Dict/stack-wrap test-part
+
+	( Part 8
+		> Testing RAM wrapping
+		> Storing 12 in 0xffff, and 34 in 0x0000 )
+
+	#1234 #ffff STA2
+	#ffff LDA #0000 LDA ADD #46 EQU
+	#ffff LDA2 ADD #46 EQU
+	AND ;Dict/ram-wrap test-part
+
+	( Part 9
+		> Testing that zero-page is wrapping )
+
+	#0000 STZ #00ff STZ
+	#1234 #ff STZ2
+	#00ff LDA #0000 LDA ADD #46 EQU
+	;Dict/zp-wrap test-part
+
+	( Part 10
+		> Testing that device page is wrapping )
+
+	#1234 #ff DEO2
+	#ff DEI #00 DEI ADD #46 EQU
+	;Dict/dev-wrap test-part
+	#0000 DEO #00ff DEO
+
+	( end )
+
+	[ LIT &fail 80 ]
+		DUP #80 EQU ;Dict/result test-part
+		#0f DEO
+
+	#0a18 DEO
+	#010e DEO
 
 BRK
+
+@meta 00
+	( name ) "Opctest 0a
+	( details ) "A 20 "Testing 20 "Program 0a
+	( author ) "By 20 "Devine 20 "Lu 20 "Linvega 0a
+	( date ) "1 20 "Nov 20 "2023 $2
+
+@test-part ( f name* -- )
+	pstr ?{
+		#01 ;on-reset/fail STA
+		;Dict/failed !pstr }
+	;Dict/passed !pstr
 
 @run-test ( addr* -- addr* f )
 
 	LDA2k JSR2 DUP ?&pass
-		;Dict/failed pstr
-		[ LIT2 &name $2 ] pstr/ #0a18 DEO JMP2r
+		;Dict/missed pstr
+		[ LIT2 &name $2 ] pstr/ #0a18 DEO
+		#01 ;on-reset/fail STA JMP2r
 		&pass
 
 JMP2r
@@ -167,7 +225,7 @@ JMP2r
 	&d #00 #ff EQU [ #00 ] EQU JMP2r
 	&e #f801 #f801 EQU2 [ #01 ] EQU JMP2r
 	&f #01f8 #01f8 EQU2 [ #01 ] EQU JMP2r
-	&g #f801 #01f8 EQU2 [ #00 ] EQU JMP2r ( HERE )
+	&g #f801 #01f8 EQU2 [ #00 ] EQU JMP2r
 	&h #01f8 #f801 EQU2 [ #00 ] EQU JMP2r
 @op-neq ;Dict/neq !set
 	&a #f8 #f8 NEQ [ #00 ] EQU JMP2r
@@ -224,12 +282,12 @@ JMP2r
 	&g #8000 #0200 MUL2 [ #0000 ] EQU2 JMP2r
 	&h #2222 #0003 MUL2 [ #6666 ] EQU2 JMP2r
 @op-div ;Dict/div !set
-	&a #10 #02 DIV [ #08 ] EQU JMP2r
+	&a #10 #06 DIV [ #02 ] EQU JMP2r
 	&b #20 #20 DIV [ #01 ] EQU JMP2r
 	&c #34 #01 DIV [ #34 ] EQU JMP2r
 	&d #02 #ef DIV [ #00 ] EQU JMP2r
 	&e #02 #00 DIV [ #00 ] EQU JMP2r
-	&f #1000 #0040 DIV2 [ #0040 ] EQU2 JMP2r
+	&f #03e8 #0006 DIV2 [ #00a6 ] EQU2 JMP2r
 	&g #abcd #1234 DIV2 [ #0009 ] EQU2 JMP2r
 	&h #8000 #0200 DIV2 [ #0040 ] EQU2 JMP2r
 	&i #2222 #0003 DIV2 [ #0b60 ] EQU2 JMP2r
@@ -363,7 +421,15 @@ JMP2r
 @Dict [
 	&ok "Ok $1
 	&done "Tests 20 "Complete. 0a $1
-	&failed "-- 20 "failed: 20 $1
+	&opctests "Opcodes $1
+	&stack-wrap "Stack-wrap $1
+	&ram-wrap "RAM-wrap $1
+	&zp-wrap "Zeropage-wrap $1
+	&dev-wrap "Devices-wrap $1
+	&result "Result: $1
+	&passed 20 "passed! 0a $1
+	&missed "Opcode 20 "Failed 20 "-- 20 $1
+	&failed 20 "failed. 0a $1
 	&equ "EQU $1 &neq "NEQ $1 &gth "GTH $1 &lth "LTH $1
 	&add "ADD $1 &sub "SUB $1 &mul "MUL $1 &div "DIV $1
 	&inc "INC $1 &pop "POP $1 &dup "DUP $1 &nip "NIP $1

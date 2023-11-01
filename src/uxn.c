@@ -13,8 +13,8 @@ WITH REGARD TO THIS SOFTWARE.
 
 #define FLIP       { s = ins & 0x40 ? &u->wst : &u->rst; }
 #define JUMP(x)    { if(m2) pc = (x); else pc += (Sint8)(x); }
-#define POKE(x, y) { if(m2) { tp = &ram[x]; POKE2(tp, y) } else ram[(x)] = (y); }
-#define PEEK(o, x) { if(m2) { tp = &ram[x]; o = PEEK2(tp); } else o = ram[(x)]; }
+#define POKE(x, y) { if(m2) { t = (x); ram[t++] = y >> 8; ram[t] = y; } else ram[(x)] = (y); }
+#define PEEK(o, x) { if(m2) { t = (x); o = ram[t++] << 8 | ram[t]; } else o = ram[(x)]; }
 #define DEVR(o, p) { if(m2) { o = (emu_dei(u, p) << 8) | emu_dei(u, p + 1); } else o = emu_dei(u, p); }
 #define DEVW(p, y) { if(m2) { emu_deo(u, p, y >> 8); emu_deo(u, p + 1, y); } else emu_deo(u, p, y); }
 #define PUSH1(y)   { s->dat[s->ptr++] = (y); }
