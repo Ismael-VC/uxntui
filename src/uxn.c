@@ -27,17 +27,16 @@ WITH REGARD TO THIS SOFTWARE.
 int
 uxn_eval(Uxn *u, Uint16 pc)
 {
-	Uint8 t, ksp, *sp, *tp, *ram = u->ram;
+	Uint8 t, kp, *sp, *ram = u->ram;
 	Uint16 tt, a, b, c;
 	if(!pc || u->dev[0x0f]) return 0;
 	for(;;) {
 		Uint8 ins = ram[pc++], opc = ins & 0x1f;
 		Uint8 m2 = ins & 0x20;
 		Stack *s = ins & 0x40 ? &u->rst : &u->wst;
-		if(ins & 0x80) {
-			ksp = s->ptr;
-			sp = &ksp;
-		} else
+		if(ins & 0x80)
+			kp = s->ptr, sp = &kp;
+		else
 			sp = &s->ptr;
 		/* Opcodes */
 		switch(opc - (!opc * (ins >> 5))) {
