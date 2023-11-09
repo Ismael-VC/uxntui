@@ -31,21 +31,22 @@ uxn_eval(Uxn *u, Uint16 pc)
 	Uint16 tt, a, b, c;
 	if(!pc || u->dev[0x0f]) return 0;
 	for(;;) {
-		Uint8 ins = ram[pc++], opc = ins & 0x1f, m2 = ins & 0x20;
+		Uint8 ins = ram[pc++], m2 = ins & 0x20;
 		Stack *s = ins & 0x40 ? &u->rst : &u->wst;
-		if(ins & 0x80)
-			kp = s->ptr, sp = &kp;
-		else
-			sp = &s->ptr;
-		/* Opcodes */
-		switch(opc ? opc : ins) {
-		/* Immediate */
-		case 0x00: /* BRK   */ return 1;
-		case 0x20: /* JCI   */ POP1(b) if(!b) { pc += 2; break; } /* else fallthrough */
-		case 0x40: /* JMI   */ pc += PEEK2(ram + pc) + 2; break;
-		case 0x60: /* JSI   */ PUSH2(pc + 2) pc += PEEK2(ram + pc) + 2; break;
-		case 0x80: case 0xc0: /* LIT   */ PUSH1(ram[pc++]) break;
-		case 0xa0: case 0xe0: /* LIT2  */ PUSH1(ram[pc++]) PUSH1(ram[pc++]) break;
+		if(ins & 0x80) kp = s->ptr, sp = &kp;
+		else sp = &s->ptr;
+		/* OPC */
+		switch(ins & 0x1f) {
+		/* IMM */
+		case 0x00: case 0x20:
+		switch(ins) {
+			case 0x00: /* BRK */ return 1;
+			case 0x20: /* JCI */ POP1(b) if(!b) { pc += 2; break; } /* fall-through */
+			case 0x40: /* JMI */ pc += PEEK2(ram + pc) + 2; break;
+			case 0x60: /* JSI */ PUSH2(pc + 2) pc += PEEK2(ram + pc) + 2; break;
+			case 0x80: case 0xc0: /* LIT  */ PUSH1(ram[pc++]) break;
+			case 0xa0: case 0xe0: /* LIT2 */ PUSH1(ram[pc++]) PUSH1(ram[pc++]) break;
+		} break;
 		/* ALU */
 		case 0x01: /* INC */ POPx(a) PUSHx(a + 1) break;
 		case 0x02: /* POP */ POPx(a) break;
