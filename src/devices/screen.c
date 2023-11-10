@@ -96,16 +96,16 @@ screen_debugger(Uxn *u)
 	int i;
 	for(i = 0; i < 0x08; i++) {
 		Uint8 pos = u->wst.ptr - 4 + i;
-		Uint8 color = i > 4 ? 0x01 : !pos ? 0xc
-			: i == 4                      ? 0x8
-										  : 0x2;
+		Uint8 color = i > 4 ? 0x01 : !pos ? 0xc :
+			i == 4                        ? 0x8 :
+                                            0x2;
 		draw_byte(u->wst.dat[pos], i * 0x18 + 0x8, uxn_screen.height - 0x18, color);
 	}
 	for(i = 0; i < 0x08; i++) {
 		Uint8 pos = u->rst.ptr - 4 + i;
-		Uint8 color = i > 4 ? 0x01 : !pos ? 0xc
-			: i == 4                      ? 0x8
-										  : 0x2;
+		Uint8 color = i > 4 ? 0x01 : !pos ? 0xc :
+			i == 4                        ? 0x8 :
+                                            0x2;
 		draw_byte(u->rst.dat[pos], i * 0x18 + 0x8, uxn_screen.height - 0x10, color);
 	}
 	screen_blit(uxn_screen.fg, arrow, 0, 0x68, uxn_screen.height - 0x20, 3, 0, 0, 0);

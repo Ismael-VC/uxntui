@@ -20,4 +20,5 @@ WITH REGARD TO THIS SOFTWARE.
 
 int console_input(Uxn *u, char c, int type);
 void console_listen(Uxn *u, int i, int argc, char **argv);
-void console_deo(Uint8 *d, Uint8 port);
+Uint8 console_dei(Uxn *u, Uint8 addr);
+void console_deo(Uxn *u, Uint8 *d, Uint8 port);

@@ -49,6 +49,7 @@ emu_dei(Uxn *u, Uint8 addr)
 {
 	switch(addr & 0xf0) {
 	case 0x00: return system_dei(u, addr);
+	case 0x10: return console_dei(u, addr);
 	case 0x20: return screen_dei(u, addr);
 	case 0xc0: return datetime_dei(u, addr);
 	}
@@ -66,7 +67,7 @@ emu_deo(Uxn *u, Uint8 addr, Uint8 value)
 		if(p > 0x7 && p < 0xe)
 			screen_palette(&u->dev[0x8]);
 		break;
-	case 0x10: console_deo(&u->dev[d], p); break;
+	case 0x10: console_deo(u, &u->dev[d], p); break;
 	case 0x20: screen_deo(u->ram, &u->dev[d], p); break;
 	case 0xa0: file_deo(0, u->ram, &u->dev[d], p); break;
 	case 0xb0: file_deo(1, u->ram, &u->dev[d], p); break;

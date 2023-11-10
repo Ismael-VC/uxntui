@@ -35,16 +35,35 @@ console_listen(Uxn *u, int i, int argc, char **argv)
 }
 
 void
-console_deo(Uint8 *d, Uint8 port)
+start_fork(Uxn *u, Uint8 *d)
 {
+	/* TODO */
+}
+
+void
+kill_child(Uint8 *d)
+{
+	/* TODO */
+}
+
+Uint8
+console_dei(Uxn *u, Uint8 addr)
+{
+	/* TODO */
+}
+
+void
+console_deo(Uxn *u, Uint8 *d, Uint8 port)
+{
+	FILE *fd = NULL;
 	switch(port) {
-	case 0x8:
-		fputc(d[port], stdout);
-		fflush(stdout);
-		return;
-	case 0x9:
-		fputc(d[port], stderr);
-		fflush(stderr);
-		return;
+	case 0x5: /* Console/dead */ start_fork(u, d); break;
+	case 0x6: /* Console/exit*/ kill_child(d); break;
+	case 0x8: fd = stdout; break;
+	case 0x9: fd = stderr; break;
+	}
+	if(fd) {
+		fputc(d[port], fd);
+		fflush(fd);
 	}
 }
