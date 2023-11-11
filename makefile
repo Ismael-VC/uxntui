@@ -29,8 +29,8 @@ clean:
 	@ rm -f bin/uxnasm bin/uxncli bin/uxn11 bin/polycat.rom bin/polycat.rom.sym
 
 bin/uxnasm: src/uxnasm.c
-	@ cc ${RELEASE_flags} src/uxnasm.c -o bin/uxnasm
+	@ cc ${RELEASE_flags} ${CFLAGS} src/uxnasm.c -o bin/uxnasm
 bin/uxncli: ${CLI_src} src/uxncli.c
-	@ cc ${RELEASE_flags} ${CLI_src} src/uxncli.c -pthread -o bin/uxncli
+	@ cc ${RELEASE_flags} ${CFLAGS} ${CLI_src} src/uxncli.c -lutil -pthread -o bin/uxncli
 bin/uxn11: ${EMU_src} src/uxn11.c
-	@ cc ${RELEASE_flags} ${EMU_src} src/uxn11.c -lX11 -pthread -o bin/uxn11
+	@ cc ${RELEASE_flags} ${CFLAGS} ${EMU_src} src/uxn11.c -lX11 -lutil -pthread -o bin/uxn11
