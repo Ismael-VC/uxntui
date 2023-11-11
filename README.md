@@ -1,6 +1,6 @@
 # Uxn11
 
-An emulator for the [Uxn stack-machine](https://wiki.xxiivv.com/site/uxn.html), written in ANSI C. 
+An emulator for the [Uxn stack-machine](https://wiki.xxiivv.com/site/uxn.html), written in ANSI C. The emulator contains a few linux specific utilities in the Console device to allow for it to interface with the unix systems.
 
 ## Building 
 
@@ -37,7 +37,7 @@ bin/uxnemu bin/polycat.rom arg1 arg2
 The file device is _sandboxed_, meaning that it should not be able to read or write outside of the working directory.
 
 - `00` system
-- `10` console
+- `10` console(+)
 - `20` screen
 - `80` controller
 - `90` mouse

@@ -41,35 +41,38 @@ static int from_child_fd[2];
 static int saved_in;
 static int saved_out;
 
+struct winsize ws = {24, 80, 8, 12};
+
 static void
-parse_args(Uint8 *d, Uxn *u)
+parse_args(Uxn *u, Uint8 *d)
 {
-	int addr = (d[0x3] << 8) | d[0x4];
+	Uint8 *port_addr = d + 0x3;
+	int addr = PEEK2(port_addr);
 	char *pos = (char *)&u->ram[addr];
 	int i = 0;
 	do {
 		fork_args[i++] = pos;
-		while (*pos != 0) pos++;
+		while(*pos != 0) pos++;
 		pos++;
-	} while (*pos != '\0');
+	} while(*pos != '\0');
 	fork_args[i] = NULL;
 }
 
 /* call after we're sure the process has exited */
 static void
-clean_after_child()
+clean_after_child(void)
 {
 	child_pid = 0;
-	if (child_mode >= 0x80) {
+	if(child_mode >= 0x80) {
 		close(pty_fd);
 		dup2(saved_in, 0);
 		dup2(saved_out, 1);
 	} else {
-		if (child_mode & 0x01) {
+		if(child_mode & 0x01) {
 			close(to_child_fd[1]);
 			dup2(saved_out, 1);
 		}
-		if (child_mode & 0x06) {
+		if(child_mode & 0x06) {
 			close(from_child_fd[0]);
 			dup2(saved_in, 0);
 		}
@@ -99,14 +102,14 @@ console_listen(Uxn *u, int i, int argc, char **argv)
 }
 
 static void
-start_fork_pty(Uint8 *d, Uxn *u)
+start_fork_pty(Uint8 *d)
 {
 	int fd = -1;
 	pid_t pid = forkpty(&fd, NULL, NULL, NULL);
-	if (pid < 0) { /* failure */
+	if(pid < 0) { /* failure */
 		d[0x6] = 0xff;
 		fprintf(stderr, "fork failure\n");
-	} else if (pid == 0) { /* child */
+	} else if(pid == 0) { /* child */
 		setenv("TERM", "ansi", 1);
 		execvp(fork_args[0], fork_args);
 		d[0x6] = 0xff;
@@ -114,7 +117,6 @@ start_fork_pty(Uint8 *d, Uxn *u)
 	} else { /*parent*/
 		child_pid = pid;
 		pty_fd = fd;
-		struct winsize ws = {24, 80, 8, 12};
 		ioctl(fd, TIOCSWINSZ, &ws);
 		saved_in = dup(0);
 		saved_out = dup(1);
@@ -124,20 +126,20 @@ start_fork_pty(Uint8 *d, Uxn *u)
 }
 
 static void
-start_fork_pipe(Uint8 *d, Uxn *u)
+start_fork_pipe(Uint8 *d)
 {
-	if (child_mode & 0x01) {
+	if(child_mode & 0x01) {
 		/* parent writes to child's stdin */
-		if (pipe(to_child_fd) == -1) {
+		if(pipe(to_child_fd) == -1) {
 			d[0x6] = 0xff;
 			fprintf(stderr, "pipe error: to child\n");
 			return;
 		}
 	}
 
-	if (child_mode & 0x06) {
+	if(child_mode & 0x06) {
 		/* parent reads from child's stdout and/or stderr */
-		if (pipe(from_child_fd) == -1) {
+		if(pipe(from_child_fd) == -1) {
 			d[0x6] = 0xff;
 			fprintf(stderr, "pipe error: from child\n");
 			return;
@@ -145,17 +147,17 @@ start_fork_pipe(Uint8 *d, Uxn *u)
 	}
 
 	pid_t pid = fork();
-	if (pid < 0) { /* failure */
+	if(pid < 0) { /* failure */
 		d[0x6] = 0xff;
 		fprintf(stderr, "fork failure\n");
-	} else if (pid == 0) { /* child */
-		if (child_mode & 0x01) {
+	} else if(pid == 0) { /* child */
+		if(child_mode & 0x01) {
 			dup2(to_child_fd[0], 0);
 			close(to_child_fd[1]);
 		}
-		if (child_mode & 0x06) {
-			if (child_mode & 0x02) dup2(from_child_fd[1], 1);
-			if (child_mode & 0x04) dup2(from_child_fd[1], 2);
+		if(child_mode & 0x06) {
+			if(child_mode & 0x02) dup2(from_child_fd[1], 1);
+			if(child_mode & 0x04) dup2(from_child_fd[1], 2);
 			close(from_child_fd[0]);
 		}
 		execvp(fork_args[0], fork_args);
@@ -163,12 +165,12 @@ start_fork_pipe(Uint8 *d, Uxn *u)
 		fprintf(stderr, "exec failure\n");
 	} else { /*parent*/
 		child_pid = pid;
-		if (child_mode & 0x01) {
+		if(child_mode & 0x01) {
 			saved_out = dup(1);
 			dup2(to_child_fd[1], 1);
 			close(to_child_fd[0]);
 		}
-		if (child_mode & 0x06) {
+		if(child_mode & 0x06) {
 			saved_in = dup(0);
 			dup2(from_child_fd[0], 0);
 			close(from_child_fd[1]);
@@ -179,10 +181,10 @@ start_fork_pipe(Uint8 *d, Uxn *u)
 static void
 kill_child(Uint8 *d)
 {
-	if (child_pid) {
+	if(child_pid) {
 		kill(child_pid, 9);
 		int wstatus;
-		if (waitpid(child_pid, &wstatus, 0)) {
+		if(waitpid(child_pid, &wstatus, 0)) {
 			d[0x6] = 1;
 			d[0x7] = WEXITSTATUS(wstatus);
 			clean_after_child();
@@ -196,12 +198,11 @@ start_fork(Uxn *u, Uint8 *d)
 	fflush(stderr);
 	kill_child(d);
 	child_mode = d[0x5];
-	parse_args(d, u);
-	if (child_mode >= 0x80) {
-		start_fork_pty(d, u);
-	} else {
-		start_fork_pipe(d, u);
-	}
+	parse_args(u, d);
+	if(child_mode >= 0x80)
+		start_fork_pty(d);
+	else
+		start_fork_pipe(d);
 }
 
 Uint8
@@ -211,9 +212,9 @@ console_dei(Uxn *u, Uint8 addr)
 	switch(port) {
 	case 0x6:
 	case 0x7:
-		if (child_pid) {
+		if(child_pid) {
 			int wstatus;
-			if (waitpid(child_pid, &wstatus, WNOHANG)) {
+			if(waitpid(child_pid, &wstatus, WNOHANG)) {
 				d[0x6] = 1;
 				d[0x7] = WEXITSTATUS(wstatus);
 				clean_after_child();

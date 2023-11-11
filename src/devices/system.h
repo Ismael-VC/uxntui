@@ -10,18 +10,14 @@ WITH REGARD TO THIS SOFTWARE.
 */
 
 #define SYSTEM_VERSION 2
-#define SYSTEM_DEIMASK 0x0030
-#define SYSTEM_DEOMASK 0xff38
-
 #define RAM_PAGES 0x10
-
-extern char *boot_rom;
 
 void system_reboot(Uxn *u, char *rom, int soft);
 void system_inspect(Uxn *u);
 int system_version(char *emulator, char *date);
 int system_error(char *msg, const char *err);
 int system_init(Uxn *u, Uint8 *ram, char *rom);
-
 Uint8 system_dei(Uxn *u, Uint8 addr);
 void system_deo(Uxn *u, Uint8 *d, Uint8 port);
+
+extern char *boot_rom;

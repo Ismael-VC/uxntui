@@ -10,8 +10,6 @@ WITH REGARD TO THIS SOFTWARE.
 */
 
 #define LINK_VERSION 1
-#define LINK_DEIMASK 0x0000
-#define LINK_DEOMASK 0xaaaa
 
 Uint8 link_dei(Uxn *u, Uint8 addr);
 void link_deo(Uint8 *ram, Uint8 *d, Uint8 port);
