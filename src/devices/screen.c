@@ -58,18 +58,16 @@ screen_rect(Uint8 *layer, Uint16 x1, Uint16 y1, Uint16 x2, Uint16 y2, int color)
 static void
 screen_2bpp(Uint8 *layer, Uint8 *ram, Uint16 addr, Uint16 x1, Uint16 y1, Uint16 color, int fx, int fy)
 {
-	int h, width = uxn_screen.width, height = uxn_screen.height, opaque = (color % 5);
-	Uint8 *ch1 = &ram[addr], *ch2 = ch1 + 8, mx = (fx > 0 ? 8 : 0);
+	int width = uxn_screen.width, height = uxn_screen.height, opaque = (color % 5);
+	Uint8 *ch1 = &ram[addr], *ch2 = ch1 + 8;
 	Uint16 y, ymod = (fy < 0 ? 8 : 0), ymax = y1 + ymod + fy * 8;
-	// Uint16 x, xmod = (fx < 0 ? 8 : 0), xmax = x1 + xmod + fx * 8;
+	Uint16 x, xmod = (fx > 0 ? 8 : 0), xmax = x1 + xmod - fx * 8;
 	for(y = y1 + ymod; y != ymax; y += fy) {
 		Uint16 c = *ch1++ | (*ch2++ << 8);
-		Uint16 xx = x1 + mx;
-		for(h = 7; h >= 0; --h, c >>= 1) {
+		for(x = x1 + xmod; x != xmax; x -= fx, c >>= 1) {
 			Uint8 ch = (c & 1) | ((c >> 7) & 2);
-			xx += -fx;
-			if((opaque || ch) && xx < width && y < height)
-				layer[xx + y * width] = blending[ch][color];
+			if((opaque || ch) && x < width && y < height)
+				layer[x + y * width] = blending[ch][color];
 		}
 	}
 }
