@@ -73,16 +73,16 @@ screen_2bpp(Uint8 *layer, Uint8 *ram, Uint16 addr, Uint16 x1, Uint16 y1, Uint16 
 }
 
 static void
-screen_1bpp(Uint8 *layer, Uint8 *ram, Uint16 addr, Uint16 x1, Uint16 y1, Uint16 color, int flipx, int flipy)
+screen_1bpp(Uint8 *layer, Uint8 *ram, Uint16 addr, Uint16 x1, Uint16 y1, Uint16 color, int fx, int fy)
 {
-	int v, h, width = uxn_screen.width, height = uxn_screen.height, opaque = (color % 5);
+	int width = uxn_screen.width, height = uxn_screen.height, opaque = (color % 5);
 	Uint8 *ch1 = &ram[addr];
-	for(v = 0; v < 8; v++) {
+	Uint16 y, ymod = (fy < 0 ? 8 : 0), ymax = y1 + ymod + fy * 8;
+	Uint16 x, xmod = (fx > 0 ? 8 : 0), xmax = x1 + xmod - fx * 8;
+	for(y = y1 + ymod; y != ymax; y += fy) {
 		Uint16 c = *ch1++;
-		Uint16 y = (y1 + (flipy ? 7 - v : v));
-		for(h = 7; h >= 0; --h, c >>= 1) {
-			Uint8 ch = (c & 1) | ((c >> 7) & 2);
-			Uint16 x = (x1 + (flipx ? 7 - h : h));
+		for(x = x1 + xmod; x != xmax; x -= fx, c >>= 1) {
+			Uint8 ch = c & 1;
 			if((opaque || ch) && x < width && y < height)
 				layer[x + y * width] = blending[ch][color];
 		}
@@ -109,8 +109,8 @@ static Uint8 arrow[] = {
 static void
 draw_byte(Uint8 b, Uint16 x, Uint16 y, Uint8 color)
 {
-	screen_1bpp(uxn_screen.fg, icons, (b >> 4) << 3, x, y, color, 0, 0);
-	screen_1bpp(uxn_screen.fg, icons, (b & 0xf) << 3, x + 8, y, color, 0, 0);
+	screen_1bpp(uxn_screen.fg, icons, (b >> 4) << 3, x, y, color, 1, 1);
+	screen_1bpp(uxn_screen.fg, icons, (b & 0xf) << 3, x + 8, y, color, 1, 1);
 	screen_change(x, y, x + 0x10, y + 0x8);
 }
 
@@ -132,7 +132,7 @@ screen_debugger(Uxn *u)
                                             0x2;
 		draw_byte(u->rst.dat[pos], i * 0x18 + 0x8, uxn_screen.height - 0x10, color);
 	}
-	screen_1bpp(uxn_screen.fg, arrow, 0, 0x68, uxn_screen.height - 0x20, 3, 0, 0);
+	screen_1bpp(uxn_screen.fg, arrow, 0, 0x68, uxn_screen.height - 0x20, 3, 1, 1);
 	for(i = 0; i < 0x20; i++)
 		draw_byte(u->ram[i], (i & 0x7) * 0x18 + 0x8, ((i >> 3) << 3) + 0x8, 1 + !!u->ram[i]);
 }
@@ -275,7 +275,7 @@ screen_deo(Uint8 *ram, Uint8 *d, Uint8 port)
 			}
 		} else {
 			for(i = 0; i <= length; i++) {
-				screen_1bpp(layer, ram, addr, x + dyx * i, y + dxy * i, color, flipx, flipy);
+				screen_1bpp(layer, ram, addr, x + dyx * i, y + dxy * i, color, fx, fy);
 				addr += addr_incr;
 			}
 		}
