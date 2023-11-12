@@ -33,14 +33,13 @@ WITH REGARD TO THIS SOFTWARE.
 
 /* process */
 static char *fork_args[32];
-static pid_t child_pid;
 static int child_mode;
 static int pty_fd;
 static int to_child_fd[2];
 static int from_child_fd[2];
 static int saved_in;
 static int saved_out;
-
+static pid_t child_pid;
 struct winsize ws = {24, 80, 8, 12};
 
 static void
@@ -179,12 +178,12 @@ start_fork_pipe(Uint8 *d)
 }
 
 static void
-kill_child(Uint8 *d)
+kill_child(Uint8 *d, int options)
 {
 	if(child_pid) {
 		kill(child_pid, 9);
 		int wstatus;
-		if(waitpid(child_pid, &wstatus, 0)) {
+		if(waitpid(child_pid, &wstatus, options)) {
 			d[0x6] = 1;
 			d[0x7] = WEXITSTATUS(wstatus);
 			clean_after_child();
@@ -196,7 +195,7 @@ static void
 start_fork(Uxn *u, Uint8 *d)
 {
 	fflush(stderr);
-	kill_child(d);
+	kill_child(d, 0);
 	child_mode = d[0x5];
 	parse_args(u, d);
 	if(child_mode >= 0x80)
@@ -211,15 +210,7 @@ console_dei(Uxn *u, Uint8 addr)
 	Uint8 port = addr & 0x0f, *d = &u->dev[addr & 0xf0];
 	switch(port) {
 	case 0x6:
-	case 0x7:
-		if(child_pid) {
-			int wstatus;
-			if(waitpid(child_pid, &wstatus, WNOHANG)) {
-				d[0x6] = 1;
-				d[0x7] = WEXITSTATUS(wstatus);
-				clean_after_child();
-			}
-		}
+	case 0x7: kill_child(d, WNOHANG);
 	}
 	return d[port];
 }
@@ -230,7 +221,7 @@ console_deo(Uxn *u, Uint8 *d, Uint8 port)
 	FILE *fd = NULL;
 	switch(port) {
 	case 0x5: /* Console/dead */ start_fork(u, d); break;
-	case 0x6: /* Console/exit*/ kill_child(d); break;
+	case 0x6: /* Console/exit*/ kill_child(d, 0); break;
 	case 0x8: fd = stdout; break;
 	case 0x9: fd = stderr; break;
 	}
