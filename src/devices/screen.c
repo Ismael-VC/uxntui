@@ -60,8 +60,8 @@ screen_2bpp(Uint8 *layer, Uint8 *ram, Uint16 addr, Uint16 x1, Uint16 y1, Uint16 
 {
 	int width = uxn_screen.width, height = uxn_screen.height, opaque = (color % 5);
 	Uint8 *ch1 = &ram[addr], *ch2 = ch1 + 8;
-	Uint16 y, ymod = (fy < 0 ? 8 : 0), ymax = y1 + ymod + fy * 8;
-	Uint16 x, xmod = (fx > 0 ? 8 : 0), xmax = x1 + xmod - fx * 8;
+	Uint16 y, ymod = (fy < 0 ? 7 : 0), ymax = y1 + ymod + fy * 8;
+	Uint16 x, xmod = (fx > 0 ? 7 : 0), xmax = x1 + xmod - fx * 8;
 	for(y = y1 + ymod; y != ymax; y += fy) {
 		Uint16 c = *ch1++ | (*ch2++ << 8);
 		for(x = x1 + xmod; x != xmax; x -= fx, c >>= 1) {
@@ -77,8 +77,8 @@ screen_1bpp(Uint8 *layer, Uint8 *ram, Uint16 addr, Uint16 x1, Uint16 y1, Uint16 
 {
 	int width = uxn_screen.width, height = uxn_screen.height, opaque = (color % 5);
 	Uint8 *ch1 = &ram[addr];
-	Uint16 y, ymod = (fy < 0 ? 8 : 0), ymax = y1 + ymod + fy * 8;
-	Uint16 x, xmod = (fx > 0 ? 8 : 0), xmax = x1 + xmod - fx * 8;
+	Uint16 y, ymod = (fy < 0 ? 7 : 0), ymax = y1 + ymod + fy * 8;
+	Uint16 x, xmod = (fx > 0 ? 7 : 0), xmax = x1 + xmod - fx * 8;
 	for(y = y1 + ymod; y != ymax; y += fy) {
 		Uint16 c = *ch1++;
 		for(x = x1 + xmod; x != xmax; x -= fx, c >>= 1) {
