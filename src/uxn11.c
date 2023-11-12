@@ -35,7 +35,6 @@ static Window window;
 #define WIDTH (64 * 8)
 #define HEIGHT (40 * 8)
 #define PAD 2
-#define SCALE 1
 #define CONINBUFSIZE 256
 
 static int
@@ -107,13 +106,10 @@ emu_end(Uxn *u)
 static void
 hide_cursor(void)
 {
-	Cursor blank;
-	Pixmap bitmap;
-	XColor black;
+	XColor black = {0};
 	static char empty[] = {0};
-	black.red = black.green = black.blue = 0;
-	bitmap = XCreateBitmapFromData(display, window, empty, 1, 1);
-	blank = XCreatePixmapCursor(display, bitmap, bitmap, &black, &black, 0, 0);
+	Pixmap bitmap = XCreateBitmapFromData(display, window, empty, 1, 1);
+	Cursor blank = XCreatePixmapCursor(display, bitmap, bitmap, &black, &black, 0, 0);
 	XDefineCursor(display, window, blank);
 	XFreeCursor(display, blank);
 	XFreePixmap(display, bitmap);
@@ -181,8 +177,8 @@ emu_event(Uxn *u)
 	} break;
 	case MotionNotify: {
 		XMotionEvent *e = (XMotionEvent *)&ev;
-		int x = clamp((e->x - PAD) / SCALE, 0, uxn_screen.width - 1);
-		int y = clamp((e->y - PAD) / SCALE, 0, uxn_screen.height - 1);
+		int x = clamp((e->x - PAD), 0, uxn_screen.width - 1);
+		int y = clamp((e->y - PAD), 0, uxn_screen.height - 1);
 		mouse_pos(u, &u->dev[0x90], x, y);
 	} break;
 	}
@@ -211,7 +207,7 @@ emu_run(Uxn *u, char *rom)
 	Atom wmDelete;
 	static Visual *visual;
 	visual = DefaultVisual(display, 0);
-	window = XCreateSimpleWindow(display, RootWindow(display, 0), 0, 0, uxn_screen.width * SCALE + PAD * 2, uxn_screen.height * SCALE + PAD * 2, 1, 0, 0);
+	window = XCreateSimpleWindow(display, RootWindow(display, 0), 0, 0, uxn_screen.width + PAD * 2, uxn_screen.height + PAD * 2, 1, 0, 0);
 	if(visual->class != TrueColor)
 		return system_error("init", "True-color visual failed");
 	XSelectInput(display, window, ButtonPressMask | ButtonReleaseMask | PointerMotionMask | ExposureMask | KeyPressMask | KeyReleaseMask);
@@ -219,7 +215,7 @@ emu_run(Uxn *u, char *rom)
 	XSetWMProtocols(display, window, &wmDelete, 1);
 	XStoreName(display, window, rom);
 	XMapWindow(display, window);
-	ximage = XCreateImage(display, visual, DefaultDepth(display, DefaultScreen(display)), ZPixmap, 0, (char *)uxn_screen.pixels, uxn_screen.width * SCALE, uxn_screen.height * SCALE, 32, 0);
+	ximage = XCreateImage(display, visual, DefaultDepth(display, DefaultScreen(display)), ZPixmap, 0, (char *)uxn_screen.pixels, uxn_screen.width, uxn_screen.height, 32, 0);
 	hide_cursor();
 
 	/* timer */
