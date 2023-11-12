@@ -56,19 +56,35 @@ screen_rect(Uint8 *layer, Uint16 x1, Uint16 y1, Uint16 x2, Uint16 y2, int color)
 }
 
 static void
-screen_blit(Uint8 *layer, Uint8 *ram, Uint16 addr, Uint16 x1, Uint16 y1, Uint16 color, int flipx, int flipy, int twobpp)
+screen_2bpp(Uint8 *layer, Uint8 *ram, Uint16 addr, Uint16 x1, Uint16 y1, Uint16 color, int flipx, int flipy)
 {
 	int v, h, width = uxn_screen.width, height = uxn_screen.height, opaque = (color % 5);
-	/* TODO: Draw partial tile */
-	if(x1 + 8 >= width) return;
-	if(y1 + 8 >= height) return;
+	Uint8 *ch1 = &ram[addr], *ch2 = ch1 + 8;
 	for(v = 0; v < 8; v++) {
-		Uint16 c = ram[(addr + v) & 0xffff] | (twobpp ? (ram[(addr + v + 8) & 0xffff] << 8) : 0);
-		int y = (y1 + (flipy ? 7 - v : v)) * width;
+		Uint16 c = *ch1++ | (*ch2++ << 8);
+		Uint16 y = (y1 + (flipy ? 7 - v : v));
 		for(h = 7; h >= 0; --h, c >>= 1) {
 			Uint8 ch = (c & 1) | ((c >> 7) & 2);
-			if(opaque || ch)
-				layer[(x1 + (flipx ? 7 - h : h)) + y] = blending[ch][color];
+			Uint16 x = (x1 + (flipx ? 7 - h : h));
+			if((opaque || ch) && x < width && y < height)
+				layer[x + y * width] = blending[ch][color];
+		}
+	}
+}
+
+static void
+screen_1bpp(Uint8 *layer, Uint8 *ram, Uint16 addr, Uint16 x1, Uint16 y1, Uint16 color, int flipx, int flipy)
+{
+	int v, h, width = uxn_screen.width, height = uxn_screen.height, opaque = (color % 5);
+	Uint8 *ch1 = &ram[addr];
+	for(v = 0; v < 8; v++) {
+		Uint16 c = *ch1++;
+		Uint16 y = (y1 + (flipy ? 7 - v : v));
+		for(h = 7; h >= 0; --h, c >>= 1) {
+			Uint8 ch = (c & 1) | ((c >> 7) & 2);
+			Uint16 x = (x1 + (flipx ? 7 - h : h));
+			if((opaque || ch) && x < width && y < height)
+				layer[x + y * width] = blending[ch][color];
 		}
 	}
 }
@@ -93,8 +109,8 @@ static Uint8 arrow[] = {
 static void
 draw_byte(Uint8 b, Uint16 x, Uint16 y, Uint8 color)
 {
-	screen_blit(uxn_screen.fg, icons, (b >> 4) << 3, x, y, color, 0, 0, 0);
-	screen_blit(uxn_screen.fg, icons, (b & 0xf) << 3, x + 8, y, color, 0, 0, 0);
+	screen_1bpp(uxn_screen.fg, icons, (b >> 4) << 3, x, y, color, 0, 0);
+	screen_1bpp(uxn_screen.fg, icons, (b & 0xf) << 3, x + 8, y, color, 0, 0);
 	screen_change(x, y, x + 0x10, y + 0x8);
 }
 
@@ -116,7 +132,7 @@ screen_debugger(Uxn *u)
                                             0x2;
 		draw_byte(u->rst.dat[pos], i * 0x18 + 0x8, uxn_screen.height - 0x10, color);
 	}
-	screen_blit(uxn_screen.fg, arrow, 0, 0x68, uxn_screen.height - 0x20, 3, 0, 0, 0);
+	screen_1bpp(uxn_screen.fg, arrow, 0, 0x68, uxn_screen.height - 0x20, 3, 0, 0);
 	for(i = 0; i < 0x20; i++)
 		draw_byte(u->ram[i], (i & 0x7) * 0x18 + 0x8, ((i >> 3) << 3) + 0x8, 1 + !!u->ram[i]);
 }
@@ -253,7 +269,10 @@ screen_deo(Uint8 *ram, Uint8 *d, Uint8 port)
 		y = PEEK2(port_y), dy = (move & 0x2) << 2, dyx = dy * fx;
 		addr = PEEK2(port_addr), addr_incr = (move & 0x4) << (1 + twobpp);
 		for(i = 0; i <= length; i++) {
-			screen_blit(layer, ram, addr, x + dyx * i, y + dxy * i, color, flipx, flipy, twobpp);
+			if(twobpp)
+				screen_2bpp(layer, ram, addr, x + dyx * i, y + dxy * i, color, flipx, flipy);
+			else
+				screen_1bpp(layer, ram, addr, x + dyx * i, y + dxy * i, color, flipx, flipy);
 			addr += addr_incr;
 		}
 		screen_change(x, y, x + dyx * length + 8, y + dxy * length + 8);
