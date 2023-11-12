@@ -17,17 +17,30 @@
 	.Screen/y DEO2
 	#80 .Screen/pixel DEO
 	( | cursor )
-	#00 ;cursor-icn <update-cursor>
+	#41 ;cursor-icn <update-cursor>
 	( | draw portrait )
-	.Screen/x DEI2k #000c SUB2 ROT DEO2
-	.Screen/y DEI2k #000c SUB2 ROT DEO2
+	.Screen/x DEI2k #0008 ADD2 ROT DEO2
+	.Screen/y DEI2k #0020 SUB2 ROT DEO2
 	[ LIT2 36 -Screen/auto ] DEO
-	;portrait-chr .Screen/addr DEO2
-	#81 .Screen/sprite DEOk DEOk DEOk DEO
-	<draw-box>
+	#81 <draw-portrait>
+	.Screen/x DEI2k #0010 SUB2 ROT DEO2
+	.Screen/y DEI2k #0020 SUB2 ROT DEO2
+	#91 <draw-portrait>
+	.Screen/x DEI2k #0000 SUB2 ROT DEO2
+	.Screen/y DEI2k #0020 ADD2 ROT DEO2
+	#b1 <draw-portrait>
+	.Screen/x DEI2k #0010 ADD2 ROT DEO2
+	.Screen/y DEI2k #0020 ADD2 ROT DEO2
+	#a1 <draw-portrait>
+	( <draw-box>
 	.Screen/y DEI2k #0060 SUB2 ROT DEO2
-	<draw-box>
+	<draw-box> )
 	BRK
+
+@<draw-portrait> ( color -- )
+	;portrait-chr .Screen/addr DEO2
+	.Screen/sprite DEOk DEOk DEOk DEO
+	JMP2r
 
 @<draw-box> ( -- )
 	;box-icn .Screen/addr DEO2

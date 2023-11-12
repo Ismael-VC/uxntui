@@ -279,7 +279,6 @@ screen_deo(Uint8 *ram, Uint8 *d, Uint8 port)
 				addr += addr_incr;
 			}
 		}
-
 		screen_change(x, y, x + dyx * length + 8, y + dxy * length + 8);
 		if(move & 0x1) {
 			x = x + dx * fx;
