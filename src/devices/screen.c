@@ -39,7 +39,15 @@ screen_change(Uint16 x1, Uint16 y1, Uint16 x2, Uint16 y2)
 }
 
 void
-screen_fill(Uint8 *layer, int x1, int y1, int x2, int y2, int color)
+screen_fill(Uint8 *layer, int color)
+{
+	int i, length = uxn_screen.width * uxn_screen.height;
+	for(i = 0; i < length; i++)
+		layer[i] = color;
+}
+
+void
+screen_rect(Uint8 *layer, int x1, int y1, int x2, int y2, int color)
 {
 	int x, y, width = uxn_screen.width, height = uxn_screen.height;
 	for(y = y1; y < y2 && y < height; y++)
@@ -96,16 +104,16 @@ screen_debugger(Uxn *u)
 	int i;
 	for(i = 0; i < 0x08; i++) {
 		Uint8 pos = u->wst.ptr - 4 + i;
-		Uint8 color = i > 4 ? 0x01 : !pos ? 0xc :
-			i == 4                        ? 0x8 :
-                                            0x2;
+		Uint8 color = i > 4 ? 0x01 : !pos ? 0xc
+			: i == 4                      ? 0x8
+										  : 0x2;
 		draw_byte(u->wst.dat[pos], i * 0x18 + 0x8, uxn_screen.height - 0x18, color);
 	}
 	for(i = 0; i < 0x08; i++) {
 		Uint8 pos = u->rst.ptr - 4 + i;
-		Uint8 color = i > 4 ? 0x01 : !pos ? 0xc :
-			i == 4                        ? 0x8 :
-                                            0x2;
+		Uint8 color = i > 4 ? 0x01 : !pos ? 0xc
+			: i == 4                      ? 0x8
+										  : 0x2;
 		draw_byte(u->rst.dat[pos], i * 0x18 + 0x8, uxn_screen.height - 0x10, color);
 	}
 	screen_blit(uxn_screen.fg, arrow, 0, 0x68, uxn_screen.height - 0x20, 3, 0, 0, 0);
@@ -137,24 +145,18 @@ screen_resize(Uint16 width, Uint16 height)
 		return;
 	if(uxn_screen.width == width && uxn_screen.height == height)
 		return;
-	bg = malloc(width * height),
-	fg = malloc(width * height);
+	bg = malloc(width * height), fg = malloc(width * height);
 	if(bg && fg)
 		pixels = realloc(uxn_screen.pixels, width * height * sizeof(Uint32));
 	if(!bg || !fg || !pixels) {
-		free(bg);
-		free(fg);
+		free(bg), free(fg);
 		return;
 	}
-	free(uxn_screen.bg);
-	free(uxn_screen.fg);
-	uxn_screen.bg = bg;
-	uxn_screen.fg = fg;
+	free(uxn_screen.bg), free(uxn_screen.fg);
+	uxn_screen.bg = bg, uxn_screen.fg = fg;
 	uxn_screen.pixels = pixels;
-	uxn_screen.width = width;
-	uxn_screen.height = height;
-	screen_fill(uxn_screen.bg, 0, 0, width, height, 0);
-	screen_fill(uxn_screen.fg, 0, 0, width, height, 0);
+	uxn_screen.width = width, uxn_screen.height = height;
+	screen_fill(uxn_screen.bg, 0), screen_fill(uxn_screen.fg, 0);
 	emu_resize(width, height);
 	screen_change(0, 0, width, height);
 }
@@ -194,13 +196,13 @@ screen_dei(Uxn *u, Uint8 addr)
 void
 screen_deo(Uint8 *ram, Uint8 *d, Uint8 port)
 {
-	Uint8 *port_width, *port_height, *port_x, *port_y, *port_addr;
+	Uint8 *port_height, *port_x, *port_y, *port_addr;
 	Uint16 x, y, dx, dy, dxy, dyx, addr, addr_incr;
 	switch(port) {
-	case 0x3:
-		port_width = d + 0x2;
+	case 0x3: {
+		Uint8 *port_width = d + 0x2;
 		screen_resize(PEEK2(port_width), uxn_screen.height);
-		break;
+	} break;
 	case 0x5:
 		port_height = d + 0x4;
 		screen_resize(uxn_screen.width, PEEK2(port_height));
@@ -219,7 +221,7 @@ screen_deo(Uint8 *ram, Uint8 *d, Uint8 port)
 			Uint16 y2 = uxn_screen.height;
 			if(ctrl & 0x10) x2 = x, x = 0;
 			if(ctrl & 0x20) y2 = y, y = 0;
-			screen_fill(layer, x, y, x2, y2, color);
+			screen_rect(layer, x, y, x2, y2, color);
 			screen_change(x, y, x2, y2);
 		}
 		/* pixel mode */
