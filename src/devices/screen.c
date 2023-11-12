@@ -47,7 +47,7 @@ screen_fill(Uint8 *layer, int color)
 }
 
 void
-screen_rect(Uint8 *layer, int x1, int y1, int x2, int y2, int color)
+screen_rect(Uint8 *layer, Uint16 x1, Uint16 y1, Uint16 x2, Uint16 y2, int color)
 {
 	int x, y, width = uxn_screen.width, height = uxn_screen.height;
 	for(y = y1; y < y2 && y < height; y++)
@@ -56,19 +56,19 @@ screen_rect(Uint8 *layer, int x1, int y1, int x2, int y2, int color)
 }
 
 static void
-screen_blit(Uint8 *layer, Uint8 *ram, Uint16 addr, int x1, int y1, int color, int flipx, int flipy, int twobpp)
+screen_blit(Uint8 *layer, Uint8 *ram, Uint16 addr, Uint16 x1, Uint16 y1, Uint16 color, int flipx, int flipy, int twobpp)
 {
 	int v, h, width = uxn_screen.width, height = uxn_screen.height, opaque = (color % 5);
+	/* TODO: Draw partial tile */
+	if(x1 + 8 >= width) return;
+	if(y1 + 8 >= height) return;
 	for(v = 0; v < 8; v++) {
 		Uint16 c = ram[(addr + v) & 0xffff] | (twobpp ? (ram[(addr + v + 8) & 0xffff] << 8) : 0);
-		Uint16 y = y1 + (flipy ? 7 - v : v);
+		int y = (y1 + (flipy ? 7 - v : v)) * width;
 		for(h = 7; h >= 0; --h, c >>= 1) {
 			Uint8 ch = (c & 1) | ((c >> 7) & 2);
-			if(opaque || ch) {
-				Uint16 x = x1 + (flipx ? 7 - h : h);
-				if(x < width && y < height)
-					layer[x + y * width] = blending[ch][color];
-			}
+			if(opaque || ch)
+				layer[(x1 + (flipx ? 7 - h : h)) + y] = blending[ch][color];
 		}
 	}
 }
@@ -104,16 +104,16 @@ screen_debugger(Uxn *u)
 	int i;
 	for(i = 0; i < 0x08; i++) {
 		Uint8 pos = u->wst.ptr - 4 + i;
-		Uint8 color = i > 4 ? 0x01 : !pos ? 0xc
-			: i == 4                      ? 0x8
-										  : 0x2;
+		Uint8 color = i > 4 ? 0x01 : !pos ? 0xc :
+			i == 4                        ? 0x8 :
+                                            0x2;
 		draw_byte(u->wst.dat[pos], i * 0x18 + 0x8, uxn_screen.height - 0x18, color);
 	}
 	for(i = 0; i < 0x08; i++) {
 		Uint8 pos = u->rst.ptr - 4 + i;
-		Uint8 color = i > 4 ? 0x01 : !pos ? 0xc
-			: i == 4                      ? 0x8
-										  : 0x2;
+		Uint8 color = i > 4 ? 0x01 : !pos ? 0xc :
+			i == 4                        ? 0x8 :
+                                            0x2;
 		draw_byte(u->rst.dat[pos], i * 0x18 + 0x8, uxn_screen.height - 0x10, color);
 	}
 	screen_blit(uxn_screen.fg, arrow, 0, 0x68, uxn_screen.height - 0x20, 3, 0, 0, 0);
