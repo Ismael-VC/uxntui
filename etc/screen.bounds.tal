@@ -24,7 +24,15 @@
 	[ LIT2 36 -Screen/auto ] DEO
 	;portrait-chr .Screen/addr DEO2
 	#81 .Screen/sprite DEOk DEOk DEOk DEO
+	<draw-box>
+	.Screen/y DEI2k #0060 SUB2 ROT DEO2
+	<draw-box>
 	BRK
+
+@<draw-box> ( -- )
+	;box-icn .Screen/addr DEO2
+	#05 .Screen/sprite DEOk DEOk DEOk DEO
+	JMP2r
 
 @<update-cursor> ( color addr* -- )
 	[ LIT2 00 -Screen/auto ] DEO
@@ -61,4 +69,14 @@
 	ee03 0000 0000 0000 0e12 fcff ffff ffff
 	fffc f30f 1f1f 1f3f 9f3c f30f dfdf dfbf
 	3c80 8080 80c0 c0e0 0003 3fbf bfbf dfef ]
+
+@box-icn [
+	001f 2050 4844 4241 00ff 0000 0000 0000
+	00ff 0000 0000 0000 00f8 040a 1222 4282
+	4040 4040 4040 4040 8040 2010 0804 0201
+	0102 0408 1020 4080 0202 0202 0202 0202
+	4040 4040 4040 4040 0102 0408 1020 4080
+	8040 2010 0804 0201 0202 0202 0202 0202
+	4142 4448 5020 1f00 0000 0000 0000 ff00
+	0000 0000 0000 ff00 8242 2212 0a04 f800 ]
 

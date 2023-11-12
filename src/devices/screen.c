@@ -268,13 +268,18 @@ screen_deo(Uint8 *ram, Uint8 *d, Uint8 port)
 		x = PEEK2(port_x), dx = (move & 0x1) << 3, dxy = dx * fy;
 		y = PEEK2(port_y), dy = (move & 0x2) << 2, dyx = dy * fx;
 		addr = PEEK2(port_addr), addr_incr = (move & 0x4) << (1 + twobpp);
-		for(i = 0; i <= length; i++) {
-			if(twobpp)
+		if(twobpp) {
+			for(i = 0; i <= length; i++) {
 				screen_2bpp(layer, ram, addr, x + dyx * i, y + dxy * i, color, flipx, flipy);
-			else
+				addr += addr_incr;
+			}
+		} else {
+			for(i = 0; i <= length; i++) {
 				screen_1bpp(layer, ram, addr, x + dyx * i, y + dxy * i, color, flipx, flipy);
-			addr += addr_incr;
+				addr += addr_incr;
+			}
 		}
+
 		screen_change(x, y, x + dyx * length + 8, y + dxy * length + 8);
 		if(move & 0x1) {
 			x = x + dx * fx;
