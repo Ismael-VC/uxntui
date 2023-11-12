@@ -1,0 +1,62 @@
+|00 @System &vector $2 &wst $1 &rst $1 &pad $4 &r $2 &g $2 &b $2 &debug $1 &halt $1
+|20 @Screen &vector $2 &width $2 &height $2 &auto $1 &pad $1 &x $2 &y $2 &addr $2 &pixel $1 &sprite $1
+|90 @Mouse &vector $2 &x $2 &y $2 &state $1 &pad $3 &scrollx $2 &scrolly $2
+
+|0100
+
+@on-reset ( -> )
+	#375e .System/r DEO2
+	#286c .System/g DEO2
+	#2358 .System/b DEO2
+	;on-mouse .Mouse/vector DEO2
+	BRK
+
+@on-mouse ( -> )
+	( | clear background )
+	#0000 DUP2 .Screen/x DEO2
+	.Screen/y DEO2
+	#80 .Screen/pixel DEO
+	( | cursor )
+	[ LIT2 00 -Mouse/state ] DEI NEQ #41 ADD ;cursor-icn <update-cursor>
+	( | draw portrait )
+	[ LIT2 36 -Screen/auto ] DEO
+	;portrait-chr .Screen/addr DEO2
+	#81 .Screen/sprite DEOk DEOk DEOk DEO
+	BRK
+
+@<update-cursor> ( color addr* -- )
+	[ LIT2 00 -Screen/auto ] DEO
+	;fill-icn .Screen/addr DEO2
+	#40 <draw-cursor>
+	.Mouse/x DEI2 ,<draw-cursor>/x STR2
+	.Mouse/y DEI2 ,<draw-cursor>/y STR2
+	.Screen/addr DEO2
+
+@<draw-cursor> ( color -- )
+	[ LIT2 &x $2 ] .Screen/x DEO2
+	[ LIT2 &y $2 ] .Screen/y DEO2
+	.Screen/sprite DEO
+	JMP2r
+
+@fill-icn [ ffff ffff ffff ffff ]
+
+@cursor-icn [ 80c0 e0f0 f8e0 1000 ]
+
+@portrait-chr [
+	070f 1e1d 1b3b 3b3b f0e0 c0c0 d08b 8080
+f76f cf9f 9f5f 5f5f 0000 0007 1c40 4040
+fffb f975 7576 7667 0000 3164 0406 0607
+efef efef eddd 9e1e 0060 8000 0000 0000
+3b2b 280d 0105 0506 8080 8081 e1f1 f1f0
+5f6c 639b 0f27 77ab 4060 639b 0f27 67ab
+0dc8 b0e5 cded fdfc 0dc8 b0e4 ccec fcfc
+5e1e 1c9c 9d1d 5d59 4000 0080 8000 4040
+0607 0707 070e 0e0e f0f0 f0f0 f0e0 e0e0
+fb73 7fb7 bbbf bfdd f373 7b37 3b3f 3f1c
+ffff ffff ffff ffff ffff ffff ffff ff7f
+dba7 97f7 f7ed dd9d c080 90f0 f0e0 c080
+1e0e 0000 0000 0000 c0c0 f0ff ffff ffff
+ee03 0000 0000 0000 0e12 fcff ffff ffff
+fffc f30f 1f1f 1f3f 9f3c f30f dfdf dfbf
+3c80 8080 80c0 c0e0 0003 3fbf bfbf dfef ]
+
