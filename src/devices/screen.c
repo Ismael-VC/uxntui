@@ -56,18 +56,20 @@ screen_rect(Uint8 *layer, Uint16 x1, Uint16 y1, Uint16 x2, Uint16 y2, int color)
 }
 
 static void
-screen_2bpp(Uint8 *layer, Uint8 *ram, Uint16 addr, Uint16 x1, Uint16 y1, Uint16 color, int flipx, int flipy)
+screen_2bpp(Uint8 *layer, Uint8 *ram, Uint16 addr, Uint16 x1, Uint16 y1, Uint16 color, int fx, int fy)
 {
 	int v, h, width = uxn_screen.width, height = uxn_screen.height, opaque = (color % 5);
-	Uint8 *ch1 = &ram[addr], *ch2 = ch1 + 8;
+	Uint8 *ch1 = &ram[addr], *ch2 = ch1 + 8, mx = (fx > 0 ? 8 : 0), my = (fy < 0 ? 8 : 0);
+	Uint16 yy = y1 + my;
 	for(v = 0; v < 8; v++) {
 		Uint16 c = *ch1++ | (*ch2++ << 8);
-		Uint16 y = (y1 + (flipy ? 7 - v : v));
+		Uint16 xx = x1 + mx;
+		yy += fy;
 		for(h = 7; h >= 0; --h, c >>= 1) {
 			Uint8 ch = (c & 1) | ((c >> 7) & 2);
-			Uint16 x = (x1 + (flipx ? 7 - h : h));
-			if((opaque || ch) && x < width && y < height)
-				layer[x + y * width] = blending[ch][color];
+			xx += -fx;
+			if((opaque || ch) && xx < width && yy < height)
+				layer[xx + yy * width] = blending[ch][color];
 		}
 	}
 }
@@ -270,7 +272,7 @@ screen_deo(Uint8 *ram, Uint8 *d, Uint8 port)
 		addr = PEEK2(port_addr), addr_incr = (move & 0x4) << (1 + twobpp);
 		if(twobpp) {
 			for(i = 0; i <= length; i++) {
-				screen_2bpp(layer, ram, addr, x + dyx * i, y + dxy * i, color, flipx, flipy);
+				screen_2bpp(layer, ram, addr, x + dyx * i, y + dxy * i, color, fx, fy);
 				addr += addr_incr;
 			}
 		} else {
