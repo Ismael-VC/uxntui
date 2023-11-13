@@ -69,11 +69,12 @@ screen_2bpp(Uint8 *layer, Uint8 *ram, Uint16 addr, Uint16 x1, Uint16 y1, Uint16 
 	Uint16 x, xmod = (fx > 0 ? 7 : 0), xmax = x1 + xmod - fx * 8;
 	for(y = y1 + ymod; y != ymax; y += fy) {
 		Uint16 c = *ch1++ | (*ch2++ << 8);
-		for(x = x1 + xmod; x != xmax; x -= fx, c >>= 1) {
-			Uint8 ch = (c & 1) | ((c >> 7) & 2);
-			if((opaque || ch) && x < w && y < h)
-				layer[x + y * w] = blending[ch][color];
-		}
+		if(y < h)
+			for(x = x1 + xmod; x != xmax; x -= fx, c >>= 1) {
+				Uint8 ch = (c & 1) | ((c >> 7) & 2);
+				if((opaque || ch) && x < w)
+					layer[x + y * w] = blending[ch][color];
+			}
 	}
 }
 
@@ -86,11 +87,12 @@ screen_1bpp(Uint8 *layer, Uint8 *ram, Uint16 addr, Uint16 x1, Uint16 y1, Uint16 
 	Uint16 x, xmod = (fx > 0 ? 7 : 0), xmax = x1 + xmod - fx * 8;
 	for(y = y1 + ymod; y != ymax; y += fy) {
 		Uint16 c = *ch1++;
-		for(x = x1 + xmod; x != xmax; x -= fx, c >>= 1) {
-			Uint8 ch = c & 1;
-			if((opaque || ch) && x < w && y < h)
-				layer[x + y * w] = blending[ch][color];
-		}
+		if(y < h)
+			for(x = x1 + xmod; x != xmax; x -= fx, c >>= 1) {
+				Uint8 ch = c & 1;
+				if((opaque || ch) && x < w)
+					layer[x + y * w] = blending[ch][color];
+			}
 	}
 }
 
