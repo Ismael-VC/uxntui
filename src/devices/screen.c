@@ -49,16 +49,21 @@ screen_fill(Uint8 *layer, int color)
 void
 screen_rect(Uint8 *layer, Uint16 x1, Uint16 y1, Uint16 x2, Uint16 y2, int color)
 {
-	int x, y, width = uxn_screen.width, height = uxn_screen.height;
-	for(y = y1; y < y2 && y < height; y++)
-		for(x = x1; x < x2 && x < width; x++)
-			layer[x + y * width] = color;
+	int x, y, w, h;
+	if(!x1 && !y1) {
+		screen_fill(layer, color);
+		return;
+	}
+	w = uxn_screen.width, h = uxn_screen.height;
+	for(y = y1; y < y2 && y < h; y++)
+		for(x = x1; x < x2 && x < w; x++)
+			layer[x + y * w] = color;
 }
 
 static void
 screen_2bpp(Uint8 *layer, Uint8 *ram, Uint16 addr, Uint16 x1, Uint16 y1, Uint16 color, int fx, int fy)
 {
-	int width = uxn_screen.width, height = uxn_screen.height, opaque = (color % 5);
+	int w = uxn_screen.width, h = uxn_screen.height, opaque = (color % 5);
 	Uint8 *ch1 = &ram[addr], *ch2 = ch1 + 8;
 	Uint16 y, ymod = (fy < 0 ? 7 : 0), ymax = y1 + ymod + fy * 8;
 	Uint16 x, xmod = (fx > 0 ? 7 : 0), xmax = x1 + xmod - fx * 8;
@@ -66,8 +71,8 @@ screen_2bpp(Uint8 *layer, Uint8 *ram, Uint16 addr, Uint16 x1, Uint16 y1, Uint16 
 		Uint16 c = *ch1++ | (*ch2++ << 8);
 		for(x = x1 + xmod; x != xmax; x -= fx, c >>= 1) {
 			Uint8 ch = (c & 1) | ((c >> 7) & 2);
-			if((opaque || ch) && x < width && y < height)
-				layer[x + y * width] = blending[ch][color];
+			if((opaque || ch) && x < w && y < h)
+				layer[x + y * w] = blending[ch][color];
 		}
 	}
 }
@@ -75,7 +80,7 @@ screen_2bpp(Uint8 *layer, Uint8 *ram, Uint16 addr, Uint16 x1, Uint16 y1, Uint16 
 static void
 screen_1bpp(Uint8 *layer, Uint8 *ram, Uint16 addr, Uint16 x1, Uint16 y1, Uint16 color, int fx, int fy)
 {
-	int width = uxn_screen.width, height = uxn_screen.height, opaque = (color % 5);
+	int w = uxn_screen.width, h = uxn_screen.height, opaque = (color % 5);
 	Uint8 *ch1 = &ram[addr];
 	Uint16 y, ymod = (fy < 0 ? 7 : 0), ymax = y1 + ymod + fy * 8;
 	Uint16 x, xmod = (fx > 0 ? 7 : 0), xmax = x1 + xmod - fx * 8;
@@ -83,8 +88,8 @@ screen_1bpp(Uint8 *layer, Uint8 *ram, Uint16 addr, Uint16 x1, Uint16 y1, Uint16 
 		Uint16 c = *ch1++;
 		for(x = x1 + xmod; x != xmax; x -= fx, c >>= 1) {
 			Uint8 ch = c & 1;
-			if((opaque || ch) && x < width && y < height)
-				layer[x + y * width] = blending[ch][color];
+			if((opaque || ch) && x < w && y < h)
+				layer[x + y * w] = blending[ch][color];
 		}
 	}
 }
@@ -240,9 +245,9 @@ screen_deo(Uint8 *ram, Uint8 *d, Uint8 port)
 		}
 		/* pixel mode */
 		else {
-			Uint16 width = uxn_screen.width, height = uxn_screen.height;
-			if(x < width && y < height)
-				layer[x + y * width] = color;
+			Uint16 w = uxn_screen.width, h = uxn_screen.height;
+			if(x < w && y < h)
+				layer[x + y * w] = color;
 			screen_change(x, y, x + 1, y + 1);
 			if(d[0x6] & 0x1) POKE2(port_x, x + 1);
 			if(d[0x6] & 0x2) POKE2(port_y, y + 1);
