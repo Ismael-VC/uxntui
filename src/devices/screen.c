@@ -158,26 +158,37 @@ screen_palette(Uint8 *addr)
 }
 
 void
-screen_resize(Uint16 width, Uint16 height)
+screen_resize(Uint16 width, Uint16 height, int scale)
 {
 	Uint8 *bg, *fg;
 	Uint32 *pixels = NULL;
-	if(width < 0x8 || height < 0x8 || width >= 0x800 || height >= 0x800)
+	int dim_change = uxn_screen.width != width || uxn_screen.height != height;
+	if(width < 0x8 || height < 0x8 || width >= 0x800 || height >= 0x800 || scale < 1 || scale >= 4)
 		return;
-	if(uxn_screen.width == width && uxn_screen.height == height)
+	if(uxn_screen.width == width && uxn_screen.height == height && uxn_screen.scale == scale)
 		return;
-	bg = malloc(width * height), fg = malloc(width * height);
-	if(bg && fg)
-		pixels = realloc(uxn_screen.pixels, width * height * sizeof(Uint32));
-	if(!bg || !fg || !pixels) {
-		free(bg), free(fg);
-		return;
+
+	if(dim_change) {
+		bg = malloc(width * height), fg = malloc(width * height);
+		if(bg && fg)
+			pixels = realloc(uxn_screen.pixels, width * height * sizeof(Uint32) * scale * scale);
+		if(!bg || !fg || !pixels) {
+			free(bg), free(fg);
+			return;
+		}
+		free(uxn_screen.bg), free(uxn_screen.fg);
+	} else {
+		bg = uxn_screen.bg, fg = uxn_screen.fg;
+		pixels = realloc(uxn_screen.pixels, width * height * sizeof(Uint32) * scale * scale);
+		if(!pixels)
+			return;
 	}
-	free(uxn_screen.bg), free(uxn_screen.fg);
+
 	uxn_screen.bg = bg, uxn_screen.fg = fg;
 	uxn_screen.pixels = pixels;
-	uxn_screen.width = width, uxn_screen.height = height;
-	screen_fill(uxn_screen.bg, 0), screen_fill(uxn_screen.fg, 0);
+	uxn_screen.width = width, uxn_screen.height = height, uxn_screen.scale = scale;
+	if(dim_change)
+		screen_fill(uxn_screen.bg, 0), screen_fill(uxn_screen.fg, 0);
 	emu_resize(width, height);
 	screen_change(0, 0, width, height);
 }
@@ -185,7 +196,7 @@ screen_resize(Uint16 width, Uint16 height)
 void
 screen_redraw(Uxn *u)
 {
-	int i, j, o, y;
+	int i, x, y, k, l, s = uxn_screen.scale;
 	Uint8 *fg = uxn_screen.fg, *bg = uxn_screen.bg;
 	Uint16 w = uxn_screen.width, h = uxn_screen.height;
 	Uint16 x1 = uxn_screen.x1, y1 = uxn_screen.y1;
@@ -197,9 +208,18 @@ screen_redraw(Uxn *u)
 		screen_debugger(u);
 	for(i = 0; i < 16; i++)
 		palette[i] = uxn_screen.palette[(i >> 2) ? (i >> 2) : (i & 3)];
-	for(y = y1; y < y2; y++)
-		for(o = y * w, i = x1 + o, j = x2 + o; i < j; i++)
-			pixels[i] = palette[fg[i] << 2 | bg[i]];
+	for(y = y1; y < y2; y++) {
+		int ys = y * s;
+		int o = y * w;
+		for(x = x1, i = x1 + o; x < x2; x++, i++) {
+			int c = palette[fg[i] << 2 | bg[i]];
+			for(k = 0; k < s; k++) {
+				int oo = ((ys + k) * w + x) * s;
+				for(l = 0; l < s; l++)
+					pixels[oo + l] = c;
+			}
+		}
+	}
 }
 
 Uint8
@@ -222,11 +242,11 @@ screen_deo(Uint8 *ram, Uint8 *d, Uint8 port)
 	switch(port) {
 	case 0x3: {
 		Uint8 *port_width = d + 0x2;
-		screen_resize(PEEK2(port_width), uxn_screen.height);
+		screen_resize(PEEK2(port_width), uxn_screen.height, uxn_screen.scale);
 	} break;
 	case 0x5: {
 		Uint8 *port_height = d + 0x4;
-		screen_resize(uxn_screen.width, PEEK2(port_height));
+		screen_resize(uxn_screen.width, PEEK2(port_height), uxn_screen.scale);
 	} break;
 	case 0xe: {
 		Uint8 ctrl = d[0xe];

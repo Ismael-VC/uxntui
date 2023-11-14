@@ -14,7 +14,7 @@ WITH REGARD TO THIS SOFTWARE.
 #define SCREEN_DEOMASK 0xc028
 
 typedef struct UxnScreen {
-	int width, height, x1, y1, x2, y2;
+	int width, height, x1, y1, x2, y2, scale;
 	Uint32 palette[4], *pixels;
 	Uint8 *fg, *bg;
 } UxnScreen;
@@ -25,7 +25,7 @@ extern int emu_resize(int width, int height);
 void screen_fill(Uint8 *layer, int color);
 void screen_rect(Uint8 *layer, Uint16 x1, Uint16 y1, Uint16 x2, Uint16 y2, int color);
 void screen_palette(Uint8 *addr);
-void screen_resize(Uint16 width, Uint16 height);
+void screen_resize(Uint16 width, Uint16 height, int scale);
 void screen_change(Uint16 x1, Uint16 y1, Uint16 x2, Uint16 y2);
 void screen_redraw(Uxn *u);
 
