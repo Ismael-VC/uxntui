@@ -142,7 +142,7 @@ static void
 toggle_scale(Uxn *u)
 {
 	int s = uxn_screen.scale + 1;
-	if (s > 3) s = 1;
+	if(s > 3) s = 1;
 	screen_resize(uxn_screen.width, uxn_screen.height, s);
 }
 
@@ -280,7 +280,7 @@ main(int argc, char **argv)
 		return system_error("usage", "uxn11 [-v] file.rom [args...]");
 	/* Read flags */
 	if(argv[i][0] == '-' && argv[i][1] == 'v')
-		return system_version("Uxn11 - Graphical Varvara Emulator", "12 Nov 2023");
+		return system_version("Uxn11 - Graphical Varvara Emulator", "18 Nov 2023");
 	if(!emu_init())
 		return system_error("Init", "Failed to initialize varvara.");
 	if(!system_init(&u, (Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8)), argv[i++]))
