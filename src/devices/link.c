@@ -20,9 +20,8 @@ static int tids[8];
 static Uint16 link_vectors[8];
 static Uint8 *link_ram;
 
-static void
-	*
-	link_eval(void *x)
+static void *
+link_eval(void *x)
 {
 	int tid = *((int *)x);
 	Uxn u;
