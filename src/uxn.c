@@ -35,19 +35,16 @@ uxn_eval(Uxn *u, Uint16 pc)
 		Stack *s = ins & 0x40 ? &u->rst : &u->wst;
 		if(ins & 0x80) kp = s->ptr, sp = &kp;
 		else sp = &s->ptr;
-		/* OPC */
 		switch(ins & 0x1f) {
-		/* IMM */
 		case 0x00: case 0x20:
 		switch(ins) {
 			case 0x00: /* BRK */ return 1;
-			case 0x20: /* JCI */ POP1(b) if(!b) { pc += 2; break; } /* fall-through */
-			case 0x40: /* JMI */ pc += PEEK2(ram + pc) + 2; break;
-			case 0x60: /* JSI */ PUSH2(pc + 2) pc += PEEK2(ram + pc) + 2; break;
+			case 0x20: /* JCI */ POP1(b) if(!b) { pc += 2; break; }
+			case 0x40: /* JMI */ a = ram[pc++] << 8 | ram[pc++]; pc += a; break;
+			case 0x60: /* JSI */ PUSH2(pc + 2) a = ram[pc++] << 8 | ram[pc++]; pc += a; break;
 			case 0x80: case 0xc0: /* LIT  */ PUSH1(ram[pc++]) break;
 			case 0xa0: case 0xe0: /* LIT2 */ PUSH1(ram[pc++]) PUSH1(ram[pc++]) break;
 		} break;
-		/* ALU */
 		case 0x01: /* INC */ POPx(a) PUSHx(a + 1) break;
 		case 0x02: /* POP */ POPx(a) break;
 		case 0x03: /* NIP */ POPx(a) POPx(b) PUSHx(a) break;
@@ -73,7 +70,7 @@ uxn_eval(Uxn *u, Uint16 pc)
 		case 0x17: /* DEO */ POP1(a) POPx(b) DEVW(a, b) break;
 		case 0x18: /* ADD */ POPx(a) POPx(b) PUSHx(b + a) break;
 		case 0x19: /* SUB */ POPx(a) POPx(b) PUSHx(b - a) break;
-		case 0x1a: /* MUL */ POPx(a) POPx(b) PUSHx((Uint32)b * a) break;
+		case 0x1a: /* MUL */ POPx(a) POPx(b) PUSHx(b * a) break;
 		case 0x1b: /* DIV */ POPx(a) POPx(b) PUSHx(a ? b / a : 0) break;
 		case 0x1c: /* AND */ POPx(a) POPx(b) PUSHx(b & a) break;
 		case 0x1d: /* ORA */ POPx(a) POPx(b) PUSHx(b | a) break;

@@ -13,7 +13,7 @@ dest:
 	@ mkdir -p bin
 rom:
 	@ ./bin/uxnasm etc/screen.bounds.tal bin/screen.bounds.rom
-run: bin/uxnasm bin/uxncli bin/uxn11 rom
+run: all bin/uxnasm bin/uxncli bin/uxn11 rom
 	@ ./bin/uxn11 bin/screen.bounds.rom
 test: bin/uxnasm bin/uxncli bin/uxn11
 	@ ./bin/uxnasm && ./bin/uxncli && ./bin/uxn11 && ./bin/uxnasm -v && ./bin/uxncli -v && ./bin/uxn11 -v
