@@ -83,7 +83,6 @@ emu_deo(Uxn *u, Uint8 addr, Uint8 value)
 	case 0x20: screen_deo(u->ram, &u->dev[d], p); break;
 	case 0xa0: file_deo(0, u->ram, &u->dev[d], p); break;
 	case 0xb0: file_deo(1, u->ram, &u->dev[d], p); break;
-	case 0xf0: link_deo(u->ram, &u->dev[d], p); break;
 	}
 }
 

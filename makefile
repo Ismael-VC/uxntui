@@ -1,5 +1,5 @@
 
-CLI_src=src/uxn.c src/devices/system.c src/devices/console.c src/devices/file.c src/devices/datetime.c src/devices/link.c
+CLI_src=src/uxn.c src/devices/system.c src/devices/console.c src/devices/file.c src/devices/datetime.c
 EMU_src=${CLI_src} src/devices/screen.c src/devices/controller.c src/devices/mouse.c
 
 RELEASE_flags=-DNDEBUG -O2 -g0 -s
@@ -31,6 +31,6 @@ clean:
 bin/uxnasm: src/uxnasm.c
 	@ cc ${RELEASE_flags} ${CFLAGS} src/uxnasm.c -o bin/uxnasm
 bin/uxncli: ${CLI_src} src/uxncli.c
-	@ cc ${RELEASE_flags} ${CFLAGS} ${CLI_src} src/uxncli.c -lutil -pthread -o bin/uxncli
+	@ cc ${RELEASE_flags} ${CFLAGS} ${CLI_src} src/uxncli.c -lutil -o bin/uxncli
 bin/uxn11: ${EMU_src} src/uxn11.c
-	@ cc ${RELEASE_flags} ${CFLAGS} ${EMU_src} src/uxn11.c -lX11 -lutil -pthread -o bin/uxn11
+	@ cc ${RELEASE_flags} ${CFLAGS} ${EMU_src} src/uxn11.c -lX11 -lutil -o bin/uxn11
