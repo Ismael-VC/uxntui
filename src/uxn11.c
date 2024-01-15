@@ -203,16 +203,6 @@ emu_event(Uxn *u)
 }
 
 static int
-emu_init(void)
-{
-	display = XOpenDisplay(NULL);
-	if(!display)
-		return system_error("X11", "Could not open display");
-	screen_resize(WIDTH, HEIGHT, 1);
-	return 1;
-}
-
-static int
 emu_run(Uxn *u, char *rom)
 {
 	int i = 1, n, s = uxn_screen.scale;
@@ -274,16 +264,24 @@ main(int argc, char **argv)
 {
 	Uxn u = {0};
 	int i = 1;
-	if(i == argc)
-		return system_error("usage", "uxn11 [-v] file.rom [args...]");
-	/* Read flags */
-	if(argv[i][0] == '-' && argv[i][1] == 'v')
-		return system_version("Uxn11 - Graphical Varvara Emulator", "18 Nov 2023");
-	if(!emu_init())
-		return system_error("Init", "Failed to initialize varvara.");
-	if(!system_init(&u, (Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8)), argv[i++]))
-		return system_error("Init", "Failed to initialize uxn.");
+	if(i == argc) {
+		fprintf(stdout, "usage: %s [-v] file.rom [args..]\n", argv[0]);
+		return 0;
+	}
+	if(argv[i][0] == '-' && argv[i][1] == 'v') {
+		fprintf(stdout, "Uxn11 - Varvara Emulator, 15 Jan 2023.\n");
+		i++;
+	}
+	if(!(display = XOpenDisplay(NULL))) {
+		fprintf(stdout, "Could not open display.\n");
+		return 0;
+	}
+	if(!system_boot(&u, (Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8)), argv[i++])) {
+		fprintf(stdout, "Could not boot.\n");
+		return 0;
+	}
 	/* Game Loop */
+	screen_resize(WIDTH, HEIGHT, 1);
 	u.dev[0x17] = argc - i;
 	if(uxn_eval(&u, PAGE_PROGRAM)) {
 		console_listen(&u, i, argc, argv);

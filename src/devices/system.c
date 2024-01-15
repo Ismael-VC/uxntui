@@ -18,18 +18,29 @@ WITH REGARD TO THIS SOFTWARE.
 char *boot_rom;
 Uint16 dev_vers[0x10];
 
+static void
+system_zero(Uxn *u, int soft)
+{
+	int i;
+	for(i = 0x100 * soft; i < 0x10000; i++)
+		u->ram[i] = 0;
+	for(i = 0x0; i < 0x100; i++)
+		u->dev[i] = 0;
+	u->wst.ptr = 0;
+	u->rst.ptr = 0;
+}
+
 static int
 system_load(Uxn *u, char *filename)
 {
-	int l, i = 0;
 	FILE *f = fopen(filename, "rb");
-	if(!f)
-		return 0;
-	l = fread(&u->ram[PAGE_PROGRAM], 0x10000 - PAGE_PROGRAM, 1, f);
-	while(l && ++i < RAM_PAGES)
-		l = fread(u->ram + 0x10000 * i, 0x10000, 1, f);
-	fclose(f);
-	return 1;
+	if(f) {
+		int i, l = fread(&u->ram[PAGE_PROGRAM], 0x10000 - PAGE_PROGRAM, 1, f);
+		while(l && ++i < RAM_PAGES)
+			l = fread(u->ram + 0x10000 * i, 0x10000, 1, f);
+		fclose(f);
+	}
+	return !!f;
 }
 
 static void
@@ -69,34 +80,22 @@ system_version(char *name, char *date)
 }
 
 void
-system_boot(Uxn *u, int soft)
-{
-	int i;
-	for(i = 0x100 * soft; i < 0x10000; i++)
-		u->ram[i] = 0;
-	for(i = 0x0; i < 0x100; i++)
-		u->dev[i] = 0;
-	u->wst.ptr = 0;
-	u->rst.ptr = 0;
-}
-
-void
 system_reboot(Uxn *u, char *rom, int soft)
 {
-	system_boot(u, soft);
+	system_zero(u, soft);
 	if(system_load(u, boot_rom))
 		if(uxn_eval(u, PAGE_PROGRAM))
 			boot_rom = rom;
 }
 
 int
-system_init(Uxn *u, Uint8 *ram, char *rom)
+system_boot(Uxn *u, Uint8 *ram, char *rom)
 {
 	u->ram = ram;
-	system_boot(u, 0);
+	system_zero(u, 0);
 	if(!system_load(u, rom))
 		if(!system_load(u, "boot.rom"))
-			return system_error("Init", "Failed to load rom.");
+			return system_error("Could not load rom", rom);
 	boot_rom = rom;
 	return 1;
 }
