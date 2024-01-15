@@ -79,7 +79,7 @@ emu_resize(int w, int h)
 	static Visual *visual;
 	if(window) {
 		visual = DefaultVisual(display, 0);
-		ximage = XCreateImage(display, visual, DefaultDepth(display, DefaultScreen(display)), ZPixmap, 0, (char *)uxn_screen.pixels, uxn_screen.width * s, uxn_screen.height * s, 32, 0);
+		ximage = XCreateImage(display, visual, DefaultDepth(display, DefaultScreen(display)), ZPixmap, 0, (char *)uxn_screen.pixels, w * s, h * s, 32, 0);
 		XResizeWindow(display, window, w * s, h * s);
 		XMapWindow(display, window);
 	}
@@ -192,7 +192,6 @@ emu_event(Uxn *u)
 static int
 display_init(void)
 {
-	int s = uxn_screen.scale;
 	Atom wmDelete;
 	static Visual *visual;
 	XColor black = {0};
@@ -202,9 +201,10 @@ display_init(void)
 	display = XOpenDisplay(NULL);
 	if(!display)
 		return system_error("init", "Display failed");
-	/* display */
+	/* default size */
+	screen_resize(WIDTH, HEIGHT, 1);
 	visual = DefaultVisual(display, 0);
-	window = XCreateSimpleWindow(display, RootWindow(display, 0), 0, 0, uxn_screen.width * s + PAD * 2, uxn_screen.height * s + PAD * 2, 1, 0, 0);
+	window = XCreateSimpleWindow(display, RootWindow(display, 0), 0, 0, uxn_screen.width + PAD * 2, uxn_screen.height + PAD * 2, 1, 0, 0);
 	if(visual->class != TrueColor)
 		return system_error("init", "True-color visual failed");
 	XSelectInput(display, window, ButtonPressMask | ButtonReleaseMask | PointerMotionMask | ExposureMask | KeyPressMask | KeyReleaseMask);
@@ -212,7 +212,7 @@ display_init(void)
 	XSetWMProtocols(display, window, &wmDelete, 1);
 	XStoreName(display, window, boot_rom);
 	XMapWindow(display, window);
-	ximage = XCreateImage(display, visual, DefaultDepth(display, DefaultScreen(display)), ZPixmap, 0, (char *)uxn_screen.pixels, uxn_screen.width * s, uxn_screen.height * s, 32, 0);
+	ximage = XCreateImage(display, visual, DefaultDepth(display, DefaultScreen(display)), ZPixmap, 0, (char *)uxn_screen.pixels, uxn_screen.width, uxn_screen.height, 32, 0);
 	/* hide cursor */
 	bitmap = XCreateBitmapFromData(display, window, empty, 1, 1);
 	blank = XCreatePixmapCursor(display, bitmap, bitmap, &black, &black, 0, 0);
@@ -284,7 +284,6 @@ main(int argc, char **argv)
 		return 0;
 	}
 	/* Game Loop */
-	screen_resize(WIDTH, HEIGHT, 1);
 	u.dev[0x17] = argc - i;
 	if(uxn_eval(&u, PAGE_PROGRAM)) {
 		console_listen(&u, i, argc, argv);
