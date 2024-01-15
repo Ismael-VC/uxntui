@@ -35,7 +35,7 @@ system_load(Uxn *u, char *filename)
 {
 	FILE *f = fopen(filename, "rb");
 	if(f) {
-		int i, l = fread(&u->ram[PAGE_PROGRAM], 0x10000 - PAGE_PROGRAM, 1, f);
+		int i = 0, l = fread(&u->ram[PAGE_PROGRAM], 0x10000 - PAGE_PROGRAM, 1, f);
 		while(l && ++i < RAM_PAGES)
 			l = fread(u->ram + 0x10000 * i, 0x10000, 1, f);
 		fclose(f);

@@ -43,18 +43,6 @@ clamp(int val, int min, int max)
 	return (val >= min) ? (val <= max) ? val : max : min;
 }
 
-static void
-hide_cursor(void)
-{
-	XColor black = {0};
-	static char empty[] = {0};
-	Pixmap bitmap = XCreateBitmapFromData(display, window, empty, 1, 1);
-	Cursor blank = XCreatePixmapCursor(display, bitmap, bitmap, &black, &black, 0, 0);
-	XDefineCursor(display, window, blank);
-	XFreeCursor(display, blank);
-	XFreePixmap(display, bitmap);
-}
-
 Uint8
 emu_dei(Uxn *u, Uint8 addr)
 {
@@ -86,9 +74,9 @@ emu_deo(Uxn *u, Uint8 addr, Uint8 value)
 }
 
 int
-emu_resize(int width, int height)
+emu_resize(int w, int h)
 {
-	int w = uxn_screen.width, h = uxn_screen.height, s = uxn_screen.scale;
+	int s = uxn_screen.scale;
 	static Visual *visual;
 	if(window) {
 		visual = DefaultVisual(display, 0);
@@ -137,7 +125,7 @@ get_button(KeySym sym)
 }
 
 static void
-toggle_scale(Uxn *u)
+toggle_scale(void)
 {
 	int s = uxn_screen.scale + 1;
 	if(s > 3) s = 1;
@@ -162,7 +150,7 @@ emu_event(Uxn *u)
 		char buf[7];
 		XLookupString((XKeyPressedEvent *)&ev, buf, 7, &sym, 0);
 		if(sym == XK_F1)
-			toggle_scale(u);
+			toggle_scale();
 		else if(sym == XK_F2)
 			u->dev[0x0e] = !u->dev[0x0e];
 		else if(sym == XK_F4)
@@ -203,18 +191,19 @@ emu_event(Uxn *u)
 }
 
 static int
-emu_run(Uxn *u, char *rom)
+display_init(void)
 {
-	int i = 1, n, s = uxn_screen.scale;
-	char expirations[8];
-	char coninp[CONINBUFSIZE];
-	struct pollfd fds[3];
-	static const struct itimerspec screen_tspec = {{0, 16666666}, {0, 16666666}};
-	loaded_rom = rom;
-
-	/* display */
+	int s = uxn_screen.scale;
 	Atom wmDelete;
 	static Visual *visual;
+	XColor black = {0};
+	static char empty[] = {0};
+	Pixmap bitmap;
+	Cursor blank;
+	display = XOpenDisplay(NULL);
+	if(!display)
+		return system_error("init", "Display failed");
+	/* display */
 	visual = DefaultVisual(display, 0);
 	window = XCreateSimpleWindow(display, RootWindow(display, 0), 0, 0, uxn_screen.width * s + PAD * 2, uxn_screen.height * s + PAD * 2, 1, 0, 0);
 	if(visual->class != TrueColor)
@@ -222,10 +211,27 @@ emu_run(Uxn *u, char *rom)
 	XSelectInput(display, window, ButtonPressMask | ButtonReleaseMask | PointerMotionMask | ExposureMask | KeyPressMask | KeyReleaseMask);
 	wmDelete = XInternAtom(display, "WM_DELETE_WINDOW", True);
 	XSetWMProtocols(display, window, &wmDelete, 1);
-	XStoreName(display, window, rom);
+	XStoreName(display, window, boot_rom);
 	XMapWindow(display, window);
 	ximage = XCreateImage(display, visual, DefaultDepth(display, DefaultScreen(display)), ZPixmap, 0, (char *)uxn_screen.pixels, uxn_screen.width * s, uxn_screen.height * s, 32, 0);
-	hide_cursor();
+	/* hide cursor */
+	bitmap = XCreateBitmapFromData(display, window, empty, 1, 1);
+	blank = XCreatePixmapCursor(display, bitmap, bitmap, &black, &black, 0, 0);
+	XDefineCursor(display, window, blank);
+	XFreeCursor(display, blank);
+	XFreePixmap(display, bitmap);
+	return 1;
+}
+
+static int
+emu_run(Uxn *u, char *rom)
+{
+	int i = 1, n;
+	char expirations[8];
+	char coninp[CONINBUFSIZE];
+	struct pollfd fds[3];
+	static const struct itimerspec screen_tspec = {{0, 16666666}, {0, 16666666}};
+	loaded_rom = rom;
 
 	/* timer */
 	fds[0].fd = XConnectionNumber(display);
@@ -243,7 +249,7 @@ emu_run(Uxn *u, char *rom)
 			read(fds[1].fd, expirations, 8);   /* Indicate we handled the timer */
 			uxn_eval(u, PEEK2(u->dev + 0x20)); /* Call the vector once, even if the timer fired multiple times */
 			if(uxn_screen.x2) {
-				s = uxn_screen.scale;
+				int s = uxn_screen.scale;
 				int x1 = uxn_screen.x1 * s, y1 = uxn_screen.y1 * s, x2 = uxn_screen.x2 * s, y2 = uxn_screen.y2 * s;
 				screen_redraw(u);
 				XPutImage(display, window, DefaultGC(display, 0), ximage, x1, y1, x1 + PAD, y1 + PAD, x2 - x1, y2 - y1);
@@ -272,12 +278,12 @@ main(int argc, char **argv)
 		fprintf(stdout, "Uxn11 - Varvara Emulator, 15 Jan 2023.\n");
 		i++;
 	}
-	if(!(display = XOpenDisplay(NULL))) {
-		fprintf(stdout, "Could not open display.\n");
-		return 0;
-	}
 	if(!system_boot(&u, (Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8)), argv[i++])) {
 		fprintf(stdout, "Could not boot.\n");
+		return 0;
+	}
+	if(!display_init()) {
+		fprintf(stdout, "Could not open display.\n");
 		return 0;
 	}
 	/* Game Loop */
