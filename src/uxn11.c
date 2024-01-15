@@ -75,12 +75,12 @@ emu_deo(Uxn *u, Uint8 addr, Uint8 value)
 int
 emu_resize(int w, int h)
 {
-	int s = uxn_screen.scale;
-	static Visual *visual;
 	if(window) {
+		static Visual *visual;
+		w *= uxn_screen.scale, h *= uxn_screen.scale;
 		visual = DefaultVisual(display, 0);
-		ximage = XCreateImage(display, visual, DefaultDepth(display, DefaultScreen(display)), ZPixmap, 0, (char *)uxn_screen.pixels, w * s, h * s, 32, 0);
-		XResizeWindow(display, window, w * s, h * s);
+		ximage = XCreateImage(display, visual, DefaultDepth(display, DefaultScreen(display)), ZPixmap, 0, (char *)uxn_screen.pixels, w, h, 32, 0);
+		XResizeWindow(display, window, w, h);
 		XMapWindow(display, window);
 	}
 	return 1;
@@ -93,7 +93,6 @@ emu_restart(Uxn *u, char *rom, int soft)
 	screen_rect(uxn_screen.bg, 0, 0, uxn_screen.width, uxn_screen.height, 0);
 	screen_rect(uxn_screen.fg, 0, 0, uxn_screen.width, uxn_screen.height, 0);
 	system_reboot(u, rom, soft);
-	/* set window title */
 }
 
 static int
@@ -135,11 +134,10 @@ static void
 emu_event(Uxn *u)
 {
 	XEvent ev;
-	int s = uxn_screen.scale;
 	XNextEvent(display, &ev);
 	switch(ev.type) {
 	case Expose:
-		XPutImage(display, window, DefaultGC(display, 0), ximage, 0, 0, PAD, PAD, uxn_screen.width * s, uxn_screen.height * s);
+		XPutImage(display, window, DefaultGC(display, 0), ximage, 0, 0, PAD, PAD, uxn_screen.width * uxn_screen.scale, uxn_screen.height * uxn_screen.scale);
 		break;
 	case ClientMessage: {
 		emu_end(u);
@@ -180,8 +178,8 @@ emu_event(Uxn *u)
 	} break;
 	case MotionNotify: {
 		XMotionEvent *e = (XMotionEvent *)&ev;
-		int ex = (e->x - PAD) / s;
-		int ey = (e->y - PAD) / s;
+		int ex = (e->x - PAD) / uxn_screen.scale;
+		int ey = (e->y - PAD) / uxn_screen.scale;
 		int x = clamp(ex, 0, uxn_screen.width - 1);
 		int y = clamp(ey, 0, uxn_screen.height - 1);
 		mouse_pos(u, &u->dev[0x90], x, y);
@@ -201,12 +199,12 @@ display_init(void)
 	display = XOpenDisplay(NULL);
 	if(!display)
 		return system_error("init", "Display failed");
-	/* default size */
 	screen_resize(WIDTH, HEIGHT, 1);
+	/* start window */
 	visual = DefaultVisual(display, 0);
-	window = XCreateSimpleWindow(display, RootWindow(display, 0), 0, 0, uxn_screen.width + PAD * 2, uxn_screen.height + PAD * 2, 1, 0, 0);
 	if(visual->class != TrueColor)
 		return system_error("init", "True-color visual failed");
+	window = XCreateSimpleWindow(display, RootWindow(display, 0), 0, 0, uxn_screen.width + PAD * 2, uxn_screen.height + PAD * 2, 1, 0, 0);
 	XSelectInput(display, window, ButtonPressMask | ButtonReleaseMask | PointerMotionMask | ExposureMask | KeyPressMask | KeyReleaseMask);
 	wmDelete = XInternAtom(display, "WM_DELETE_WINDOW", True);
 	XSetWMProtocols(display, window, &wmDelete, 1);
@@ -243,8 +241,8 @@ emu_run(Uxn *u, char *rom)
 		while(XPending(display))
 			emu_event(u);
 		if(poll(&fds[1], 1, 0)) {
-			read(fds[1].fd, expirations, 8);               /* Indicate we handled the timer */
-			uxn_eval(u, u->dev[0x20] << 8 | u->dev[0x21]); /* Call the vector once, even if the timer fired multiple times */
+			read(fds[1].fd, expirations, 8);
+			uxn_eval(u, u->dev[0x20] << 8 | u->dev[0x21]);
 			if(uxn_screen.x2) {
 				int s = uxn_screen.scale;
 				int x1 = uxn_screen.x1 * s, y1 = uxn_screen.y1 * s, x2 = uxn_screen.x2 * s, y2 = uxn_screen.y2 * s;
