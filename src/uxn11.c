@@ -139,9 +139,9 @@ emu_event(Uxn *u)
 	case Expose:
 		XPutImage(display, window, DefaultGC(display, 0), ximage, 0, 0, PAD, PAD, uxn_screen.width * uxn_screen.scale, uxn_screen.height * uxn_screen.scale);
 		break;
-	case ClientMessage: {
+	case ClientMessage:
 		emu_end(u);
-	} break;
+		break;
 	case KeyPress: {
 		KeySym sym;
 		char buf[7];
@@ -178,10 +178,8 @@ emu_event(Uxn *u)
 	} break;
 	case MotionNotify: {
 		XMotionEvent *e = (XMotionEvent *)&ev;
-		int ex = (e->x - PAD) / uxn_screen.scale;
-		int ey = (e->y - PAD) / uxn_screen.scale;
-		int x = clamp(ex, 0, uxn_screen.width - 1);
-		int y = clamp(ey, 0, uxn_screen.height - 1);
+		int x = clamp((e->x - PAD) / uxn_screen.scale, 0, uxn_screen.width - 1);
+		int y = clamp((e->y - PAD) / uxn_screen.scale, 0, uxn_screen.height - 1);
 		mouse_pos(u, &u->dev[0x90], x, y);
 	} break;
 	}
@@ -244,10 +242,10 @@ emu_run(Uxn *u, char *rom)
 			read(fds[1].fd, expirations, 8);
 			uxn_eval(u, u->dev[0x20] << 8 | u->dev[0x21]);
 			if(uxn_screen.x2) {
-				int s = uxn_screen.scale;
-				int x1 = uxn_screen.x1 * s, y1 = uxn_screen.y1 * s, x2 = uxn_screen.x2 * s, y2 = uxn_screen.y2 * s;
+				int x = uxn_screen.x1 * uxn_screen.scale, y = uxn_screen.y1 * uxn_screen.scale;
+				int w = uxn_screen.x2 * uxn_screen.scale - x, h = uxn_screen.y2 * uxn_screen.scale - y;
 				screen_redraw(u);
-				XPutImage(display, window, DefaultGC(display, 0), ximage, x1, y1, x1 + PAD, y1 + PAD, x2 - x1, y2 - y1);
+				XPutImage(display, window, DefaultGC(display, 0), ximage, x, y, x + PAD, y + PAD, w, h);
 			}
 		}
 		if((fds[2].revents & POLLIN) != 0) {
