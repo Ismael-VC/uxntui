@@ -146,14 +146,12 @@ emu_event(Uxn *u)
 		KeySym sym;
 		char buf[7];
 		XLookupString((XKeyPressedEvent *)&ev, buf, 7, &sym, 0);
-		if(sym == XK_F1)
-			toggle_scale();
-		else if(sym == XK_F2)
-			u->dev[0x0e] = !u->dev[0x0e];
-		else if(sym == XK_F4)
-			emu_restart(u, boot_rom, 0);
-		else if(sym == XK_F5)
-			emu_restart(u, boot_rom, 1);
+		switch(sym){
+			case XK_F1: toggle_scale(); break;
+			case XK_F2: u->dev[0x0e] = !u->dev[0x0e]; break;
+			case XK_F4: emu_restart(u, boot_rom, 0); break;
+			case XK_F5: emu_restart(u, boot_rom, 1); break;
+		}
 		controller_down(u, &u->dev[0x80], get_button(sym));
 		controller_key(u, &u->dev[0x80], sym < 0x80 ? sym : (Uint8)buf[0]);
 	} break;
