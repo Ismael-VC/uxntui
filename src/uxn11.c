@@ -30,7 +30,6 @@ WITH REGARD TO THIS SOFTWARE.
 static XImage *ximage;
 static Display *display;
 static Window window;
-static char *loaded_rom;
 
 #define WIDTH (64 * 8)
 #define HEIGHT (40 * 8)
@@ -231,8 +230,6 @@ emu_run(Uxn *u, char *rom)
 	char coninp[CONINBUFSIZE];
 	struct pollfd fds[3];
 	static const struct itimerspec screen_tspec = {{0, 16666666}, {0, 16666666}};
-	loaded_rom = rom;
-
 	/* timer */
 	fds[0].fd = XConnectionNumber(display);
 	fds[1].fd = timerfd_create(CLOCK_MONOTONIC, 0);
@@ -246,8 +243,8 @@ emu_run(Uxn *u, char *rom)
 		while(XPending(display))
 			emu_event(u);
 		if(poll(&fds[1], 1, 0)) {
-			read(fds[1].fd, expirations, 8);   /* Indicate we handled the timer */
-			uxn_eval(u, PEEK2(u->dev + 0x20)); /* Call the vector once, even if the timer fired multiple times */
+			read(fds[1].fd, expirations, 8);               /* Indicate we handled the timer */
+			uxn_eval(u, u->dev[0x20] << 8 | u->dev[0x21]); /* Call the vector once, even if the timer fired multiple times */
 			if(uxn_screen.x2) {
 				int s = uxn_screen.scale;
 				int x1 = uxn_screen.x1 * s, y1 = uxn_screen.y1 * s, x2 = uxn_screen.x2 * s, y2 = uxn_screen.y2 * s;
