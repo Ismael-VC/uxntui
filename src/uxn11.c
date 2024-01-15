@@ -15,7 +15,6 @@
 #include "devices/mouse.h"
 #include "devices/file.h"
 #include "devices/datetime.h"
-#include "devices/link.h"
 
 /*
 Copyright (c) 2022 Devine Lu Linvega
