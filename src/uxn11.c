@@ -80,7 +80,7 @@ emu_resize(int w, int h)
 		w *= uxn_screen.scale, h *= uxn_screen.scale;
 		visual = DefaultVisual(display, 0);
 		ximage = XCreateImage(display, visual, DefaultDepth(display, DefaultScreen(display)), ZPixmap, 0, (char *)uxn_screen.pixels, w, h, 32, 0);
-		XResizeWindow(display, window, w, h);
+		XResizeWindow(display, window, w + PAD * 2, h + PAD * 2);
 		XMapWindow(display, window);
 	}
 	return 1;
@@ -146,11 +146,11 @@ emu_event(Uxn *u)
 		KeySym sym;
 		char buf[7];
 		XLookupString((XKeyPressedEvent *)&ev, buf, 7, &sym, 0);
-		switch(sym){
-			case XK_F1: toggle_scale(); break;
-			case XK_F2: u->dev[0x0e] = !u->dev[0x0e]; break;
-			case XK_F4: emu_restart(u, boot_rom, 0); break;
-			case XK_F5: emu_restart(u, boot_rom, 1); break;
+		switch(sym) {
+		case XK_F1: toggle_scale(); break;
+		case XK_F2: u->dev[0x0e] = !u->dev[0x0e]; break;
+		case XK_F4: emu_restart(u, boot_rom, 0); break;
+		case XK_F5: emu_restart(u, boot_rom, 1); break;
 		}
 		controller_down(u, &u->dev[0x80], get_button(sym));
 		controller_key(u, &u->dev[0x80], sym < 0x80 ? sym : (Uint8)buf[0]);
