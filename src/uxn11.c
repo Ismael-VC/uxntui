@@ -118,6 +118,7 @@ get_button(KeySym sym)
 	case XK_Alt_L: return 0x02;
 	case XK_Shift_L: return 0x04;
 	case XK_Home: return 0x08;
+	case XK_Meta_L: return 0x02;
 	}
 	return 0x00;
 }
