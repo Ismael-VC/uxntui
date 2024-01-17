@@ -136,9 +136,12 @@ emu_event(Uxn *u)
 	XEvent ev;
 	XNextEvent(display, &ev);
 	switch(ev.type) {
-	case Expose:
-		XPutImage(display, window, DefaultGC(display, 0), ximage, 0, 0, PAD, PAD, uxn_screen.width * uxn_screen.scale, uxn_screen.height * uxn_screen.scale);
-		break;
+	case Expose: {
+		int w = uxn_screen.width * uxn_screen.scale;
+		int h = uxn_screen.height * uxn_screen.scale;
+		XResizeWindow(display, window, w + PAD * 2, h + PAD * 2);
+		XPutImage(display, window, DefaultGC(display, 0), ximage, 0, 0, PAD, PAD, w, h);
+	} break;
 	case ClientMessage:
 		emu_end(u);
 		break;
@@ -266,7 +269,7 @@ main(int argc, char **argv)
 		return 0;
 	}
 	if(argv[i][0] == '-' && argv[i][1] == 'v') {
-		fprintf(stdout, "Uxn11 - Varvara Emulator, 15 Jan 2023.\n");
+		fprintf(stdout, "Uxn11 - Varvara Emulator, 16 Jan 2023.\n");
 		i++;
 	}
 	if(!system_boot(&u, (Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8)), argv[i++])) {
