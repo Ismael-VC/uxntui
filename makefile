@@ -12,7 +12,7 @@ all: dest bin/uxnasm bin/uxncli bin/uxn11
 dest:
 	@ mkdir -p bin
 rom:
-	@ ./bin/uxnasm etc/controller.tal bin/res.rom
+	@ ./bin/uxnasm etc/screen.bounds.tal bin/res.rom
 run: all bin/uxnasm bin/uxncli bin/uxn11 rom
 	@ ./bin/uxn11 bin/res.rom
 test: bin/uxnasm bin/uxncli bin/uxn11
