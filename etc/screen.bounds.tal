@@ -17,9 +17,9 @@
 
 @on-mouse ( -> )
 	( | clear background )
-	#0000 DUP2 .Screen/x DEO2
+	( #0000 DUP2 .Screen/x DEO2
 	.Screen/y DEO2
-	#80 .Screen/pixel DEO
+	#80 .Screen/pixel DEO )
 	<draw-guide>
 	( | cursor )
 	#41 ;cursor-icn <update-cursor>

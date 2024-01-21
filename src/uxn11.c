@@ -243,7 +243,7 @@ emu_run(Uxn *u, char *rom)
 		if(poll(&fds[1], 1, 0)) {
 			read(fds[1].fd, expirations, 8);
 			uxn_eval(u, u->dev[0x20] << 8 | u->dev[0x21]);
-			if(uxn_screen.x2) {
+			if(screen_changed()) {
 				int x = uxn_screen.x1 * uxn_screen.scale, y = uxn_screen.y1 * uxn_screen.scale;
 				int w = uxn_screen.x2 * uxn_screen.scale - x, h = uxn_screen.y2 * uxn_screen.scale - y;
 				screen_redraw(u);
@@ -270,7 +270,7 @@ main(int argc, char **argv)
 		return 0;
 	}
 	if(argv[i][0] == '-' && argv[i][1] == 'v') {
-		fprintf(stdout, "Uxn11 - Varvara Emulator, 16 Jan 2023.\n");
+		fprintf(stdout, "Uxn11 - Varvara Emulator, 20 Jan 2023.\n");
 		i++;
 	}
 	if(!system_boot(&u, (Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8)), argv[i++])) {
