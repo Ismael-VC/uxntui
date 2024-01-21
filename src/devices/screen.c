@@ -89,6 +89,7 @@ screen_change(int x1, int y1, int x2, int y2)
 	if(x2 > uxn_screen.x2) uxn_screen.x2 = x2;
 	if(y2 > uxn_screen.y2) uxn_screen.y2 = y2;
 }
+
 /* clang-format off */
 
 static Uint8 icons[] = {
@@ -302,24 +303,23 @@ screen_deo(Uint8 *ram, Uint8 *d, Uint8 port)
 		Uint8 twobpp = !!(ctrl & 0x80);
 		Uint8 color = ctrl & 0xf;
 		Uint8 *layer = ctrl & 0x40 ? uxn_screen.fg : uxn_screen.bg;
-		int fx = ctrl & 0x10 ? -1 : 1;
-		int fy = ctrl & 0x20 ? -1 : 1;
-		int x1, x2, y1, y2;
+		int fx = ctrl & 0x10 ? -1 : 1, fy = ctrl & 0x20 ? -1 : 1;
+		int x1, x2, y1, y2, x = rX, y = rY;
 		int dxy = rDX * fy, dyx = rDY * fx, addr_incr = rMA << (1 + twobpp);
 		if(twobpp)
-			for(i = 0; i <= rML; i++, rA += addr_incr)
-				screen_2bpp(layer, &ram[rA], rX + dyx * i, rY + dxy * i, color, fx, fy);
+			for(i = 0; i <= rML; i++, x += dyx, y += dxy, rA += addr_incr)
+				screen_2bpp(layer, &ram[rA], x, y, color, fx, fy);
 		else
-			for(i = 0; i <= rML; i++, rA += addr_incr)
-				screen_1bpp(layer, &ram[rA], rX + dyx * i, rY + dxy * i, color, fx, fy);
-		if(fx == -1)
-			x1 = rX + dyx * rML, x2 = rX;
+			for(i = 0; i <= rML; i++, x += dyx, y += dxy, rA += addr_incr)
+				screen_1bpp(layer, &ram[rA], x, y, color, fx, fy);
+		if(fx < 0)
+			x1 = x, x2 = rX;
 		else
-			x1 = rX, x2 = rX + dyx * rML;
-		if(fy == -1)
-			y1 = rY + dxy * rML, y2 = rY;
+			x1 = rX, x2 = x;
+		if(fy < 0)
+			y1 = y, y2 = rY;
 		else
-			y1 = rY, y2 = rY + dxy * rML;
+			y1 = rY, y2 = y;
 		screen_change(x1, y1, x2 + 8, y2 + 8);
 		if(rMX) rX += rDX * fx;
 		if(rMY) rY += rDY * fy;
