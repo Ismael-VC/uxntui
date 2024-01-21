@@ -289,7 +289,7 @@ screen_deo(Uint8 *ram, Uint8 *d, Uint8 port)
 		/* pixel mode */
 		else {
 			Uint16 w = uxn_screen.width;
-			if(rX < w && rY < uxn_screen.height)
+			if(rX > 0 && rY > 0 && rX < w && rY < uxn_screen.height)
 				layer[rX + rY * w] = color;
 			screen_change(rX, rY, rX + 1, rY + 1);
 			if(rMX) rX++;
