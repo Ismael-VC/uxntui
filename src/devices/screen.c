@@ -25,15 +25,6 @@ static Uint8 blending[4][16] = {
 	{1, 2, 3, 1, 1, 2, 3, 1, 1, 2, 3, 1, 1, 2, 3, 1},
 	{2, 3, 1, 2, 2, 3, 1, 2, 2, 3, 1, 2, 2, 3, 1, 2}};
 
-static int
-twos(Uint16 value)
-{
-	if(value & (1 << (sizeof(Uint16) * 8 - 1)))
-		return (int)value - (1 << sizeof(Uint16) * 8);
-	else
-		return (int)value;
-}
-
 static void
 screen_2bpp(Uint8 *layer, Uint8 *addr, Uint16 x1, Uint16 y1, Uint16 color, int fx, int fy)
 {
@@ -271,9 +262,9 @@ screen_deo(Uint8 *ram, Uint8 *d, Uint8 port)
 	case 0x5: screen_resize(uxn_screen.width, PEEK2(d + 4), uxn_screen.scale); return;
 	case 0x6: rMX = d[0x6] & 0x1, rMY = d[0x6] & 0x2, rMA = d[0x6] & 0x4, rML = d[0x6] >> 4, rDX = rMX << 3, rDY = rMY << 2; return;
 	case 0x8:
-	case 0x9: rX = twos((d[0x8] << 8) | d[0x9]); return;
+	case 0x9: rX = (d[0x8] << 8) | d[0x9], rX = twos(rX); return;
 	case 0xa:
-	case 0xb: rY = twos((d[0xa] << 8) | d[0xb]); return;
+	case 0xb: rY = (d[0xa] << 8) | d[0xb], rY = twos(rY); return;
 	case 0xc:
 	case 0xd: rA = (d[0xc] << 8) | d[0xd]; return;
 	case 0xe: {

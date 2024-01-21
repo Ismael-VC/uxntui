@@ -31,3 +31,5 @@ void screen_redraw(Uxn *u);
 
 Uint8 screen_dei(Uxn *u, Uint8 addr);
 void screen_deo(Uint8 *ram, Uint8 *d, Uint8 port);
+
+#define twos(v) (v & 0x8000 ? (int)v - 0x10000 : (int)v)
