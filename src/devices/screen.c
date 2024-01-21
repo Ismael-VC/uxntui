@@ -34,7 +34,6 @@ twos(Uint16 value)
 		return (int)value;
 }
 
-
 static void
 screen_2bpp(Uint8 *layer, Uint8 *addr, Uint16 x1, Uint16 y1, Uint16 color, int fx, int fy)
 {
@@ -88,7 +87,7 @@ screen_changed(void)
 		uxn_screen.y2 = 0;
 	else if(uxn_screen.y2 >= uxn_screen.height)
 		uxn_screen.y2 = uxn_screen.height;
-	return uxn_screen.x2 > uxn_screen.x1 || uxn_screen.y2 > uxn_screen.y1;
+	return uxn_screen.x2 > uxn_screen.x1 && uxn_screen.y2 > uxn_screen.y1;
 }
 
 void
@@ -99,24 +98,6 @@ screen_change(int x1, int y1, int x2, int y2)
 	if(x2 > uxn_screen.x2) uxn_screen.x2 = x2;
 	if(y2 > uxn_screen.y2) uxn_screen.y2 = y2;
 }
-
-void
-screen_fill(Uint8 *layer, int color)
-{
-	int i, length = uxn_screen.width * uxn_screen.height;
-	for(i = 0; i < length; i++)
-		layer[i] = color;
-}
-
-void
-screen_rect(Uint8 *layer, Uint16 x1, Uint16 y1, Uint16 x2, Uint16 y2, int color)
-{
-	int row, x, y, w = uxn_screen.width, h = uxn_screen.height;
-	for(y = y1; y < y2 && y < h; y++)
-		for(x = x1, row = y * w; x < x2 && x < w; x++)
-			layer[x + row] = color;
-}
-
 /* clang-format off */
 
 static Uint8 icons[] = {
@@ -166,6 +147,23 @@ screen_debugger(Uxn *u)
 }
 
 void
+screen_fill(Uint8 *layer, int color)
+{
+	int i, length = uxn_screen.width * uxn_screen.height;
+	for(i = 0; i < length; i++)
+		layer[i] = color;
+}
+
+void
+screen_rect(Uint8 *layer, Uint16 x1, Uint16 y1, Uint16 x2, Uint16 y2, int color)
+{
+	int row, x, y, w = uxn_screen.width, h = uxn_screen.height;
+	for(y = y1; y < y2 && y < h; y++)
+		for(x = x1, row = y * w; x < x2 && x < w; x++)
+			layer[x + row] = color;
+}
+
+void
 screen_palette(Uint8 *addr)
 {
 	int i, shift;
@@ -190,7 +188,6 @@ screen_resize(Uint16 width, Uint16 height, int scale)
 		return;
 	if(uxn_screen.width == width && uxn_screen.height == height && uxn_screen.scale == scale)
 		return;
-
 	if(dim_change) {
 		bg = malloc(width * height), fg = malloc(width * height);
 		if(bg && fg)
@@ -206,7 +203,6 @@ screen_resize(Uint16 width, Uint16 height, int scale)
 		if(!pixels)
 			return;
 	}
-
 	uxn_screen.bg = bg, uxn_screen.fg = fg;
 	uxn_screen.pixels = pixels;
 	uxn_screen.width = width, uxn_screen.height = height, uxn_screen.scale = scale;
@@ -326,14 +322,14 @@ screen_deo(Uint8 *ram, Uint8 *d, Uint8 port)
 			for(i = 0; i <= rML; i++, rA += addr_incr)
 				screen_1bpp(layer, &ram[rA], rX + dyx * i, rY + dxy * i, color, fx, fy);
 		if(fx == -1)
-			x1 = rX + dyx * rML, x2 = rX + 8;
+			x1 = rX + dyx * rML, x2 = rX;
 		else
-			x1 = rX, x2 = rX + dyx * rML + 8;
+			x1 = rX, x2 = rX + dyx * rML;
 		if(fy == -1)
-			y1 = rY + dxy * rML, y2 = rY + 8;
+			y1 = rY + dxy * rML, y2 = rY;
 		else
-			y1 = rY, y2 = rY + dxy * rML + 8;
-		screen_change(x1, y1, x2, y2);
+			y1 = rY, y2 = rY + dxy * rML;
+		screen_change(x1, y1, x2 + 8, y2 + 8);
 		if(rMX) rX += rDX * fx;
 		if(rMY) rY += rDY * fy;
 		return;
