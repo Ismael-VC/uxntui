@@ -270,7 +270,7 @@ main(int argc, char **argv)
 		return 0;
 	}
 	if(argv[i][0] == '-' && argv[i][1] == 'v') {
-		fprintf(stdout, "Uxn11 - Varvara Emulator, 20 Jan 2023.\n");
+		fprintf(stdout, "Uxn11 - Varvara Emulator, 14 Feb 2023.\n");
 		i++;
 	}
 	if(!system_boot(&u, (Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8)), argv[i++])) {
