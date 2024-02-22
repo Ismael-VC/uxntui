@@ -265,16 +265,14 @@ main(int argc, char **argv)
 {
 	Uxn u = {0};
 	int i = 1;
-	if(i == argc) {
-		fprintf(stdout, "usage: %s [-v] file.rom [args..]\n", argv[0]);
-		return 0;
-	}
-	if(argv[i][0] == '-' && argv[i][1] == 'v') {
-		fprintf(stdout, "Uxn11 - Varvara Emulator, 14 Feb 2023.\n");
+	char *rom;
+	if(i != argc && argv[i][0] == '-' && argv[i][1] == 'v') {
+		fprintf(stdout, "Uxn11 - Varvara Emulator, 22 Feb 2023.\n");
 		i++;
 	}
-	if(!system_boot(&u, (Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8)), argv[i++])) {
-		fprintf(stdout, "Could not boot.\n");
+	rom = i == argc ? "boot.rom" : argv[i++];
+	if(!system_boot(&u, (Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8)), rom)) {
+		fprintf(stdout, "usage: %s [-v] file.rom [args..]\n", argv[0]);
 		return 0;
 	}
 	if(!display_init()) {
