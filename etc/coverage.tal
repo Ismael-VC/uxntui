@@ -1,0 +1,77 @@
+( test file )
+
+|0100 @program
+
+	#01 ?{ ( skip ) #ffff }
+	!{ ( skip ) #ffff }
+	{ ( skip ) #ffff } POP2r
+
+	( nested lambda )
+	{ { "hello 0a $1 } STH2r !print-str } STH2r JSR2
+
+	( function application )
+	{ 01 02 03 04 05 } STH2r { LIT "0 ADD #18 DEO #0a18 DEO JMP2r } STH2r foreach
+
+	( get lambda length )
+	{ "Dindeldums $1 } STH2r get-lambda-length <print-dec> #0a18 DEO
+
+	( allocated string )
+	;hello-word print-str
+
+	#800f DEO
+
+BRK
+
+( 
+@| test label inheritance )
+
+@object 
+
+&x $1 &y $1
+
+&get-x ( -- x )
+	,&x LDR
+	JMP2r
+
+@object/get-y ( -- y )
+	,&y LDR
+	JMP2r
+
+( raw lambda length )
+_{ 01 02 03 }
+
+@get-lambda-length ( lambda* -- length* )
+	#0002 SUB2 LDA2
+JMP2r
+
+@print-str ( str* -- )
+	&while ( -- )
+		( send ) LDAk #18 DEO
+		( loop ) INC2 LDAk ?&while
+	POP2
+
+JMP2r
+
+@foreach ( arr* fn* -- )
+	STH2
+	DUP2
+	DUP2 #0002 SUB2 LDA2 ADD2
+	SWP2
+	&l
+		LDAk STH2kr JSR2
+		INC2 NEQ2k ?&l
+	POP2 POP2 POP2r
+JMP2r
+
+@<print-dec> ( short* -- )
+	#2710 [ LIT2r 00fb ]
+	&w ( -- )
+		DIV2k #000a DIV2k MUL2 SUB2 SWPr EQUk OVR STHkr EQU AND ?&>skip
+			DUP [ LIT "0 ] ADD #19 DEO
+			INCr &>skip
+		POP2 #000a DIV2 SWPr INCr STHkr ?&w
+	POP2r POP2 POP2 JMP2r
+
+$20 @label2
+
+@hello-word "Hello 20 "World! 0a $1

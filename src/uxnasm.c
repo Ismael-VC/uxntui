@@ -320,7 +320,10 @@ parse(char *w, FILE *f)
 	case '@': /* label */
 		if(!makelabel(w + 1))
 			return error("Invalid label", w);
-		scpy(w + 1, p.scope, 0x40);
+		i = 0;
+		while(w[i + 1] != '/' && i < 0x3e && (p.scope[i] = w[i + 1])) 
+			i++;
+		p.scope[i] = '\0';
 		break;
 	case '&': /* sublabel */
 		if(!sublabel(subw, p.scope, w + 1) || !makelabel(subw))
@@ -346,7 +349,6 @@ parse(char *w, FILE *f)
 	case '.': /* literal byte zero-page */
 		makereference(p.scope, w + 1, w[0], p.ptr + 1);
 		return writelitbyte(0xff);
-	case ':':
 	case '=': /* raw short absolute */
 		makereference(p.scope, w + 1, w[0], p.ptr);
 		return writeshort(0xffff, 0);
@@ -420,7 +422,6 @@ resolve(void)
 			p.data[r->addr] = l->addr & 0xff;
 			l->refs++;
 			break;
-		case ':':
 		case '=':
 		case ';':
 			if(!(l = findlabel(r->name)))
@@ -501,7 +502,7 @@ main(int argc, char *argv[])
 	if(argc == 1)
 		return error("usage", "uxnasm [-v] input.tal output.rom");
 	if(argv[1][0] == '-' && argv[1][1] == 'v')
-		return !fprintf(stdout, "Uxnasm - Uxntal Assembler, 27 Oct 2023.\n");
+		return !fprintf(stdout, "Uxnasm - Uxntal Assembler, 24 Feb 2024.\n");
 	if(!(src = fopen(argv[1], "r")))
 		return !error("Invalid input", argv[1]);
 	if(!assemble(src))
