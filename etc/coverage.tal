@@ -22,19 +22,21 @@
 
 BRK
 
-( 
+(
 @| test label inheritance )
 
-@object 
-
-&x $1 &y $1
+@Object &x $1 &y $1
 
 &get-x ( -- x )
 	,&x LDR
 	JMP2r
 
-@object/get-y ( -- y )
+@Object/get-y ( -- y )
 	,&y LDR
+	JMP2r
+
+@Object/get-both ( -- x y )
+	/get-x /get-y
 	JMP2r
 
 ( raw lambda length )

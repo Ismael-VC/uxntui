@@ -195,7 +195,7 @@ makereference(char *scope, char *label, char rune, Uint16 addr)
 	if(label[0] == '{') {
 		p.lambda_stack[p.lambda_ptr++] = p.lambda_count;
 		scpy(makelambda(p.lambda_count++), r->name, 0x40);
-	} else if(label[0] == '&') {
+	} else if(label[0] == '&' || label[0] == '/') {
 		if(!sublabel(subw, scope, label + 1))
 			return error("Invalid sublabel", label);
 		scpy(subw, r->name, 0x40);
@@ -321,7 +321,7 @@ parse(char *w, FILE *f)
 		if(!makelabel(w + 1))
 			return error("Invalid label", w);
 		i = 0;
-		while(w[i + 1] != '/' && i < 0x3e && (p.scope[i] = w[i + 1])) 
+		while(w[i + 1] != '/' && i < 0x3e && (p.scope[i] = w[i + 1]))
 			i++;
 		p.scope[i] = '\0';
 		break;
@@ -502,7 +502,7 @@ main(int argc, char *argv[])
 	if(argc == 1)
 		return error("usage", "uxnasm [-v] input.tal output.rom");
 	if(argv[1][0] == '-' && argv[1][1] == 'v')
-		return !fprintf(stdout, "Uxnasm - Uxntal Assembler, 24 Feb 2024.\n");
+		return !fprintf(stdout, "Uxnasm - Uxntal Assembler, 25 Feb 2024.\n");
 	if(!(src = fopen(argv[1], "r")))
 		return !error("Invalid input", argv[1]);
 	if(!assemble(src))
