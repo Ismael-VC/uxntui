@@ -520,9 +520,7 @@ main(int argc, char *argv[])
 		return !error("Invalid input", argv[1]);
 	if(!assemble(src))
 		return !error("Assembly", "Failed to assemble rom.");
-	if(scmp(argv[2], "-", 2))
-		dst = stdout;
-	else if(!(dst = fopen(argv[2], "wb")))
+	if(!(dst = fopen(argv[2], "wb")))
 		return !error("Invalid Output", argv[2]);
 	if(p.length <= TRIM)
 		return !error("Assembly", "Output rom is empty.");
