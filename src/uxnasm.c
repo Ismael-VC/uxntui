@@ -55,6 +55,8 @@ static char ops[][4] = {
 	"ADD", "SUB", "MUL", "DIV", "AND", "ORA", "EOR", "SFT"
 };
 
+static char *runes = "|$@&,_.-;=!?#\"%~";
+
 static int   scmp(char *a, char *b, int len) { int i = 0; while(a[i] == b[i]) if(!a[i] || ++i >= len) return 1; return 0; } /* string compare */
 static int   sihx(char *s) { int i = 0; char c; while((c = s[i++])) if(!(c >= '0' && c <= '9') && !(c >= 'a' && c <= 'f')) return 0; return i > 1; } /* string is hexadecimal */
 static int   shex(char *s) { int n = 0, i = 0; char c; while((c = s[i++])) if(c >= '0' && c <= '9') n = n * 16 + (c - '0'); else if(c >= 'a' && c <= 'f') n = n * 16 + 10 + (c - 'a'); return n; } /* string to num */
@@ -157,6 +159,15 @@ makemacro(char *name, FILE *f)
 }
 
 static int
+isrune(char c)
+{
+	char cc, *r = runes;
+	while((cc = *r++))
+		if(c == cc) return 1;
+	return 0;
+}
+
+static int
 makelabel(char *name)
 {
 	Label *l;
@@ -166,6 +177,8 @@ makelabel(char *name)
 		return error("Label name is hex number", name);
 	if(findopcode(name) || scmp(name, "BRK", 4) || !slen(name))
 		return error("Label name is invalid", name);
+	if(isrune(name[0]))
+		return error("Label name is runic", name);
 	if(p.label_len == 0x400)
 		return error("Labels limit exceeded", name);
 	l = &p.labels[p.label_len++];
