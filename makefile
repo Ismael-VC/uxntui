@@ -12,11 +12,11 @@ all: dest bin/uxnasm bin/uxncli bin/uxn11
 dest:
 	@ mkdir -p bin
 run: all bin/uxnasm bin/uxncli bin/uxn11
-	@ ./bin/uxn11 
+	@ bin/uxn11 
 test: bin/uxnasm bin/uxncli bin/uxn11
-	@ ./bin/uxnasm -v && ./bin/uxncli -v && ./bin/uxn11 -v
-	@ ./bin/uxnasm etc/opctest.tal bin/opctest.rom
-	@ ./bin/uxncli bin/opctest.rom
+	@ bin/uxnasm -v && ./bin/uxncli -v && ./bin/uxn11 -v
+	@ bin/uxnasm etc/opctest.tal bin/opctest.rom
+	@ bin/uxncli bin/opctest.rom
 install: all bin/uxnasm bin/uxncli bin/uxn11
 	@ cp bin/uxn11 bin/uxnasm bin/uxncli ~/bin/
 uninstall:
