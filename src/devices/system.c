@@ -47,7 +47,7 @@ static void
 system_print(Stack *s)
 {
 	Uint8 i;
-	for(i = s->ptr - 7; i != s->ptr + 1; i++)
+	for(i = s->ptr - 7; i != (Uint8)(s->ptr + 1); i++)
 		fprintf(stderr, "%02x%c", s->dat[i], i == 0 ? '|' : ' ');
 	fprintf(stderr, "< \n");
 }
