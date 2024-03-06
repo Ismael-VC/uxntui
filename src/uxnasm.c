@@ -36,12 +36,12 @@ typedef struct {
 typedef struct {
 	Uint8 data[LENGTH];
 	Uint8 lambda_stack[0x100], lambda_ptr, lambda_count;
-	char scope[0x40], lambda[0x10];
+	char scope[0x40], lambda[0x10], *location, *entry;
 	unsigned int ptr, length;
 	Uint16 label_len, macro_len, refs_len;
 	Label labels[0x400];
 	Macro macros[0x100];
-	Reference refs[0x800];
+	Reference refs[0x1000];
 } Program;
 
 Program p;
@@ -70,17 +70,38 @@ static char *scat(char *dst, const char *src) { char *ptr = dst + slen(dst); whi
 static int parse(char *w, FILE *f);
 
 static int
-error(const char *name, const char *msg)
+error_top(const char *name, const char *msg)
 {
 	fprintf(stderr, "%s: %s\n", name, msg);
 	return 0;
+}
+
+static int
+error_asm(const char *name, const char *msg)
+{
+	fprintf(stderr, "%s: %s in @%s, %s:%d.\n", name, msg, p.scope, p.location, 123);
+	return 0;
+}
+
+static int
+error_res(const char *name, const char *msg)
+{
+	fprintf(stderr, "%s: %s.\n", name, msg);
+	return 0;
+}
+
+static char *
+setlocation(char *name)
+{
+	p.location = name;
+	return name;
 }
 
 static char *
 sublabel(char *src, char *scope, char *name)
 {
 	if(slen(scope) + slen(name) >= 0x3f) {
-		error("Sublabel length too long", name);
+		error_asm("Sublabel length too long", name);
 		return NULL;
 	}
 	return scat(scat(scpy(scope, src, 0x40), "/"), name);
@@ -137,22 +158,22 @@ makemacro(char *name, FILE *f)
 	Macro *m;
 	char word[0x40];
 	if(findmacro(name))
-		return error("Macro duplicate", name);
+		return error_asm("Macro duplicate", name);
 	if(sihx(name) && slen(name) % 2 == 0)
-		return error("Macro name is hex number", name);
+		return error_asm("Macro name is hex number", name);
 	if(findopcode(name) || scmp(name, "BRK", 4) || !slen(name))
-		return error("Macro name is invalid", name);
+		return error_asm("Macro name is invalid", name);
 	if(p.macro_len == 0x100)
-		return error("Macros limit exceeded", name);
+		return error_asm("Macros limit exceeded", name);
 	m = &p.macros[p.macro_len++];
 	scpy(name, m->name, 0x40);
 	while(fscanf(f, "%63s", word) == 1) {
 		if(word[0] == '{') continue;
 		if(word[0] == '}') break;
 		if(word[0] == '%')
-			return error("Macro error", name);
+			return error_asm("Macro error", name);
 		if(m->len >= 0x40)
-			return error("Macro size exceeded", name);
+			return error_asm("Macro size exceeded", name);
 		scpy(word, m->items[m->len++], 0x40);
 	}
 	return 1;
@@ -172,15 +193,15 @@ makelabel(char *name)
 {
 	Label *l;
 	if(findlabel(name))
-		return error("Label duplicate", name);
+		return error_asm("Label duplicate", name);
 	if(sihx(name) && (slen(name) == 2 || slen(name) == 4))
-		return error("Label name is hex number", name);
+		return error_asm("Label name is hex number", name);
 	if(findopcode(name) || scmp(name, "BRK", 4) || !slen(name))
-		return error("Label name is invalid", name);
+		return error_asm("Label name is invalid", name);
 	if(isrune(name[0]))
-		return error("Label name is runic", name);
+		return error_asm("Label name is runic", name);
 	if(p.label_len == 0x400)
-		return error("Labels limit exceeded", name);
+		return error_asm("Labels limit exceeded", name);
 	l = &p.labels[p.label_len++];
 	l->addr = p.ptr;
 	l->refs = 0;
@@ -202,15 +223,15 @@ makereference(char *scope, char *label, char rune, Uint16 addr)
 {
 	char subw[0x40], parent[0x40];
 	Reference *r;
-	if(p.refs_len >= 0x800)
-		return error("References limit exceeded", label);
+	if(p.refs_len >= 0x1000)
+		return error_asm("References limit exceeded", label);
 	r = &p.refs[p.refs_len++];
 	if(label[0] == '{') {
 		p.lambda_stack[p.lambda_ptr++] = p.lambda_count;
 		scpy(makelambda(p.lambda_count++), r->name, 0x40);
 	} else if(label[0] == '&' || label[0] == '/') {
 		if(!sublabel(subw, scope, label + 1))
-			return error("Invalid sublabel", label);
+			return error_asm("Invalid sublabel", label);
 		scpy(subw, r->name, 0x40);
 	} else {
 		int pos = spos(label, '/');
@@ -230,11 +251,11 @@ static int
 writebyte(Uint8 b)
 {
 	if(p.ptr < TRIM)
-		return error("Writing in zero-page", "");
+		return error_asm("Writing in zero-page", "");
 	else if(p.ptr > 0xffff)
-		return error("Writing after the end of RAM", "");
+		return error_asm("Writing after the end of RAM", "");
 	else if(p.ptr < p.length)
-		return error("Memory overwrite", "");
+		return error_asm("Memory overwrite", "");
 	p.data[p.ptr++] = b;
 	p.length = p.ptr;
 	return 1;
@@ -261,15 +282,15 @@ writelitbyte(Uint8 b)
 }
 
 static int
-doinclude(const char *filename)
+doinclude(char *filename)
 {
 	FILE *f;
 	char w[0x40];
-	if(!(f = fopen(filename, "r")))
-		return error("Include missing", filename);
+	if(!(f = fopen(setlocation(filename), "r")))
+		return error_asm("Include missing", filename);
 	while(fscanf(f, "%63s", w) == 1)
 		if(!parse(w, f))
-			return error("Unknown token", w);
+			return error_asm("Unknown token", w);
 	fclose(f);
 	return 1;
 }
@@ -282,7 +303,7 @@ parse(char *w, FILE *f)
 	Label *l;
 	Macro *m;
 	if(slen(w) >= 63)
-		return error("Invalid token", w);
+		return error_asm("Invalid token", w);
 	switch(w[0]) {
 	case '(': /* comment */
 		if(slen(w) != 1) fprintf(stderr, "-- Malformed comment: %s\n", w);
@@ -298,22 +319,22 @@ parse(char *w, FILE *f)
 		break;
 	case '~': /* include */
 		if(!doinclude(w + 1))
-			return error("Invalid include", w);
+			return error_asm("Invalid include", w);
 		break;
 	case '%': /* macro */
 		if(!makemacro(w + 1, f))
-			return error("Invalid macro", w);
+			return error_asm("Invalid macro", w);
 		break;
 	case '|': /* pad-absolute */
 		if(sihx(w + 1))
 			p.ptr = shex(w + 1);
 		else if(w[1] == '&') {
 			if(!sublabel(subw, p.scope, w + 2) || !(l = findlabel(subw)))
-				return error("Invalid sublabel", w);
+				return error_asm("Invalid sublabel", w);
 			p.ptr = l->addr;
 		} else {
 			if(!(l = findlabel(w + 1)))
-				return error("Invalid label", w);
+				return error_asm("Invalid label", w);
 			p.ptr = l->addr;
 		}
 		break;
@@ -322,17 +343,17 @@ parse(char *w, FILE *f)
 			p.ptr += shex(w + 1);
 		else if(w[1] == '&') {
 			if(!sublabel(subw, p.scope, w + 2) || !(l = findlabel(subw)))
-				return error("Invalid sublabel", w);
+				return error_asm("Invalid sublabel", w);
 			p.ptr += l->addr;
 		} else {
 			if(!(l = findlabel(w + 1)))
-				return error("Invalid label", w);
+				return error_asm("Invalid label", w);
 			p.ptr += l->addr;
 		}
 		break;
 	case '@': /* label */
 		if(!makelabel(w + 1))
-			return error("Invalid label", w);
+			return error_asm("Invalid label", w);
 		i = 0;
 		while(w[i + 1] != '/' && i < 0x3e && (p.scope[i] = w[i + 1]))
 			i++;
@@ -340,7 +361,7 @@ parse(char *w, FILE *f)
 		break;
 	case '&': /* sublabel */
 		if(!sublabel(subw, p.scope, w + 1) || !makelabel(subw))
-			return error("Invalid sublabel", w);
+			return error_asm("Invalid sublabel", w);
 		break;
 	case '#': /* literals hex */
 		if(sihx(w + 1) && slen(w) == 3)
@@ -348,32 +369,25 @@ parse(char *w, FILE *f)
 		else if(sihx(w + 1) && slen(w) == 5)
 			return writeshort(shex(w + 1), 1);
 		else
-			return error("Invalid hex literal", w);
+			return error_asm("Invalid hex literal", w);
 		break;
 	case '_': /* raw byte relative */
-		makereference(p.scope, w + 1, w[0], p.ptr);
-		return writebyte(0xff);
+		return writebyte(0xff) && makereference(p.scope, w + 1, w[0], p.ptr);
 	case ',': /* literal byte relative */
-		makereference(p.scope, w + 1, w[0], p.ptr + 1);
-		return writelitbyte(0xff);
+		return writelitbyte(0xff) && makereference(p.scope, w + 1, w[0], p.ptr + 1);
 	case '-': /* raw byte absolute */
-		makereference(p.scope, w + 1, w[0], p.ptr);
-		return writebyte(0xff);
+		return writebyte(0xff) && makereference(p.scope, w + 1, w[0], p.ptr);
 	case '.': /* literal byte zero-page */
-		makereference(p.scope, w + 1, w[0], p.ptr + 1);
-		return writelitbyte(0xff);
+		return writelitbyte(0xff) && makereference(p.scope, w + 1, w[0], p.ptr + 1);
+	case ':': fprintf(stderr, "Deprecated rune %s, use =%s\n", w, w + 1);
 	case '=': /* raw short absolute */
-		makereference(p.scope, w + 1, w[0], p.ptr);
-		return writeshort(0xffff, 0);
+		return writeshort(0xffff, 0) && makereference(p.scope, w + 1, w[0], p.ptr);
 	case ';': /* literal short absolute */
-		makereference(p.scope, w + 1, w[0], p.ptr + 1);
-		return writeshort(0xffff, 1);
+		return writeshort(0xffff, 1) && makereference(p.scope, w + 1, w[0], p.ptr + 1);
 	case '?': /* JCI */
-		makereference(p.scope, w + 1, w[0], p.ptr + 1);
-		return writebyte(0x20) && writeshort(0xffff, 0);
+		return writebyte(0x20) && writeshort(0xffff, 0) && makereference(p.scope, w + 1, w[0], p.ptr + 1);
 	case '!': /* JMI */
-		makereference(p.scope, w + 1, w[0], p.ptr + 1);
-		return writebyte(0x40) && writeshort(0xffff, 0);
+		return writebyte(0x40) && writeshort(0xffff, 0) && makereference(p.scope, w + 1, w[0], p.ptr + 1);
 	case '"': /* raw string */
 		i = 0;
 		while((c = w[++i]))
@@ -381,7 +395,7 @@ parse(char *w, FILE *f)
 		break;
 	case '}': /* lambda end */
 		if(!makelabel(makelambda(p.lambda_stack[--p.lambda_ptr])))
-			return error("Invalid label", w);
+			return error_asm("Invalid label", w);
 		break;
 	case '[':
 	case ']':
@@ -402,10 +416,8 @@ parse(char *w, FILE *f)
 				if(!parse(m->items[i], f))
 					return 0;
 			return 1;
-		} else {
-			makereference(p.scope, w, ' ', p.ptr + 1);
-			return writebyte(0x60) && writeshort(0xffff, 0);
-		}
+		} else
+			return writebyte(0x60) && writeshort(0xffff, 0) && makereference(p.scope, w, ' ', p.ptr + 1);
 	}
 	return 1;
 }
@@ -422,23 +434,24 @@ resolve(void)
 		case '_':
 		case ',':
 			if(!(l = findlabel(r->name)))
-				return error("Unknown relative reference", r->name);
+				return error_res("Unknown relative reference", r->name);
 			p.data[r->addr] = (Sint8)(l->addr - r->addr - 2);
 			if((Sint8)p.data[r->addr] != (l->addr - r->addr - 2))
-				return error("Relative reference is too far", r->name);
+				return error_asm("Relative reference is too far", r->name);
 			l->refs++;
 			break;
 		case '-':
 		case '.':
 			if(!(l = findlabel(r->name)))
-				return error("Unknown zero-page reference", r->name);
+				return error_res("Unknown zero-page reference", r->name);
 			p.data[r->addr] = l->addr & 0xff;
 			l->refs++;
 			break;
+		case ':':
 		case '=':
 		case ';':
 			if(!(l = findlabel(r->name)))
-				return error("Unknown absolute reference", r->name);
+				return error_res("Unknown absolute reference", r->name);
 			p.data[r->addr] = l->addr >> 0x8;
 			p.data[r->addr + 1] = l->addr & 0xff;
 			l->refs++;
@@ -447,7 +460,7 @@ resolve(void)
 		case '!':
 		default:
 			if(!(l = findlabel(r->name)))
-				return error("Unknown absolute reference", r->name);
+				return error_res("Unknown absolute reference", r->name);
 			a = l->addr - r->addr - 2;
 			p.data[r->addr] = a >> 0x8;
 			p.data[r->addr + 1] = a & 0xff;
@@ -466,7 +479,7 @@ assemble(FILE *f)
 	scpy("on-reset", p.scope, 0x40);
 	while(fscanf(f, "%62s", w) == 1)
 		if(slen(w) > 0x3d || !parse(w, f))
-			return error("Invalid token", w);
+			return error_asm("Invalid token", w);
 	return resolve();
 }
 
@@ -513,17 +526,18 @@ main(int argc, char *argv[])
 {
 	FILE *src, *dst;
 	if(argc == 1)
-		return error("usage", "uxnasm [-v] input.tal output.rom");
+		return error_top("usage", "uxnasm [-v] input.tal output.rom");
 	if(argv[1][0] == '-' && argv[1][1] == 'v')
-		return !fprintf(stdout, "Uxnasm - Uxntal Assembler, 25 Feb 2024.\n");
-	if(!(src = fopen(argv[1], "r")))
-		return !error("Invalid input", argv[1]);
+		return !fprintf(stdout, "Uxnasm - Uxntal Assembler, 6 Mar 2024.\n");
+	if(!(src = fopen(setlocation(argv[1]), "r")))
+		return !error_top("Invalid input", argv[1]);
+	p.entry = argv[1];
 	if(!assemble(src))
-		return !error("Assembly", "Failed to assemble rom.");
+		return !error_top("Assembly", "Failed to assemble rom.");
 	if(!(dst = fopen(argv[2], "wb")))
-		return !error("Invalid Output", argv[2]);
+		return !error_top("Invalid Output", argv[2]);
 	if(p.length <= TRIM)
-		return !error("Assembly", "Output rom is empty.");
+		return !error_top("Assembly", "Output rom is empty.");
 	fwrite(p.data + TRIM, p.length - TRIM, 1, dst);
 	if(!scmp(argv[2], "-", 2)) {
 		review(argv[2]);
