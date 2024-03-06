@@ -372,22 +372,22 @@ parse(char *w, FILE *f)
 			return error_asm("Invalid hex literal", w);
 		break;
 	case '_': /* raw byte relative */
-		return writebyte(0xff) && makereference(p.scope, w + 1, w[0], p.ptr);
+		return makereference(p.scope, w + 1, w[0], p.ptr) && writebyte(0xff);
 	case ',': /* literal byte relative */
-		return writelitbyte(0xff) && makereference(p.scope, w + 1, w[0], p.ptr + 1);
+		return makereference(p.scope, w + 1, w[0], p.ptr + 1) && writelitbyte(0xff);
 	case '-': /* raw byte absolute */
-		return writebyte(0xff) && makereference(p.scope, w + 1, w[0], p.ptr);
+		return makereference(p.scope, w + 1, w[0], p.ptr) && writebyte(0xff);
 	case '.': /* literal byte zero-page */
-		return writelitbyte(0xff) && makereference(p.scope, w + 1, w[0], p.ptr + 1);
+		return makereference(p.scope, w + 1, w[0], p.ptr + 1) && writelitbyte(0xff);
 	case ':': fprintf(stderr, "Deprecated rune %s, use =%s\n", w, w + 1);
 	case '=': /* raw short absolute */
-		return writeshort(0xffff, 0) && makereference(p.scope, w + 1, w[0], p.ptr);
+		return makereference(p.scope, w + 1, w[0], p.ptr) && writeshort(0xffff, 0);
 	case ';': /* literal short absolute */
-		return writeshort(0xffff, 1) && makereference(p.scope, w + 1, w[0], p.ptr + 1);
+		return makereference(p.scope, w + 1, w[0], p.ptr + 1) && writeshort(0xffff, 1);
 	case '?': /* JCI */
-		return writebyte(0x20) && writeshort(0xffff, 0) && makereference(p.scope, w + 1, w[0], p.ptr + 1);
+		return makereference(p.scope, w + 1, w[0], p.ptr + 1) && writebyte(0x20) && writeshort(0xffff, 0);
 	case '!': /* JMI */
-		return writebyte(0x40) && writeshort(0xffff, 0) && makereference(p.scope, w + 1, w[0], p.ptr + 1);
+		return makereference(p.scope, w + 1, w[0], p.ptr + 1) && writebyte(0x40) && writeshort(0xffff, 0);
 	case '"': /* raw string */
 		i = 0;
 		while((c = w[++i]))
@@ -417,7 +417,7 @@ parse(char *w, FILE *f)
 					return 0;
 			return 1;
 		} else
-			return writebyte(0x60) && writeshort(0xffff, 0) && makereference(p.scope, w, ' ', p.ptr + 1);
+			return makereference(p.scope, w, ' ', p.ptr + 1) && writebyte(0x60) && writeshort(0xffff, 0);
 	}
 	return 1;
 }
