@@ -171,6 +171,10 @@ emu_event(Uxn *u)
 			mouse_scroll(u, &u->dev[0x90], 0, 1);
 		else if(e->button == 5)
 			mouse_scroll(u, &u->dev[0x90], 0, -1);
+		else if(e->button == 6)
+			mouse_scroll(u, &u->dev[0x90], 1, 0);
+		else if(e->button == 7)
+			mouse_scroll(u, &u->dev[0x90], -1, 0);
 		else
 			mouse_down(u, &u->dev[0x90], 0x1 << (e->button - 1));
 	} break;
@@ -267,7 +271,7 @@ main(int argc, char **argv)
 	int i = 1;
 	char *rom;
 	if(i != argc && argv[i][0] == '-' && argv[i][1] == 'v') {
-		fprintf(stdout, "Uxn11 - Varvara Emulator, 4 Mar 2023.\n");
+		fprintf(stdout, "Uxn11 - Varvara Emulator, 7 Mar 2023.\n");
 		i++;
 	}
 	rom = i == argc ? "boot.rom" : argv[i++];
