@@ -83,13 +83,6 @@ error_asm(const char *name, const char *msg)
 	return 0;
 }
 
-static int
-error_res(const char *name, const char *msg)
-{
-	fprintf(stderr, "%s: %s.\n", name, msg);
-	return 0;
-}
-
 static char *
 setlocation(char *name)
 {
@@ -434,7 +427,7 @@ resolve(void)
 		case '_':
 		case ',':
 			if(!(l = findlabel(r->name)))
-				return error_res("Unknown relative reference", r->name);
+				return error_top("Unknown relative reference", r->name);
 			p.data[r->addr] = (Sint8)(l->addr - r->addr - 2);
 			if((Sint8)p.data[r->addr] != (l->addr - r->addr - 2))
 				return error_asm("Relative reference is too far", r->name);
@@ -443,7 +436,7 @@ resolve(void)
 		case '-':
 		case '.':
 			if(!(l = findlabel(r->name)))
-				return error_res("Unknown zero-page reference", r->name);
+				return error_top("Unknown zero-page reference", r->name);
 			p.data[r->addr] = l->addr & 0xff;
 			l->refs++;
 			break;
@@ -451,7 +444,7 @@ resolve(void)
 		case '=':
 		case ';':
 			if(!(l = findlabel(r->name)))
-				return error_res("Unknown absolute reference", r->name);
+				return error_top("Unknown absolute reference", r->name);
 			p.data[r->addr] = l->addr >> 0x8;
 			p.data[r->addr + 1] = l->addr & 0xff;
 			l->refs++;
@@ -460,7 +453,7 @@ resolve(void)
 		case '!':
 		default:
 			if(!(l = findlabel(r->name)))
-				return error_res("Unknown absolute reference", r->name);
+				return error_top("Unknown absolute reference", r->name);
 			a = l->addr - r->addr - 2;
 			p.data[r->addr] = a >> 0x8;
 			p.data[r->addr + 1] = a & 0xff;
@@ -491,8 +484,8 @@ review(char *filename)
 		if(p.labels[i].name[0] >= 'A' && p.labels[i].name[0] <= 'Z')
 			continue; /* Ignore capitalized labels(devices) */
 		else if(!p.labels[i].refs)
-			fprintf(stderr, "-- Unused label: %s\n", p.labels[i].name);
-	fprintf(stderr,
+			fprintf(stdout, "-- Unused label: %s\n", p.labels[i].name);
+	fprintf(stdout,
 		"Assembled %s in %d bytes(%.2f%% used), %d labels, %d macros.\n",
 		filename,
 		p.length - TRIM,
@@ -528,7 +521,7 @@ main(int argc, char *argv[])
 	if(argc == 1)
 		return error_top("usage", "uxnasm [-v] input.tal output.rom");
 	if(argv[1][0] == '-' && argv[1][1] == 'v')
-		return !fprintf(stdout, "Uxnasm - Uxntal Assembler, 6 Mar 2024.\n");
+		return !fprintf(stdout, "Uxnasm - Uxntal Assembler, 7 Mar 2024.\n");
 	if(!(src = fopen(setlocation(argv[1]), "r")))
 		return !error_top("Invalid input", argv[1]);
 	p.entry = argv[1];
