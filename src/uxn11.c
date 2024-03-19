@@ -102,7 +102,6 @@ emu_end(Uxn *u)
 	XDestroyImage(ximage);
 	XDestroyWindow(display, window);
 	XCloseDisplay(display);
-	exit(0);
 	return u->dev[0x0f] & 0x7f;
 }
 
@@ -145,6 +144,7 @@ emu_event(Uxn *u)
 	} break;
 	case ClientMessage:
 		emu_end(u);
+		exit(0);
 		break;
 	case KeyPress: {
 		KeySym sym;
@@ -271,7 +271,7 @@ main(int argc, char **argv)
 	int i = 1;
 	char *rom;
 	if(i != argc && argv[i][0] == '-' && argv[i][1] == 'v') {
-		fprintf(stdout, "Uxn11 - Varvara Emulator, 18 Mar 2024.\n");
+		fprintf(stdout, "Uxn11 - Varvara Emulator, 19 Mar 2024.\n");
 		i++;
 	}
 	rom = i == argc ? "boot.rom" : argv[i++];
