@@ -102,6 +102,7 @@ emu_end(Uxn *u)
 	XDestroyImage(ximage);
 	XDestroyWindow(display, window);
 	XCloseDisplay(display);
+	exit(0);
 	return u->dev[0x0f] & 0x7f;
 }
 
@@ -143,8 +144,7 @@ emu_event(Uxn *u)
 		XPutImage(display, window, DefaultGC(display, 0), ximage, 0, 0, PAD, PAD, w, h);
 	} break;
 	case ClientMessage:
-		emu_end(u);
-		exit(0);
+		u->dev[0x0f] = 0x80;
 		break;
 	case KeyPress: {
 		KeySym sym;
@@ -225,7 +225,7 @@ display_init(void)
 }
 
 static int
-emu_run(Uxn *u, char *rom)
+emu_run(Uxn *u)
 {
 	int i = 1, n;
 	char expirations[8];
@@ -287,7 +287,7 @@ main(int argc, char **argv)
 	u.dev[0x17] = argc - i;
 	if(uxn_eval(&u, PAGE_PROGRAM)) {
 		console_listen(&u, i, argc, argv);
-		emu_run(&u, boot_rom);
+		emu_run(&u);
 	}
 	return emu_end(&u);
 }

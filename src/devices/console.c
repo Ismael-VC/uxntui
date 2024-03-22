@@ -127,6 +127,7 @@ start_fork_pty(Uint8 *d)
 static void
 start_fork_pipe(Uint8 *d)
 {
+	pid_t pid;
 	if(child_mode & 0x01) {
 		/* parent writes to child's stdin */
 		if(pipe(to_child_fd) == -1) {
@@ -135,7 +136,6 @@ start_fork_pipe(Uint8 *d)
 			return;
 		}
 	}
-
 	if(child_mode & 0x06) {
 		/* parent reads from child's stdout and/or stderr */
 		if(pipe(from_child_fd) == -1) {
@@ -144,8 +144,7 @@ start_fork_pipe(Uint8 *d)
 			return;
 		}
 	}
-
-	pid_t pid = fork();
+	pid = fork();
 	if(pid < 0) { /* failure */
 		d[0x6] = 0xff;
 		fprintf(stderr, "fork failure\n");
@@ -180,9 +179,9 @@ start_fork_pipe(Uint8 *d)
 static void
 kill_child(Uint8 *d, int options)
 {
+	int wstatus;
 	if(child_pid) {
 		kill(child_pid, 9);
-		int wstatus;
 		if(waitpid(child_pid, &wstatus, options)) {
 			d[0x6] = 1;
 			d[0x7] = WEXITSTATUS(wstatus);
