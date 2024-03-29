@@ -40,7 +40,7 @@ static char ops[][4] = {
 static int   find(char *s, char t) { int i = 0; char c; while((c = *s++)) { if(c == t) return i; i++; } return -1; } /* chr in str */
 static int   shex(char *s) { int n = 0; char c; while((c = *s++)) { if(find(hexad, c) < 0) return -1; n = n << 4, n |= find(hexad, c); } return n; } /* str to hex */
 static int   scmp(char *a, char *b, int len) { int i = 0; while(a[i] == b[i]) if(!a[i] || ++i >= len) return 1; return 0; } /* str compare */
-static char *scpy(char *src, char *dst, int len) { int i = 0; while((dst[i] = src[i]) && i < len - 2) i++; dst[i + 1] = '\0'; return dst; } /* str copy */
+static char *copy(char *src, char *dst, char c) { while(*src && *src != c) *dst++ = *src++; *dst++ = 0; return dst; } /* str copy */
 static char *save(char *s, char c) { char *o = dictnext; while((*dictnext++ = *s++) && *s); *dictnext++ = c; return o; } /* save to dict */
 static char *join(char *a, char j, char *b) { char *res = dictnext; save(a, j), save(b, 0); return res; } /* join two str */
 
@@ -200,12 +200,7 @@ makelabel(char *name, int setscope, Context *ctx)
 	l->name = push(name, 0);
 	l->addr = ptr;
 	l->refs = 0;
-	if(setscope) {
-		int i = 0;
-		while(name[i] != '/' && i < 0x3e && (scope[i] = name[i]))
-			i++;
-		scope[i] = '\0';
-	}
+	if(setscope) copy(name, scope, '/');
 	return 1;
 }
 
@@ -404,7 +399,7 @@ int
 main(int argc, char *argv[])
 {
 	ptr = PAGE;
-	scpy("on-reset", scope, 0x40);
+	copy("on-reset", scope, 0);
 	if(argc == 1) return error_top("usage", "uxnasm [-v] input.tal output.rom");
 	if(scmp(argv[1], "-v", 2)) return !fprintf(stdout, "Uxnasm - Uxntal Assembler, 28 Mar 2024.\n");
 	if(!assemble(argv[1]) || !length) return !error_top("Assembly", "Failed to assemble rom.");
