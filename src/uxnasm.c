@@ -23,7 +23,7 @@ typedef struct { int line; char *path; } Context;
 
 static int ptr, length;
 static char token[0x40], scope[0x40], lambda[0x05];
-static char dict[0x4000], *dictnext = dict;
+static char dict[0x8000], *dictnext = dict;
 static Uint8 data[0x10000], lambda_stack[0x100], lambda_ptr, lambda_len;
 static Uint16 labels_len, refs_len, macro_len;
 static Item labels[0x400], refs[0x1000], macros[0x100];
