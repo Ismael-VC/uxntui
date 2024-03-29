@@ -97,7 +97,7 @@ findopcode(char *s)
 			else if(s[m] == 'k')
 				i |= (1 << 7);
 			else
-				return 0;
+				return error_top("Unknown opcode mode", s);
 			m++;
 		}
 		return i;
@@ -177,7 +177,7 @@ makemacro(char *name, FILE *f, Context *ctx)
 		if(c == 0xa) ctx->line += 1;
 	while(f && fread(&c, 1, 1, f) && c != '}') {
 		if(c == 0xa) ctx->line += 1;
-		if(c == '%') return 0;
+		if(c == '%') return error_top("Nested macro", name);
 		if(c == '(')
 			walkcomment(f, ctx);
 		else
@@ -331,7 +331,7 @@ resolve(void)
 	for(i = 0; i < refs_len; i++) {
 		Item *r = &refs[i], *l = findlabel(r->name);
 		Uint8 *rom = data + r->addr;
-		if(!l) return 0;
+		if(!l) return error_top("Unknown label", r->name);
 		switch(r->rune) {
 		case '_':
 		case ',':
@@ -401,7 +401,7 @@ main(int argc, char *argv[])
 	ptr = PAGE;
 	copy("on-reset", scope, 0);
 	if(argc == 1) return error_top("usage", "uxnasm [-v] input.tal output.rom");
-	if(scmp(argv[1], "-v", 2)) return !fprintf(stdout, "Uxnasm - Uxntal Assembler, 28 Mar 2024.\n");
+	if(scmp(argv[1], "-v", 2)) return !fprintf(stdout, "Uxnasm - Uxntal Assembler, 29 Mar 2024.\n");
 	if(!assemble(argv[1]) || !length) return !error_top("Assembly", "Failed to assemble rom.");
 	if(!resolve()) return !error_top("Assembly", "Failed to resolve symbols.");
 	if(!build(argv[2])) return !error_top("Assembly", "Failed to build rom.");
