@@ -1,7 +1,7 @@
 #include <stdio.h>
 
 /*
-Copyright (c) 2021-2023 Devine Lu Linvega, Andrew Alderwick
+Copyright (c) 2021-2024 Devine Lu Linvega, Andrew Alderwick
 
 Permission to use, copy, modify, and distribute this software for any
 purpose with or without fee is hereby granted, provided that the above
@@ -11,43 +11,25 @@ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
 WITH REGARD TO THIS SOFTWARE.
 */
 
-#define TRIM 0x0100
-#define LENGTH 0x10000
+/* clang-format off */
+
+#define PAGE 0x0100
 
 typedef unsigned char Uint8;
 typedef signed char Sint8;
 typedef unsigned short Uint16;
+typedef struct { char *name, rune, *content; Uint16 addr, refs; } Item;
+typedef struct { int line; char *path; } Context;
 
-typedef struct {
-	char name[0x40], items[0x40][0x40];
-	Uint8 len;
-} Macro;
+static int ptr, length;
+static char token[0x40], scope[0x40], lambda[0x05];
+static char dict[0x4000], *dictnext = dict;
+static Uint8 data[0x10000], lambda_stack[0x100], lambda_ptr, lambda_len;
+static Uint16 labels_len, refs_len, macro_len;
+static Item labels[0x400], refs[0x1000], macros[0x100];
 
-typedef struct {
-	char name[0x40];
-	Uint16 addr, refs;
-} Label;
-
-typedef struct {
-	char name[0x40], rune;
-	Uint16 addr;
-} Reference;
-
-typedef struct {
-	Uint8 data[LENGTH];
-	Uint8 lambda_stack[0x100], lambda_ptr, lambda_count;
-	char scope[0x40], lambda[0x10], *location, *entry;
-	unsigned int ptr, length;
-	Uint16 label_len, macro_len, refs_len;
-	Label labels[0x400];
-	Macro macros[0x100];
-	Reference refs[0x1000];
-} Program;
-
-Program p;
-
-/* clang-format off */
-
+static char *runes = "|$@&,_.-;=!?#\"%~";
+static char *hexad = "0123456789abcdef";
 static char ops[][4] = {
 	"LIT", "INC", "POP", "NIP", "SWP", "ROT", "DUP", "OVR",
 	"EQU", "NEQ", "GTH", "LTH", "JMP", "JCN", "JSR", "STH",
@@ -55,68 +37,47 @@ static char ops[][4] = {
 	"ADD", "SUB", "MUL", "DIV", "AND", "ORA", "EOR", "SFT"
 };
 
-static char *runes = "|$@&,_.-;=!?#\"%~";
+static int   find(char *s, char t) { int i = 0; char c; while((c = *s++)) { if(c == t) return i; i++; } return -1; } /* chr in str */
+static int   shex(char *s) { int n = 0; char c; while((c = *s++)) { if(find(hexad, c) < 0) return -1; n = n << 4, n |= find(hexad, c); } return n; } /* str to hex */
+static int   scmp(char *a, char *b, int len) { int i = 0; while(a[i] == b[i]) if(!a[i] || ++i >= len) return 1; return 0; } /* str compare */
+static char *scpy(char *src, char *dst, int len) { int i = 0; while((dst[i] = src[i]) && i < len - 2) i++; dst[i + 1] = '\0'; return dst; } /* str copy */
+static char *save(char *s, char c) { char *o = dictnext; while((*dictnext++ = *s++) && *s); *dictnext++ = c; return o; } /* save to dict */
+static char *join(char *a, char j, char *b) { char *res = dictnext; save(a, j), save(b, 0); return res; } /* join two str */
 
-static int   scmp(char *a, char *b, int len) { int i = 0; while(a[i] == b[i]) if(!a[i] || ++i >= len) return 1; return 0; } /* string compare */
-static int   sihx(char *s) { int i = 0; char c; while((c = s[i++])) if(!(c >= '0' && c <= '9') && !(c >= 'a' && c <= 'f')) return 0; return i > 1; } /* string is hexadecimal */
-static int   shex(char *s) { int n = 0, i = 0; char c; while((c = s[i++])) if(c >= '0' && c <= '9') n = n * 16 + (c - '0'); else if(c >= 'a' && c <= 'f') n = n * 16 + 10 + (c - 'a'); return n; } /* string to num */
-static int   slen(char *s) { int i = 0; while(s[i]) i++; return i; } /* string length */
-static int   spos(char *s, char c) { Uint8 i = 0, j; while((j = s[i++])) if(j == c) return i; return -1; } /* character position */
-static char *scpy(char *src, char *dst, int len) { int i = 0; while((dst[i] = src[i]) && i < len - 2) i++; dst[i + 1] = '\0'; return dst; } /* string copy */
-static char *scat(char *dst, const char *src) { char *ptr = dst + slen(dst); while(*src) *ptr++ = *src++; *ptr = '\0'; return dst; } /* string cat */
+#define ishex(x) (shex(x) >= 0)
+#define isopc(x) (findopcode(x) || scmp(x, "BRK", 4))
+#define isinvalid(x) (!x[0] || ishex(x) || isopc(x) || find(runes, x[0]) >= 0)
+#define writeshort(x) (writebyte(x >> 8, ctx) && writebyte(x & 0xff, ctx))
+#define findlabel(x) finditem(x, labels, labels_len)
+#define findmacro(x) finditem(x, macros, macro_len)
+#define error_top(name, msg) !fprintf(stderr, "%s: %s\n", name, msg)
+#define error_asm(name) !fprintf(stderr, "%s: %s in @%s, %s:%d.\n", name, token, scope, ctx->path, ctx->line)
 
 /* clang-format on */
 
-static int parse(char *w, FILE *f);
-
-static int
-error_top(const char *name, const char *msg)
-{
-	fprintf(stderr, "%s: %s\n", name, msg);
-	return 0;
-}
-
-static int
-error_asm(const char *name, const char *msg)
-{
-	fprintf(stderr, "%s: %s in @%s, %s:%d.\n", name, msg, p.scope, p.location, 123);
-	return 0;
-}
+static int parse(char *w, FILE *f, Context *ctx);
 
 static char *
-setlocation(char *name)
+push(char *s, char c)
 {
-	p.location = name;
-	return name;
-}
-
-static char *
-sublabel(char *src, char *scope, char *name)
-{
-	if(slen(scope) + slen(name) >= 0x3f) {
-		error_asm("Sublabel length too long", name);
-		return NULL;
+	char *d = dict;
+	for(d = dict; d < dictnext; d++) {
+		char *ss = s, *dd = d, a, b;
+		while((a = *dd++) == (b = *ss++))
+			if(!a && !b) return d;
 	}
-	return scat(scat(scpy(scope, src, 0x40), "/"), name);
+	return save(s, c);
 }
 
-static Macro *
-findmacro(char *name)
+static Item *
+finditem(char *name, Item *list, int len)
 {
 	int i;
-	for(i = 0; i < p.macro_len; i++)
-		if(scmp(p.macros[i].name, name, 0x40))
-			return &p.macros[i];
-	return NULL;
-}
-
-static Label *
-findlabel(char *name)
-{
-	int i;
-	for(i = 0; i < p.label_len; i++)
-		if(scmp(p.labels[i].name, name, 0x40))
-			return &p.labels[i];
+	if(name[0] == '&')
+		name = join(scope, '/', name + 1);
+	for(i = 0; i < len; i++)
+		if(scmp(list[i].name, name, 0x40))
+			return &list[i];
 	return NULL;
 }
 
@@ -125,19 +86,18 @@ findopcode(char *s)
 {
 	int i;
 	for(i = 0; i < 0x20; i++) {
-		int m = 0;
-		if(!scmp(ops[i], s, 3))
-			continue;
-		if(!i) i |= (1 << 7); /* force keep for LIT */
-		while(s[3 + m]) {
-			if(s[3 + m] == '2')
-				i |= (1 << 5); /* mode: short */
-			else if(s[3 + m] == 'r')
-				i |= (1 << 6); /* mode: return */
-			else if(s[3 + m] == 'k')
-				i |= (1 << 7); /* mode: keep */
+		int m = 3;
+		if(!scmp(ops[i], s, 3)) continue;
+		if(!i) i |= (1 << 7);
+		while(s[m]) {
+			if(s[m] == '2')
+				i |= (1 << 5);
+			else if(s[m] == 'r')
+				i |= (1 << 6);
+			else if(s[m] == 'k')
+				i |= (1 << 7);
 			else
-				return 0; /* failed to match */
+				return 0;
 			m++;
 		}
 		return i;
@@ -146,395 +106,309 @@ findopcode(char *s)
 }
 
 static int
-makemacro(char *name, FILE *f)
+walkcomment(FILE *f, Context *ctx)
 {
-	Macro *m;
-	char word[0x40];
-	if(findmacro(name))
-		return error_asm("Macro duplicate", name);
-	if(sihx(name) && slen(name) % 2 == 0)
-		return error_asm("Macro name is hex number", name);
-	if(findopcode(name) || scmp(name, "BRK", 4) || !slen(name))
-		return error_asm("Macro name is invalid", name);
-	if(p.macro_len == 0x100)
-		return error_asm("Macros limit exceeded", name);
-	m = &p.macros[p.macro_len++];
-	scpy(name, m->name, 0x40);
-	while(fscanf(f, "%63s", word) == 1) {
-		if(word[0] == '{') continue;
-		if(word[0] == '}') break;
-		if(word[0] == '%')
-			return error_asm("Macro error", name);
-		if(m->len >= 0x40)
-			return error_asm("Macro size exceeded", name);
-		scpy(word, m->items[m->len++], 0x40);
+	char c;
+	int depth = 1;
+	while(f && fread(&c, 1, 1, f)) {
+		if(c == 0xa) ctx->line += 1;
+		if(c == '(') depth++;
+		if(c == ')' && --depth < 1) return 1;
+	}
+	return 0;
+}
+
+static int
+walkmacro(Item *m, Context *ctx)
+{
+	char c, *contentptr = m->content, *cptr = token;
+	while((c = *contentptr++)) {
+		if(c < 0x21) {
+			*cptr++ = 0x00;
+			if(token[0] && !parse(token, NULL, ctx)) return 0;
+			cptr = token;
+		} else
+			*cptr++ = c;
 	}
 	return 1;
 }
 
 static int
-isrune(char c)
+walkfile(FILE *f, Context *ctx)
 {
-	char cc, *r = runes;
-	while((cc = *r++))
-		if(c == cc) return 1;
-	return 0;
-}
-
-static int
-makelabel(char *name)
-{
-	Label *l;
-	if(findlabel(name))
-		return error_asm("Label duplicate", name);
-	if(sihx(name) && (slen(name) == 2 || slen(name) == 4))
-		return error_asm("Label name is hex number", name);
-	if(findopcode(name) || scmp(name, "BRK", 4) || !slen(name))
-		return error_asm("Label name is invalid", name);
-	if(isrune(name[0]))
-		return error_asm("Label name is runic", name);
-	if(p.label_len == 0x400)
-		return error_asm("Labels limit exceeded", name);
-	l = &p.labels[p.label_len++];
-	l->addr = p.ptr;
-	l->refs = 0;
-	scpy(name, l->name, 0x40);
+	char c, *cptr = token;
+	while(f && fread(&c, 1, 1, f)) {
+		if(c == 0xa) ctx->line += 1;
+		if(c < 0x21) {
+			*cptr++ = 0x00;
+			if(token[0] && !parse(token, f, ctx))
+				return 0;
+			cptr = token;
+		} else if(cptr - token < 0x3f)
+			*cptr++ = c;
+		else
+			return error_asm("Token too long");
+	}
 	return 1;
 }
 
 static char *
 makelambda(int id)
 {
-	scpy("lambda", p.lambda, 0x07);
-	p.lambda[6] = '0' + (id >> 0x4);
-	p.lambda[7] = '0' + (id & 0xf);
-	return p.lambda;
+	lambda[0] = (char)0xce;
+	lambda[1] = (char)0xbb;
+	lambda[2] = hexad[id >> 0x4];
+	lambda[3] = hexad[id & 0xf];
+	return lambda;
 }
 
 static int
-makereference(char *scope, char *label, char rune, Uint16 addr)
+makemacro(char *name, FILE *f, Context *ctx)
 {
-	char subw[0x40], parent[0x40];
-	Reference *r;
-	if(p.refs_len >= 0x1000)
-		return error_asm("References limit exceeded", label);
-	r = &p.refs[p.refs_len++];
-	if(label[0] == '{') {
-		p.lambda_stack[p.lambda_ptr++] = p.lambda_count;
-		scpy(makelambda(p.lambda_count++), r->name, 0x40);
-	} else if(label[0] == '&' || label[0] == '/') {
-		if(!sublabel(subw, scope, label + 1))
-			return error_asm("Invalid sublabel", label);
-		scpy(subw, r->name, 0x40);
-	} else {
-		int pos = spos(label, '/');
-		if(pos > 0) {
-			Label *l;
-			if((l = findlabel(scpy(label, parent, pos))))
-				l->refs++;
-		}
-		scpy(label, r->name, 0x40);
+	char c;
+	Item *m;
+	if(macro_len >= 0x100) return error_asm("Macros limit exceeded");
+	if(isinvalid(name)) return error_asm("Macro is invalid");
+	if(findmacro(name)) return error_asm("Macro is duplicate");
+	m = &macros[macro_len++];
+	m->name = push(name, 0);
+	m->content = dictnext;
+	while(f && fread(&c, 1, 1, f) && c != '{')
+		if(c == 0xa) ctx->line += 1;
+	while(f && fread(&c, 1, 1, f) && c != '}') {
+		if(c == 0xa) ctx->line += 1;
+		if(c == '%') return 0;
+		if(c == '(')
+			walkcomment(f, ctx);
+		else
+			*dictnext++ = c;
 	}
+	*dictnext++ = 0;
+	return 1;
+}
+
+static int
+makelabel(char *name, int setscope, Context *ctx)
+{
+	Item *l;
+	if(name[0] == '&')
+		name = join(scope, '/', name + 1);
+	if(labels_len >= 0x400) return error_asm("Labels limit exceeded");
+	if(isinvalid(name)) return error_asm("Label is invalid");
+	if(findlabel(name)) return error_asm("Label is duplicate");
+	l = &labels[labels_len++];
+	l->name = push(name, 0);
+	l->addr = ptr;
+	l->refs = 0;
+	if(setscope) {
+		int i = 0;
+		while(name[i] != '/' && i < 0x3e && (scope[i] = name[i]))
+			i++;
+		scope[i] = '\0';
+	}
+	return 1;
+}
+
+static int
+makeref(char *label, char rune, Uint16 addr)
+{
+	Item *r;
+	if(refs_len >= 0x1000) return error_top("References limit exceeded", label);
+	r = &refs[refs_len++];
+	if(label[0] == '{') {
+		lambda_stack[lambda_ptr++] = lambda_len;
+		r->name = push(makelambda(lambda_len++), 0);
+	} else if(label[0] == '&' || label[0] == '/') {
+		r->name = join(scope, '/', label + 1);
+	} else
+		r->name = push(label, 0);
 	r->rune = rune;
 	r->addr = addr;
 	return 1;
 }
 
 static int
-writebyte(Uint8 b)
+writepad(char *w)
 {
-	if(p.ptr < TRIM)
-		return error_asm("Writing in zero-page", "");
-	else if(p.ptr > 0xffff)
-		return error_asm("Writing after the end of RAM", "");
-	else if(p.ptr < p.length)
-		return error_asm("Memory overwrite", "");
-	p.data[p.ptr++] = b;
-	p.length = p.ptr;
+	Item *l;
+	int rel = w[0] == '$' ? ptr : 0;
+	if(ishex(w + 1)) {
+		ptr = shex(w + 1) + rel;
+		return 1;
+	}
+	if((l = findlabel(w + 1))) {
+		ptr = l->addr + rel;
+		return 1;
+	}
+	return 0;
+}
+
+static int
+writebyte(Uint8 b, Context *ctx)
+{
+	if(ptr < PAGE)
+		return error_asm("Writing in zero-page");
+	else if(ptr >= 0x10000)
+		return error_asm("Writing outside memory");
+	else if(ptr < length)
+		return error_asm("Writing rewind");
+	data[ptr++] = b;
+	if(b)
+		length = ptr;
 	return 1;
 }
 
 static int
-writeopcode(char *w)
+writehex(char *w, Context *ctx)
 {
-	return writebyte(findopcode(w));
+	if(*w == '#')
+		writebyte(findopcode("LIT") | !!(++w)[2] << 5, ctx);
+	if(!w[2])
+		return writebyte(shex(w), ctx);
+	else if(!w[4])
+		return writeshort(shex(w));
+	else
+		return 0;
 }
 
 static int
-writeshort(Uint16 s, int lit)
+writestring(char *w, Context *ctx)
 {
-	if(lit)
-		if(!writebyte(findopcode("LIT2"))) return 0;
-	return writebyte(s >> 8) && writebyte(s & 0xff);
+	char c;
+	while((c = *(w++)))
+		if(!writebyte(c, ctx)) return 0;
+	return 1;
 }
 
 static int
-writelitbyte(Uint8 b)
-{
-	return writebyte(findopcode("LIT")) && writebyte(b);
-}
-
-static int
-doinclude(char *filename)
+assemble(char *filename)
 {
 	FILE *f;
-	char w[0x40];
-	if(!(f = fopen(setlocation(filename), "r")))
-		return error_asm("Include missing", filename);
-	while(fscanf(f, "%63s", w) == 1)
-		if(!parse(w, f))
-			return error_asm("Unknown token", w);
+	int res = 0;
+	Context ctx;
+	ctx.line = 0;
+	ctx.path = push(filename, 0);
+	if(!(f = fopen(filename, "r")))
+		return error_top("Invalid source", filename);
+	res = walkfile(f, &ctx);
 	fclose(f);
-	return 1;
+	return res;
 }
 
 static int
-parse(char *w, FILE *f)
+parse(char *w, FILE *f, Context *ctx)
 {
-	int i;
-	char word[0x40], subw[0x40], c;
-	Label *l;
-	Macro *m;
-	if(slen(w) >= 63)
-		return error_asm("Invalid token", w);
+	Item *m;
 	switch(w[0]) {
-	case '(': /* comment */
-		if(slen(w) != 1) fprintf(stderr, "-- Malformed comment: %s\n", w);
-		i = 1; /* track nested comment depth */
-		while(fscanf(f, "%63s", word) == 1) {
-			if(slen(word) != 1)
-				continue;
-			else if(word[0] == '(')
-				i++;
-			else if(word[0] == ')' && --i < 1)
-				break;
-		}
-		break;
-	case '~': /* include */
-		if(!doinclude(w + 1))
-			return error_asm("Invalid include", w);
-		break;
-	case '%': /* macro */
-		if(!makemacro(w + 1, f))
-			return error_asm("Invalid macro", w);
-		break;
-	case '|': /* pad-absolute */
-		if(sihx(w + 1))
-			p.ptr = shex(w + 1);
-		else if(w[1] == '&') {
-			if(!sublabel(subw, p.scope, w + 2) || !(l = findlabel(subw)))
-				return error_asm("Invalid sublabel", w);
-			p.ptr = l->addr;
-		} else {
-			if(!(l = findlabel(w + 1)))
-				return error_asm("Invalid label", w);
-			p.ptr = l->addr;
-		}
-		break;
-	case '$': /* pad-relative */
-		if(sihx(w + 1))
-			p.ptr += shex(w + 1);
-		else if(w[1] == '&') {
-			if(!sublabel(subw, p.scope, w + 2) || !(l = findlabel(subw)))
-				return error_asm("Invalid sublabel", w);
-			p.ptr += l->addr;
-		} else {
-			if(!(l = findlabel(w + 1)))
-				return error_asm("Invalid label", w);
-			p.ptr += l->addr;
-		}
-		break;
-	case '@': /* label */
-		if(!makelabel(w + 1))
-			return error_asm("Invalid label", w);
-		i = 0;
-		while(w[i + 1] != '/' && i < 0x3e && (p.scope[i] = w[i + 1]))
-			i++;
-		p.scope[i] = '\0';
-		break;
-	case '&': /* sublabel */
-		if(!sublabel(subw, p.scope, w + 1) || !makelabel(subw))
-			return error_asm("Invalid sublabel", w);
-		break;
-	case '#': /* literals hex */
-		if(sihx(w + 1) && slen(w) == 3)
-			return writelitbyte(shex(w + 1));
-		else if(sihx(w + 1) && slen(w) == 5)
-			return writeshort(shex(w + 1), 1);
-		else
-			return error_asm("Invalid hex literal", w);
-		break;
-	case '_': /* raw byte relative */
-		return makereference(p.scope, w + 1, w[0], p.ptr) && writebyte(0xff);
-	case ',': /* literal byte relative */
-		return makereference(p.scope, w + 1, w[0], p.ptr + 1) && writelitbyte(0xff);
-	case '-': /* raw byte absolute */
-		return makereference(p.scope, w + 1, w[0], p.ptr) && writebyte(0xff);
-	case '.': /* literal byte zero-page */
-		return makereference(p.scope, w + 1, w[0], p.ptr + 1) && writelitbyte(0xff);
-	case ':': fprintf(stderr, "Deprecated rune %s, use =%s\n", w, w + 1);
-	case '=': /* raw short absolute */
-		return makereference(p.scope, w + 1, w[0], p.ptr) && writeshort(0xffff, 0);
-	case ';': /* literal short absolute */
-		return makereference(p.scope, w + 1, w[0], p.ptr + 1) && writeshort(0xffff, 1);
-	case '?': /* JCI */
-		return makereference(p.scope, w + 1, w[0], p.ptr + 1) && writebyte(0x20) && writeshort(0xffff, 0);
-	case '!': /* JMI */
-		return makereference(p.scope, w + 1, w[0], p.ptr + 1) && writebyte(0x40) && writeshort(0xffff, 0);
-	case '"': /* raw string */
-		i = 0;
-		while((c = w[++i]))
-			if(!writebyte(c)) return 0;
-		break;
-	case '}': /* lambda end */
-		if(!makelabel(makelambda(p.lambda_stack[--p.lambda_ptr])))
-			return error_asm("Invalid label", w);
-		break;
+	case '(': return !walkcomment(f, ctx) ? error_asm("Invalid comment") : 1;
+	case '%': return !makemacro(w + 1, f, ctx) ? error_asm("Invalid macro") : 1;
+	case '@': return !makelabel(w + 1, 1, ctx) ? error_asm("Invalid label") : 1;
+	case '&': return !makelabel(w, 0, ctx) ? error_asm("Invalid sublabel") : 1;
+	case '}': return !makelabel(makelambda(lambda_stack[--lambda_ptr]), 0, ctx) ? error_asm("Invalid label") : 1;
+	case '#': return !ishex(w + 1) || !writehex(w, ctx) ? error_asm("Invalid hexadecimal") : 1;
+	case '_': return makeref(w + 1, w[0], ptr) && writebyte(0xff, ctx);
+	case ',': return makeref(w + 1, w[0], ptr + 1) && writebyte(findopcode("LIT"), ctx) && writebyte(0xff, ctx);
+	case '-': return makeref(w + 1, w[0], ptr) && writebyte(0xff, ctx);
+	case '.': return makeref(w + 1, w[0], ptr + 1) && writebyte(findopcode("LIT"), ctx) && writebyte(0xff, ctx);
+	case ':': fprintf(stderr, "Deprecated rune %s, use =%s\n", w, w + 1); /* fall-through */
+	case '=': return makeref(w + 1, w[0], ptr) && writeshort(0xffff);
+	case ';': return makeref(w + 1, w[0], ptr + 1) && writebyte(findopcode("LIT2"), ctx) && writeshort(0xffff);
+	case '?': return makeref(w + 1, w[0], ptr + 1) && writebyte(0x20, ctx) && writeshort(0xffff);
+	case '!': return makeref(w + 1, w[0], ptr + 1) && writebyte(0x40, ctx) && writeshort(0xffff);
+	case '"': return !writestring(w + 1, ctx) ? error_asm("Invalid string") : 1;
+	case '~': return !assemble(w + 1) ? error_asm("Invalid include") : 1;
+	case '$':
+	case '|': return !writepad(w) ? error_asm("Invalid padding") : 1;
 	case '[':
-	case ']':
-		if(slen(w) == 1) break; /* else fallthrough */
-	default:
-		/* opcode */
-		if(findopcode(w) || scmp(w, "BRK", 4))
-			return writeopcode(w);
-		/* raw byte */
-		else if(sihx(w) && slen(w) == 2)
-			return writebyte(shex(w));
-		/* raw short */
-		else if(sihx(w) && slen(w) == 4)
-			return writeshort(shex(w), 0);
-		/* macro */
-		else if((m = findmacro(w))) {
-			for(i = 0; i < m->len; i++)
-				if(!parse(m->items[i], f))
-					return 0;
-			return 1;
-		} else
-			return makereference(p.scope, w, ' ', p.ptr + 1) && writebyte(0x60) && writeshort(0xffff, 0);
+	case ']': return 1;
 	}
-	return 1;
+	if(ishex(w)) return writehex(w, ctx);
+	if(isopc(w)) return writebyte(findopcode(w), ctx);
+	if((m = findmacro(w))) return walkmacro(m, ctx);
+	return makeref(w, ' ', ptr + 1) && writebyte(0x60, ctx) && writeshort(0xffff);
 }
 
 static int
 resolve(void)
 {
-	Label *l;
-	int i;
-	Uint16 a;
-	for(i = 0; i < p.refs_len; i++) {
-		Reference *r = &p.refs[i];
+	int i, rel;
+	if(!length) return error_top("Assembly", "Output rom is empty.");
+	for(i = 0; i < refs_len; i++) {
+		Item *r = &refs[i], *l = findlabel(r->name);
+		Uint8 *rom = data + r->addr;
+		if(!l) return 0;
 		switch(r->rune) {
 		case '_':
 		case ',':
-			if(!(l = findlabel(r->name)))
-				return error_top("Unknown relative reference", r->name);
-			p.data[r->addr] = (Sint8)(l->addr - r->addr - 2);
-			if((Sint8)p.data[r->addr] != (l->addr - r->addr - 2))
-				return error_asm("Relative reference is too far", r->name);
-			l->refs++;
+			*rom = rel = l->addr - r->addr - 2;
+			if((Sint8)data[r->addr] != rel)
+				return error_top("Relative reference is too far", r->name);
 			break;
 		case '-':
 		case '.':
-			if(!(l = findlabel(r->name)))
-				return error_top("Unknown zero-page reference", r->name);
-			p.data[r->addr] = l->addr & 0xff;
-			l->refs++;
+			*rom = l->addr;
 			break;
 		case ':':
 		case '=':
 		case ';':
-			if(!(l = findlabel(r->name)))
-				return error_top("Unknown absolute reference", r->name);
-			p.data[r->addr] = l->addr >> 0x8;
-			p.data[r->addr + 1] = l->addr & 0xff;
-			l->refs++;
+			*rom++ = l->addr >> 8, *rom = l->addr;
 			break;
 		case '?':
 		case '!':
 		default:
-			if(!(l = findlabel(r->name)))
-				return error_top("Unknown absolute reference", r->name);
-			a = l->addr - r->addr - 2;
-			p.data[r->addr] = a >> 0x8;
-			p.data[r->addr + 1] = a & 0xff;
-			l->refs++;
+			rel = l->addr - r->addr - 2;
+			*rom++ = rel >> 8, *rom = rel;
 			break;
 		}
+		l->refs++;
 	}
 	return 1;
 }
 
 static int
-assemble(FILE *f)
-{
-	char w[0x40];
-	p.ptr = 0x100;
-	scpy("on-reset", p.scope, 0x40);
-	while(fscanf(f, "%62s", w) == 1)
-		if(slen(w) > 0x3d || !parse(w, f))
-			return error_asm("Invalid token", w);
-	return resolve();
-}
-
-static void
-review(char *filename)
+build(char *rompath)
 {
 	int i;
-	for(i = 0; i < p.label_len; i++)
-		if(p.labels[i].name[0] >= 'A' && p.labels[i].name[0] <= 'Z')
-			continue; /* Ignore capitalized labels(devices) */
-		else if(!p.labels[i].refs)
-			fprintf(stdout, "-- Unused label: %s\n", p.labels[i].name);
+	FILE *dst, *dstsym;
+	char *sympath = join(rompath, '.', "sym");
+	/* rom */
+	if(!(dst = fopen(rompath, "wb")))
+		return !error_top("Invalid output file", rompath);
+	for(i = 0; i < labels_len; i++)
+		if(labels[i].name[0] - 'A' > 25 && !labels[i].refs)
+			fprintf(stdout, "-- Unused label: %s\n", labels[i].name);
+	fwrite(data + PAGE, length - PAGE, 1, dst);
 	fprintf(stdout,
 		"Assembled %s in %d bytes(%.2f%% used), %d labels, %d macros.\n",
-		filename,
-		p.length - TRIM,
-		(p.length - TRIM) / 652.80,
-		p.label_len,
-		p.macro_len);
-}
-
-static void
-writesym(char *filename)
-{
-	int i;
-	char symdst[0x60];
-	FILE *fp;
-	if(slen(filename) > 0x60 - 5)
-		return;
-	fp = fopen(scat(scpy(filename, symdst, slen(filename) + 1), ".sym"), "w");
-	if(fp != NULL) {
-		for(i = 0; i < p.label_len; i++) {
-			Uint8 hb = p.labels[i].addr >> 8, lb = p.labels[i].addr & 0xff;
-			fwrite(&hb, 1, 1, fp);
-			fwrite(&lb, 1, 1, fp);
-			fwrite(p.labels[i].name, slen(p.labels[i].name) + 1, 1, fp);
-		}
+		rompath,
+		length - PAGE,
+		(length - PAGE) / 652.80,
+		labels_len,
+		macro_len);
+	/* sym */
+	if(!(dstsym = fopen(sympath, "w")))
+		return !error_top("Invalid symbols file", sympath);
+	for(i = 0; i < labels_len; i++) {
+		Uint8 hb = labels[i].addr >> 8, lb = labels[i].addr;
+		char c, d = 0, *name = labels[i].name;
+		fwrite(&hb, 1, 1, dstsym);
+		fwrite(&lb, 1, 1, dstsym);
+		while((c = *name++)) fwrite(&c, 1, 1, dstsym);
+		fwrite(&d, 1, 1, dstsym);
 	}
-	fclose(fp);
+	fclose(dst), fclose(dstsym);
+	return 1;
 }
 
 int
 main(int argc, char *argv[])
 {
-	FILE *src, *dst;
-	if(argc == 1)
-		return error_top("usage", "uxnasm [-v] input.tal output.rom");
-	if(argv[1][0] == '-' && argv[1][1] == 'v')
-		return !fprintf(stdout, "Uxnasm - Uxntal Assembler, 7 Mar 2024.\n");
-	if(!(src = fopen(setlocation(argv[1]), "r")))
-		return !error_top("Invalid input", argv[1]);
-	p.entry = argv[1];
-	if(!assemble(src))
-		return !error_top("Assembly", "Failed to assemble rom.");
-	if(!(dst = fopen(argv[2], "wb")))
-		return !error_top("Invalid Output", argv[2]);
-	if(p.length <= TRIM)
-		return !error_top("Assembly", "Output rom is empty.");
-	fwrite(p.data + TRIM, p.length - TRIM, 1, dst);
-	if(!scmp(argv[2], "-", 2)) {
-		review(argv[2]);
-		writesym(argv[2]);
-	}
+	ptr = PAGE;
+	scpy("on-reset", scope, 0x40);
+	if(argc == 1) return error_top("usage", "uxnasm [-v] input.tal output.rom");
+	if(scmp(argv[1], "-v", 2)) return !fprintf(stdout, "Uxnasm - Uxntal Assembler, 28 Mar 2024.\n");
+	if(!assemble(argv[1]) || !length) return !error_top("Assembly", "Failed to assemble rom.");
+	if(!resolve()) return !error_top("Assembly", "Failed to resolve symbols.");
+	if(!build(argv[2])) return !error_top("Assembly", "Failed to build rom.");
 	return 0;
 }
