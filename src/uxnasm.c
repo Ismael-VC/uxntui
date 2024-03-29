@@ -258,9 +258,9 @@ writehex(char *w, Context *ctx)
 {
 	if(*w == '#')
 		writebyte(findopcode("LIT") | !!(++w)[2] << 5, ctx);
-	if(!w[2])
+	if(w[1] && !w[2])
 		return writebyte(shex(w), ctx);
-	else if(!w[4])
+	else if(w[3] && !w[4])
 		return writeshort(shex(w));
 	else
 		return 0;
