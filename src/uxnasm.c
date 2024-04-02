@@ -165,6 +165,7 @@ makelambda(int id)
 static int
 makemacro(char *name, FILE *f, Context *ctx)
 {
+	int depth = 0;
 	char c;
 	Item *m;
 	if(macro_len >= 0x100) return error_asm("Macros limit exceeded");
@@ -175,9 +176,11 @@ makemacro(char *name, FILE *f, Context *ctx)
 	m->content = dictnext;
 	while(f && fread(&c, 1, 1, f) && c != '{')
 		if(c == 0xa) ctx->line += 1;
-	while(f && fread(&c, 1, 1, f) && c != '}') {
+	while(f && fread(&c, 1, 1, f)) {
 		if(c == 0xa) ctx->line += 1;
 		if(c == '%') return error_top("Macro nested", name);
+		if(c == '{') depth++;
+		if(c == '}' && --depth) break;
 		if(c == '(' && !walkcomment(f, ctx))
 			return 0;
 		else
@@ -400,7 +403,7 @@ main(int argc, char *argv[])
 {
 	ptr = PAGE;
 	copy("on-reset", scope, 0);
-	if(argc == 2 && scmp(argv[1], "-v", 2)) return !fprintf(stdout, "Uxnasm - Uxntal Assembler, 30 Mar 2024.\n");
+	if(argc == 2 && scmp(argv[1], "-v", 2)) return !fprintf(stdout, "Uxnasm - Uxntal Assembler, 2 Apr 2024.\n");
 	if(argc != 3) return error_top("usage", "uxnasm [-v] input.tal output.rom");
 	if(!assemble(argv[1])) return 1;
 	if(!resolve(argv[2])) return 1;
