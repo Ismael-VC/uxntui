@@ -281,7 +281,7 @@ assemble(char *filename)
 	FILE *f;
 	int res = 0;
 	Context ctx;
-	ctx.line = 0;
+	ctx.line = 1;
 	ctx.path = push(filename, 0);
 	if(!(f = fopen(filename, "r")))
 		return error_top("Source missing", filename);
