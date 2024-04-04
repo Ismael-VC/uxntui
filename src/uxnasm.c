@@ -112,7 +112,7 @@ walkcomment(FILE *f, Context *ctx)
 	char c;
 	int depth = 1;
 	while(f && fread(&c, 1, 1, f)) {
-		if(c == 0xa) ctx->line += 1;
+		if(c == 0xa) ctx->line++;
 		if(c == '(') depth++;
 		if(c == ')' && --depth < 1) return 1;
 	}
@@ -139,11 +139,10 @@ walkfile(FILE *f, Context *ctx)
 {
 	char c, *cptr = token;
 	while(f && fread(&c, 1, 1, f)) {
-		if(c == 0xa) ctx->line += 1;
 		if(c < 0x21) {
 			*cptr++ = 0x00;
-			if(token[0] && !parse(token, f, ctx))
-				return 0;
+			if(token[0] && !parse(token, f, ctx)) return 0;
+			if(c == 0xa) ctx->line++;
 			cptr = token;
 		} else if(cptr - token < 0x3f)
 			*cptr++ = c;
@@ -177,9 +176,9 @@ makemacro(char *name, FILE *f, Context *ctx)
 	m->name = push(name, 0);
 	m->data = dictnext;
 	while(f && fread(&c, 1, 1, f) && c != '{')
-		if(c == 0xa) ctx->line += 1;
+		if(c == 0xa) ctx->line++;
 	while(f && fread(&c, 1, 1, f)) {
-		if(c == 0xa) ctx->line += 1;
+		if(c == 0xa) ctx->line++;
 		if(c == '%') return error_top("Macro nested", name);
 		if(c == '{') depth++;
 		if(c == '}' && --depth) break;
