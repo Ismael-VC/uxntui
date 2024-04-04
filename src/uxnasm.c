@@ -179,7 +179,7 @@ makemacro(char *name, FILE *f, Context *ctx)
 		if(c == 0xa) ctx->line++;
 	while(f && fread(&c, 1, 1, f)) {
 		if(c == 0xa) ctx->line++;
-		if(c == '%') return error_top("Macro nested", name);
+		if(c == '%') return error_asm("Macro nested");
 		if(c == '{') depth++;
 		if(c == '}' && --depth) break;
 		if(c == '(' && !walkcomment(f, ctx))
@@ -212,7 +212,7 @@ static int
 makeref(char *label, char rune, Uint16 addr, Context *ctx)
 {
 	Item *r;
-	if(refs_len >= 0x1000) return error_top("References limit exceeded", label);
+	if(refs_len >= 0x1000) return error_asm("References limit exceeded");
 	r = &refs[refs_len++];
 	if(label[0] == '{') {
 		lambda_stack[lambda_ptr++] = lambda_len;
