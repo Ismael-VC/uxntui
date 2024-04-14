@@ -122,7 +122,8 @@ walkcomment(FILE *f, Context *ctx)
 static int
 walkmacro(Item *m, Context *ctx)
 {
-	char c, *dataptr = m->data, *cptr = token;
+	unsigned char c;
+	char *dataptr = m->data, *cptr = token;
 	while((c = *dataptr++)) {
 		if(c < 0x21) {
 			*cptr++ = 0x00;
@@ -137,7 +138,8 @@ walkmacro(Item *m, Context *ctx)
 static int
 walkfile(FILE *f, Context *ctx)
 {
-	char c, *cptr = token;
+	unsigned char c;
+	char *cptr = token;
 	while(f && fread(&c, 1, 1, f)) {
 		if(c < 0x21) {
 			*cptr++ = 0x00;
@@ -407,7 +409,7 @@ main(int argc, char *argv[])
 {
 	ptr = PAGE;
 	copy("on-reset", scope, 0);
-	if(argc == 2 && scmp(argv[1], "-v", 2)) return !printf("Uxnasm - Uxntal Assembler, 3 Apr 2024.\n");
+	if(argc == 2 && scmp(argv[1], "-v", 2)) return !printf("Uxnasm - Uxntal Assembler, 13 Apr 2024.\n");
 	if(argc != 3) return error_top("usage", "uxnasm [-v] input.tal output.rom");
 	if(!assemble(argv[1])) return 1;
 	if(!resolve(argv[2])) return 1;
