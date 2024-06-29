@@ -30,20 +30,19 @@ WITH REGARD TO THIS SOFTWARE.
 #define T2_(v) { r = (v); T = r; N = r >> 8; }
 #define N2_(v) { r = (v); L = r; X = r >> 8; }
 #define L2_(v) { r = (v); Y = r; Z = r >> 8; }
-#define FLIP      { s = ins & 0x40 ? &u->wst : &u->rst; }
+#define FLIP      { s = ins & 0x40 ? &uxn.wst : &uxn.rst; }
 #define SHIFT(y)  { s->ptr += (y); }
 #define SET(x, y) { SHIFT((ins & 0x80) ? x + y : y) }
 
 int
 uxn_eval(Uint16 pc)
 {
-	Uxn *u = &uxn;
 	Uint16 t, n, l, r;
 	Uint8 *rr;
-	if(!pc || u->dev[0x0f]) return 0;
+	if(!pc || uxn.dev[0x0f]) return 0;
 	for(;;) {
 		Uint8 ins = uxn.ram[pc++];
-		Stack *s = ins & 0x40 ? &u->rst : &u->wst;
+		Stack *s = ins & 0x40 ? &uxn.rst : &uxn.wst;
 		switch(ins & 0x3f) {
 		/* IMM */
 		case 0x00: case 0x20:

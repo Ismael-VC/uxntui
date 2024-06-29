@@ -13,11 +13,11 @@ dest:
 	@ mkdir -p bin
 run: all bin/uxnasm bin/uxncli bin/uxn11
 	@ bin/uxn11 
-test: bin/uxnasm bin/uxncli bin/uxn11
+test: all
 	@ bin/uxnasm -v && ./bin/uxncli -v && ./bin/uxn11 -v
 	@ bin/uxnasm etc/opctest.tal bin/opctest.rom
 	@ bin/uxncli bin/opctest.rom
-install: all bin/uxnasm bin/uxncli bin/uxn11
+install: all
 	@ cp bin/uxn11 bin/uxnasm bin/uxncli ~/bin/
 uninstall:
 	@ rm -f ~/bin/uxn11 ~/bin/uxnasm ~/bin/uxncli
@@ -31,6 +31,6 @@ clean:
 bin/uxnasm: src/uxnasm.c
 	@ cc ${RELEASE_flags} ${CFLAGS} src/uxnasm.c -o bin/uxnasm
 bin/uxncli: ${CLI_src} src/uxncli.c
-	@ cc ${DEBUG_flags} ${CFLAGS} ${CLI_src} src/uxncli.c -lutil -o bin/uxncli
+	@ cc ${RELEASE_flags} ${CFLAGS} ${CLI_src} src/uxncli.c -lutil -o bin/uxncli
 bin/uxn11: ${EMU_src} src/uxn11.c
-	@ cc ${DEBUG_flags} ${CFLAGS} ${EMU_src} src/uxn11.c -lX11 -lutil -o bin/uxn11
+	@ cc ${RELEASE_flags} ${CFLAGS} ${EMU_src} src/uxn11.c -lX11 -lutil -o bin/uxn11
