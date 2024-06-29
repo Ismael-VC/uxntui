@@ -91,12 +91,12 @@ system_boot(Uint8 *ram, char *rom)
 /* IO */
 
 Uint8
-system_dei(Uxn *u, Uint8 addr)
+system_dei(Uint8 addr)
 {
 	switch(addr) {
-	case 0x4: return u->wst.ptr;
-	case 0x5: return u->rst.ptr;
-	default: return u->dev[addr];
+	case 0x4: return uxn.wst.ptr;
+	case 0x5: return uxn.rst.ptr;
+	default: return uxn.dev[addr];
 	}
 }
 

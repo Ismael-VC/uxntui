@@ -24,7 +24,7 @@ Uint8
 emu_dei(Uint8 addr)
 {
 	switch(addr & 0xf0) {
-	case 0x00: return system_dei(&uxn, addr);
+	case 0x00: return system_dei(addr);
 	case 0x10: return console_dei(&uxn, addr);
 	case 0xc0: return datetime_dei(addr);
 	}
