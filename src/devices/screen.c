@@ -256,20 +256,20 @@ screen_dei(Uint8 addr)
 }
 
 void
-screen_deo(Uint8 *d, Uint8 port)
+screen_deo(Uint8 port)
 {
 	switch(port) {
-	case 0x3: screen_resize(PEEK2(d + 2), uxn_screen.height, uxn_screen.scale); return;
-	case 0x5: screen_resize(uxn_screen.width, PEEK2(d + 4), uxn_screen.scale); return;
-	case 0x6: rMX = d[0x6] & 0x1, rMY = d[0x6] & 0x2, rMA = d[0x6] & 0x4, rML = d[0x6] >> 4, rDX = rMX << 3, rDY = rMY << 2; return;
+	case 0x3: screen_resize(PEEK2(&uxn.dev[0x22]), uxn_screen.height, uxn_screen.scale); return;
+	case 0x5: screen_resize(uxn_screen.width, PEEK2(&uxn.dev[0x24]), uxn_screen.scale); return;
+	case 0x6: rMX = uxn.dev[0x26] & 0x1, rMY = uxn.dev[0x26] & 0x2, rMA = uxn.dev[0x26] & 0x4, rML = uxn.dev[0x26] >> 4, rDX = rMX << 3, rDY = rMY << 2; return;
 	case 0x8:
-	case 0x9: rX = (d[0x8] << 8) | d[0x9], rX = twos(rX); return;
+	case 0x9: rX = (uxn.dev[0x28] << 8) | uxn.dev[0x29], rX = twos(rX); return;
 	case 0xa:
-	case 0xb: rY = (d[0xa] << 8) | d[0xb], rY = twos(rY); return;
+	case 0xb: rY = (uxn.dev[0x2a] << 8) | uxn.dev[0x2b], rY = twos(rY); return;
 	case 0xc:
-	case 0xd: rA = (d[0xc] << 8) | d[0xd]; return;
+	case 0xd: rA = (uxn.dev[0x2c] << 8) | uxn.dev[0x2d]; return;
 	case 0xe: {
-		Uint8 ctrl = d[0xe];
+		Uint8 ctrl = uxn.dev[0x2e];
 		Uint8 color = ctrl & 0x3;
 		Uint8 *layer = ctrl & 0x40 ? uxn_screen.fg : uxn_screen.bg;
 		/* fill mode */
@@ -299,7 +299,7 @@ screen_deo(Uint8 *d, Uint8 port)
 	}
 	case 0xf: {
 		Uint8 i;
-		Uint8 ctrl = d[0xf];
+		Uint8 ctrl = uxn.dev[0x2f];
 		Uint8 twobpp = !!(ctrl & 0x80);
 		Uint8 color = ctrl & 0xf;
 		Uint8 *layer = ctrl & 0x40 ? uxn_screen.fg : uxn_screen.bg;
