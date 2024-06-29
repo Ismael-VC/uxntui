@@ -11,4 +11,4 @@ WITH REGARD TO THIS SOFTWARE.
 
 #define DATETIME_VERSION 1
 
-Uint8 datetime_dei(Uxn *u, Uint8 addr);
+Uint8 datetime_dei(Uint8 addr);

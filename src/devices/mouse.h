@@ -9,9 +9,7 @@ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
 WITH REGARD TO THIS SOFTWARE.
 */
 
-#define MOUSE_VERSION 1
-
-void mouse_down(Uxn *u, Uint8 *d, Uint8 mask);
-void mouse_up(Uxn *u, Uint8 *d, Uint8 mask);
-void mouse_pos(Uxn *u, Uint8 *d, Uint16 x, Uint16 y);
-void mouse_scroll(Uxn *u, Uint8 *d, Uint16 x, Uint16 y);
+void mouse_down(Uint8 *d, Uint8 mask);
+void mouse_up(Uint8 *d, Uint8 mask);
+void mouse_pos(Uint8 *d, Uint16 x, Uint16 y);
+void mouse_scroll(Uint8 *d, Uint16 x, Uint16 y);

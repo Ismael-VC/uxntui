@@ -51,7 +51,7 @@ emu_dei(Uint8 addr)
 	case 0x00: return system_dei(&uxn, addr);
 	case 0x10: return console_dei(&uxn, addr);
 	case 0x20: return screen_dei(&uxn, addr);
-	case 0xc0: return datetime_dei(&uxn, addr);
+	case 0xc0: return datetime_dei(addr);
 	}
 	return uxn.dev[addr];
 }
@@ -158,37 +158,37 @@ emu_event(Uxn *u)
 		case XK_F4: emu_restart(u, boot_rom, 0); break;
 		case XK_F5: emu_restart(u, boot_rom, 1); break;
 		}
-		controller_down(u, &u->dev[0x80], get_button(sym));
-		controller_key(u, &u->dev[0x80], sym < 0x80 ? sym : (Uint8)buf[0]);
+		controller_down(&u->dev[0x80], get_button(sym));
+		controller_key(&u->dev[0x80], sym < 0x80 ? sym : (Uint8)buf[0]);
 	} break;
 	case KeyRelease: {
 		KeySym sym;
 		char buf[7];
 		XLookupString((XKeyPressedEvent *)&ev, buf, 7, &sym, 0);
-		controller_up(u, &u->dev[0x80], get_button(sym));
+		controller_up(&u->dev[0x80], get_button(sym));
 	} break;
 	case ButtonPress: {
 		XButtonPressedEvent *e = (XButtonPressedEvent *)&ev;
 		if(e->button == 4)
-			mouse_scroll(u, &u->dev[0x90], 0, 1);
+			mouse_scroll(&u->dev[0x90], 0, 1);
 		else if(e->button == 5)
-			mouse_scroll(u, &u->dev[0x90], 0, -1);
+			mouse_scroll(&u->dev[0x90], 0, -1);
 		else if(e->button == 6)
-			mouse_scroll(u, &u->dev[0x90], 1, 0);
+			mouse_scroll(&u->dev[0x90], 1, 0);
 		else if(e->button == 7)
-			mouse_scroll(u, &u->dev[0x90], -1, 0);
+			mouse_scroll(&u->dev[0x90], -1, 0);
 		else
-			mouse_down(u, &u->dev[0x90], 0x1 << (e->button - 1));
+			mouse_down(&u->dev[0x90], 0x1 << (e->button - 1));
 	} break;
 	case ButtonRelease: {
 		XButtonPressedEvent *e = (XButtonPressedEvent *)&ev;
-		mouse_up(u, &u->dev[0x90], 0x1 << (e->button - 1));
+		mouse_up(&u->dev[0x90], 0x1 << (e->button - 1));
 	} break;
 	case MotionNotify: {
 		XMotionEvent *e = (XMotionEvent *)&ev;
 		int x = clamp((e->x - PAD) / uxn_screen.scale, 0, uxn_screen.width - 1);
 		int y = clamp((e->y - PAD) / uxn_screen.scale, 0, uxn_screen.height - 1);
-		mouse_pos(u, &u->dev[0x90], x, y);
+		mouse_pos(&u->dev[0x90], x, y);
 	} break;
 	}
 }
