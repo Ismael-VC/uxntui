@@ -18,6 +18,8 @@ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
 WITH REGARD TO THIS SOFTWARE.
 */
 
+Uxn uxn;
+
 Uint8
 emu_dei(Uxn *u, Uint8 addr)
 {
@@ -65,20 +67,19 @@ emu_end(Uxn *u)
 int
 main(int argc, char **argv)
 {
-	Uxn u = {0};
 	int i = 1;
 	if(i == argc)
 		return system_error("usage", "uxncli [-v] file.rom [args..]");
 	/* Read flags */
 	if(argv[i][0] == '-' && argv[i][1] == 'v')
 		return system_version("Uxncli - Console Varvara Emulator", "18 Mar 2024");
-	if(!system_boot(&u, (Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8)), argv[i++]))
+	if(!system_boot(&uxn, (Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8)), argv[i++]))
 		return system_error("Init", "Failed to initialize uxn.");
 	/* Game Loop */
-	u.dev[0x17] = argc - i;
-	if(uxn_eval(&u, PAGE_PROGRAM) && PEEK2(u.dev + 0x10)) {
-		console_listen(&u, i, argc, argv);
-		emu_run(&u);
+	uxn.dev[0x17] = argc - i;
+	if(uxn_eval(&uxn, PAGE_PROGRAM) && PEEK2(uxn.dev + 0x10)) {
+		console_listen(&uxn, i, argc, argv);
+		emu_run(&uxn);
 	}
-	return emu_end(&u);
+	return emu_end(&uxn);
 }

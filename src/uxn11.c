@@ -16,6 +16,8 @@
 #include "devices/file.h"
 #include "devices/datetime.h"
 
+Uxn uxn;
+
 /*
 Copyright (c) 2022 Devine Lu Linvega
 
@@ -267,7 +269,6 @@ emu_run(Uxn *u)
 int
 main(int argc, char **argv)
 {
-	Uxn u = {0};
 	int i = 1;
 	char *rom;
 	if(i != argc && argv[i][0] == '-' && argv[i][1] == 'v') {
@@ -275,7 +276,7 @@ main(int argc, char **argv)
 		i++;
 	}
 	rom = i == argc ? "boot.rom" : argv[i++];
-	if(!system_boot(&u, (Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8)), rom)) {
+	if(!system_boot(&uxn, (Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8)), rom)) {
 		fprintf(stdout, "usage: %s [-v] file.rom [args..]\n", argv[0]);
 		return 0;
 	}
@@ -285,9 +286,9 @@ main(int argc, char **argv)
 	}
 	/* Game Loop */
 	u.dev[0x17] = argc - i;
-	if(uxn_eval(&u, PAGE_PROGRAM)) {
-		console_listen(&u, i, argc, argv);
-		emu_run(&u);
+	if(uxn_eval(&uxn, PAGE_PROGRAM)) {
+		console_listen(&uxn, i, argc, argv);
+		emu_run(&uxn);
 	}
-	return emu_end(&u);
+	return emu_end(&uxn);
 }
