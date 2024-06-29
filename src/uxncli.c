@@ -21,26 +21,26 @@ WITH REGARD TO THIS SOFTWARE.
 Uxn uxn;
 
 Uint8
-emu_dei(Uxn *u, Uint8 addr)
+emu_dei(Uint8 addr)
 {
 	switch(addr & 0xf0) {
-	case 0x00: return system_dei(u, addr);
-	case 0x10: return console_dei(u, addr);
-	case 0xc0: return datetime_dei(u, addr);
+	case 0x00: return system_dei(&uxn, addr);
+	case 0x10: return console_dei(&uxn, addr);
+	case 0xc0: return datetime_dei(&uxn, addr);
 	}
-	return u->dev[addr];
+	return uxn.dev[addr];
 }
 
 void
-emu_deo(Uxn *u, Uint8 addr, Uint8 value)
+emu_deo(Uint8 addr, Uint8 value)
 {
 	Uint8 p = addr & 0x0f, d = addr & 0xf0;
-	u->dev[addr] = value;
+	uxn.dev[addr] = value;
 	switch(d) {
-	case 0x00: system_deo(u, &u->dev[d], p); break;
-	case 0x10: console_deo(u, &u->dev[d], p); break;
-	case 0xa0: file_deo(0, u->ram, &u->dev[d], p); break;
-	case 0xb0: file_deo(1, u->ram, &u->dev[d], p); break;
+	case 0x00: system_deo(&uxn, &uxn.dev[d], p); break;
+	case 0x10: console_deo(&uxn, &uxn.dev[d], p); break;
+	case 0xa0: file_deo(0, uxn.ram, &uxn.dev[d], p); break;
+	case 0xb0: file_deo(1, uxn.ram, &uxn.dev[d], p); break;
 	}
 }
 
@@ -72,7 +72,7 @@ main(int argc, char **argv)
 		return system_error("usage", "uxncli [-v] file.rom [args..]");
 	/* Read flags */
 	if(argv[i][0] == '-' && argv[i][1] == 'v')
-		return system_version("Uxncli - Console Varvara Emulator", "18 Mar 2024");
+		return system_version("Uxncli - Console Varvara Emulator", "29 Jun 2024");
 	if(!system_boot(&uxn, (Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8)), argv[i++]))
 		return system_error("Init", "Failed to initialize uxn.");
 	/* Game Loop */

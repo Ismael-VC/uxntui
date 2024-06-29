@@ -97,10 +97,10 @@ uxn_eval(Uxn *u, Uint16 pc)
 		case 0x34: /* LDA2 */ t=T2;           SET(2, 0) N = ram[t++]; T = ram[t]; break;
 		case 0x15: /* STA  */ t=T2;n=L;       SET(3,-3) ram[t] = n; break;
 		case 0x35: /* STA2 */ t=T2;n=N2;      SET(4,-4) ram[t++] = n >> 8; ram[t] = n; break;
-		case 0x16: /* DEI  */ t=T;            SET(1, 0) T = emu_dei(u, t); break;
-		case 0x36: /* DEI2 */ t=T;            SET(1, 1) N = emu_dei(u, t++); T = emu_dei(u, t); break;
-		case 0x17: /* DEO  */ t=T;n=N;        SET(2,-2) emu_deo(u, t, n); break;
-		case 0x37: /* DEO2 */ t=T;n=N;l=L;    SET(3,-3) emu_deo(u, t++, l); emu_deo(u, t, n); break;
+		case 0x16: /* DEI  */ t=T;            SET(1, 0) T = emu_dei(t); break;
+		case 0x36: /* DEI2 */ t=T;            SET(1, 1) N = emu_dei(t++); T = emu_dei(t); break;
+		case 0x17: /* DEO  */ t=T;n=N;        SET(2,-2) emu_deo(t, n); break;
+		case 0x37: /* DEO2 */ t=T;n=N;l=L;    SET(3,-3) emu_deo(t++, l); emu_deo(t, n); break;
 		case 0x18: /* ADD  */ t=T;n=N;        SET(2,-1) T = n + t; break;
 		case 0x38: /* ADD2 */ t=T2;n=N2;      SET(4,-2) T2_(n + t) break;
 		case 0x19: /* SUB  */ t=T;n=N;        SET(2,-1) T = n - t; break;

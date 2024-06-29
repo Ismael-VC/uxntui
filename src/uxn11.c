@@ -45,32 +45,32 @@ clamp(int val, int min, int max)
 }
 
 Uint8
-emu_dei(Uxn *u, Uint8 addr)
+emu_dei(Uint8 addr)
 {
 	switch(addr & 0xf0) {
-	case 0x00: return system_dei(u, addr);
-	case 0x10: return console_dei(u, addr);
-	case 0x20: return screen_dei(u, addr);
-	case 0xc0: return datetime_dei(u, addr);
+	case 0x00: return system_dei(&uxn, addr);
+	case 0x10: return console_dei(&uxn, addr);
+	case 0x20: return screen_dei(&uxn, addr);
+	case 0xc0: return datetime_dei(&uxn, addr);
 	}
-	return u->dev[addr];
+	return uxn.dev[addr];
 }
 
 void
-emu_deo(Uxn *u, Uint8 addr, Uint8 value)
+emu_deo(Uint8 addr, Uint8 value)
 {
 	Uint8 p = addr & 0x0f, d = addr & 0xf0;
-	u->dev[addr] = value;
+	uxn.dev[addr] = value;
 	switch(d) {
 	case 0x00:
-		system_deo(u, &u->dev[d], p);
+		system_deo(&uxn, &uxn.dev[d], p);
 		if(p > 0x7 && p < 0xe)
-			screen_palette(&u->dev[0x8]);
+			screen_palette(&uxn.dev[0x8]);
 		break;
-	case 0x10: console_deo(u, &u->dev[d], p); break;
-	case 0x20: screen_deo(u->ram, &u->dev[d], p); break;
-	case 0xa0: file_deo(0, u->ram, &u->dev[d], p); break;
-	case 0xb0: file_deo(1, u->ram, &u->dev[d], p); break;
+	case 0x10: console_deo(&uxn, &uxn.dev[d], p); break;
+	case 0x20: screen_deo(uxn.ram, &uxn.dev[d], p); break;
+	case 0xa0: file_deo(0, uxn.ram, &uxn.dev[d], p); break;
+	case 0xb0: file_deo(1, uxn.ram, &uxn.dev[d], p); break;
 	}
 }
 
@@ -272,7 +272,7 @@ main(int argc, char **argv)
 	int i = 1;
 	char *rom;
 	if(i != argc && argv[i][0] == '-' && argv[i][1] == 'v') {
-		fprintf(stdout, "Uxn11 - Varvara Emulator, 5 Jun 2024.\n");
+		fprintf(stdout, "Uxn11 - Varvara Emulator, 29 Jun 2024.\n");
 		i++;
 	}
 	rom = i == argc ? "boot.rom" : argv[i++];
@@ -285,7 +285,7 @@ main(int argc, char **argv)
 		return 0;
 	}
 	/* Game Loop */
-	u.dev[0x17] = argc - i;
+	uxn.dev[0x17] = argc - i;
 	if(uxn_eval(&uxn, PAGE_PROGRAM)) {
 		console_listen(&uxn, i, argc, argv);
 		emu_run(&uxn);
