@@ -12,8 +12,8 @@ WITH REGARD TO THIS SOFTWARE.
 #define SYSTEM_VERSION 2
 #define RAM_PAGES 0x10
 
-void system_reboot(Uxn *u, char *rom, int soft);
-void system_inspect(Uxn *u);
+void system_reboot(char *rom, int soft);
+void system_inspect();
 int system_error(char *msg, const char *err);
 int system_boot(Uint8 *ram, char *rom);
 

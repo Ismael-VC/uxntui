@@ -19,25 +19,25 @@ char *boot_rom;
 Uint16 dev_vers[0x10];
 
 static void
-system_zero(Uxn *u, int soft)
+system_zero(int soft)
 {
 	int i;
 	for(i = 0x100 * soft; i < 0x10000; i++)
-		u->ram[i] = 0;
+		uxn.ram[i] = 0;
 	for(i = 0x0; i < 0x100; i++)
-		u->dev[i] = 0;
-	u->wst.ptr = 0;
-	u->rst.ptr = 0;
+		uxn.dev[i] = 0;
+	uxn.wst.ptr = 0;
+	uxn.rst.ptr = 0;
 }
 
 static int
-system_load(Uxn *u, char *filename)
+system_load(char *filename)
 {
 	FILE *f = fopen(filename, "rb");
 	if(f) {
-		int i = 0, l = fread(&u->ram[PAGE_PROGRAM], 0x10000 - PAGE_PROGRAM, 1, f);
+		int i = 0, l = fread(&uxn.ram[PAGE_PROGRAM], 0x10000 - PAGE_PROGRAM, 1, f);
 		while(l && ++i < RAM_PAGES)
-			l = fread(u->ram + 0x10000 * i, 0x10000, 1, f);
+			l = fread(uxn.ram + 0x10000 * i, 0x10000, 1, f);
 		fclose(f);
 	}
 	return !!f;
@@ -61,18 +61,18 @@ system_error(char *msg, const char *err)
 }
 
 void
-system_inspect(Uxn *u)
+system_inspect(void)
 {
-	fprintf(stderr, "WST "), system_print(&u->wst);
-	fprintf(stderr, "RST "), system_print(&u->rst);
+	fprintf(stderr, "WST "), system_print(&uxn.wst);
+	fprintf(stderr, "RST "), system_print(&uxn.rst);
 }
 
 void
-system_reboot(Uxn *u, char *rom, int soft)
+system_reboot(char *rom, int soft)
 {
-	system_zero(u, soft);
-	if(system_load(u, boot_rom))
-		if(uxn_eval(u, PAGE_PROGRAM))
+	system_zero(soft);
+	if(system_load(boot_rom))
+		if(uxn_eval(&uxn, PAGE_PROGRAM))
 			boot_rom = rom;
 }
 
@@ -80,9 +80,9 @@ int
 system_boot(Uint8 *ram, char *rom)
 {
 	uxn.ram = ram;
-	system_zero(&uxn, 0);
-	if(!system_load(&uxn, rom))
-		if(!system_load(&uxn, "boot.rom"))
+	system_zero(0);
+	if(!system_load(rom))
+		if(!system_load("boot.rom"))
 			return system_error("Could not load rom", rom);
 	boot_rom = rom;
 	return 1;
@@ -140,7 +140,7 @@ system_deo(Uxn *u, Uint8 *d, Uint8 port)
 		u->rst.ptr = d[5];
 		break;
 	case 0xe:
-		system_inspect(u);
+		system_inspect();
 		break;
 	}
 }

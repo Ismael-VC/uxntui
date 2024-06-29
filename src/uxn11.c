@@ -94,7 +94,7 @@ emu_restart(char *rom, int soft)
 	screen_resize(WIDTH, HEIGHT, uxn_screen.scale);
 	screen_rect(uxn_screen.bg, 0, 0, uxn_screen.width, uxn_screen.height, 0);
 	screen_rect(uxn_screen.fg, 0, 0, uxn_screen.width, uxn_screen.height, 0);
-	system_reboot(&uxn, rom, soft);
+	system_reboot(rom, soft);
 }
 
 static int
