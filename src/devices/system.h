@@ -18,6 +18,6 @@ int system_error(char *msg, const char *err);
 int system_boot(Uint8 *ram, char *rom);
 
 Uint8 system_dei(Uint8 addr);
-void system_deo(Uxn *u, Uint8 *d, Uint8 port);
+void system_deo(Uint8 *d, Uint8 port);
 
 extern char *boot_rom;
