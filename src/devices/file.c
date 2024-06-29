@@ -245,7 +245,7 @@ file_delete(UxnFile *c)
 /* IO */
 
 void
-file_deo(Uint8 id, Uint8 *ram, Uint8 *d, Uint8 port)
+file_deo(Uint8 id, Uint8 *d, Uint8 port)
 {
 	UxnFile *c = &uxn_file[id];
 	Uint16 addr, len, res;
@@ -255,7 +255,7 @@ file_deo(Uint8 id, Uint8 *ram, Uint8 *d, Uint8 port)
 		len = PEEK2(d + 0xa);
 		if(len > 0x10000 - addr)
 			len = 0x10000 - addr;
-		res = file_stat(c, &ram[addr], len);
+		res = file_stat(c, &uxn.ram[addr], len);
 		POKE2(d + 0x2, res);
 		break;
 	case 0x6:
@@ -264,7 +264,7 @@ file_deo(Uint8 id, Uint8 *ram, Uint8 *d, Uint8 port)
 		break;
 	case 0x9:
 		addr = PEEK2(d + 0x8);
-		res = file_init(c, (char *)&ram[addr], 0x10000 - addr, 0);
+		res = file_init(c, (char *)&uxn.ram[addr], 0x10000 - addr, 0);
 		POKE2(d + 0x2, res);
 		break;
 	case 0xd:
@@ -272,7 +272,7 @@ file_deo(Uint8 id, Uint8 *ram, Uint8 *d, Uint8 port)
 		len = PEEK2(d + 0xa);
 		if(len > 0x10000 - addr)
 			len = 0x10000 - addr;
-		res = file_read(c, &ram[addr], len);
+		res = file_read(c, &uxn.ram[addr], len);
 		POKE2(d + 0x2, res);
 		break;
 	case 0xf:
@@ -280,7 +280,7 @@ file_deo(Uint8 id, Uint8 *ram, Uint8 *d, Uint8 port)
 		len = PEEK2(d + 0xa);
 		if(len > 0x10000 - addr)
 			len = 0x10000 - addr;
-		res = file_write(c, &ram[addr], len, d[0x7]);
+		res = file_write(c, &uxn.ram[addr], len, d[0x7]);
 		POKE2(d + 0x2, res);
 		break;
 	}

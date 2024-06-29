@@ -39,8 +39,8 @@ emu_deo(Uint8 addr, Uint8 value)
 	switch(d) {
 	case 0x00: system_deo(&uxn.dev[d], p); break;
 	case 0x10: console_deo(&uxn.dev[d], p); break;
-	case 0xa0: file_deo(0, uxn.ram, &uxn.dev[d], p); break;
-	case 0xb0: file_deo(1, uxn.ram, &uxn.dev[d], p); break;
+	case 0xa0: file_deo(0, &uxn.dev[d], p); break;
+	case 0xb0: file_deo(1, &uxn.dev[d], p); break;
 	}
 }
 

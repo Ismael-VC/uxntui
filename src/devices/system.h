@@ -13,7 +13,7 @@ WITH REGARD TO THIS SOFTWARE.
 #define RAM_PAGES 0x10
 
 void system_reboot(char *rom, int soft);
-void system_inspect();
+void system_inspect(void);
 int system_error(char *msg, const char *err);
 int system_boot(Uint8 *ram, char *rom);
 

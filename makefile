@@ -31,6 +31,6 @@ clean:
 bin/uxnasm: src/uxnasm.c
 	@ cc ${RELEASE_flags} ${CFLAGS} src/uxnasm.c -o bin/uxnasm
 bin/uxncli: ${CLI_src} src/uxncli.c
-	@ cc ${RELEASE_flags} ${CFLAGS} ${CLI_src} src/uxncli.c -lutil -o bin/uxncli
+	@ cc ${DEBUG_flags} ${CFLAGS} ${CLI_src} src/uxncli.c -lutil -o bin/uxncli
 bin/uxn11: ${EMU_src} src/uxn11.c
-	@ cc ${RELEASE_flags} ${CFLAGS} ${EMU_src} src/uxn11.c -lX11 -lutil -o bin/uxn11
+	@ cc ${DEBUG_flags} ${CFLAGS} ${EMU_src} src/uxn11.c -lX11 -lutil -o bin/uxn11
