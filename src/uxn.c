@@ -35,13 +35,14 @@ WITH REGARD TO THIS SOFTWARE.
 #define SET(x, y) { SHIFT((ins & 0x80) ? x + y : y) }
 
 int
-uxn_eval(Uxn *u, Uint16 pc)
+uxn_eval(Uint16 pc)
 {
+	Uxn *u = &uxn;
 	Uint16 t, n, l, r;
-	Uint8 *ram = u->ram, *rr;
+	Uint8 *rr;
 	if(!pc || u->dev[0x0f]) return 0;
 	for(;;) {
-		Uint8 ins = ram[pc++];
+		Uint8 ins = uxn.ram[pc++];
 		Stack *s = ins & 0x40 ? &u->rst : &u->wst;
 		switch(ins & 0x3f) {
 		/* IMM */
@@ -49,10 +50,10 @@ uxn_eval(Uxn *u, Uint16 pc)
 			switch(ins) {
 			case 0x00: /* BRK  */                       return 1;
 			case 0x20: /* JCI  */ t=T;        SHIFT(-1) if(!t) { pc += 2; break; } /* fall-through */
-			case 0x40: /* JMI  */                       rr = ram + pc; pc += 2 + PEEK2(rr); break;
-			case 0x60: /* JSI  */             SHIFT( 2) rr = ram + pc; pc += 2; T2_(pc); pc += PEEK2(rr); break;
-			case 0x80: /* LIT  */ case 0xc0:  SHIFT( 1) T = ram[pc++]; break;
-			case 0xa0: /* LIT2 */ case 0xe0:  SHIFT( 2) N = ram[pc++]; T = ram[pc++]; break;
+			case 0x40: /* JMI  */                       rr = uxn.ram + pc; pc += 2 + PEEK2(rr); break;
+			case 0x60: /* JSI  */             SHIFT( 2) rr = uxn.ram + pc; pc += 2; T2_(pc); pc += PEEK2(rr); break;
+			case 0x80: /* LIT  */ case 0xc0:  SHIFT( 1) T = uxn.ram[pc++]; break;
+			case 0xa0: /* LIT2 */ case 0xe0:  SHIFT( 2) N = uxn.ram[pc++]; T = uxn.ram[pc++]; break;
 			} break;
 		/* ALU */
 		case 0x01: /* INC  */ t=T;            SET(1, 0) T = t + 1; break;
@@ -85,18 +86,18 @@ uxn_eval(Uxn *u, Uint16 pc)
 		case 0x2e: /* JSR2 */ t=T2;           SET(2,-2) FLIP SHIFT(2) T2_(pc) pc = t; break;
 		case 0x0f: /* STH  */ t=T;            SET(1,-1) FLIP SHIFT(1) T = t; break;
 		case 0x2f: /* STH2 */ t=T2;           SET(2,-2) FLIP SHIFT(2) T2_(t) break;
-		case 0x10: /* LDZ  */ t=T;            SET(1, 0) T = ram[t]; break;
-		case 0x30: /* LDZ2 */ t=T;            SET(1, 1) N = ram[t++]; T = ram[(Uint8)t]; break;
-		case 0x11: /* STZ  */ t=T;n=N;        SET(2,-2) ram[t] = n; break;
-		case 0x31: /* STZ2 */ t=T;n=H2;       SET(3,-3) ram[t++] = n >> 8; ram[(Uint8)t] = n; break;
-		case 0x12: /* LDR  */ t=T;            SET(1, 0) r = pc + (Sint8)t; T = ram[r]; break;
-		case 0x32: /* LDR2 */ t=T;            SET(1, 1) r = pc + (Sint8)t; N = ram[r++]; T = ram[r]; break;
-		case 0x13: /* STR  */ t=T;n=N;        SET(2,-2) r = pc + (Sint8)t; ram[r] = n; break;
-		case 0x33: /* STR2 */ t=T;n=H2;       SET(3,-3) r = pc + (Sint8)t; ram[r++] = n >> 8; ram[r] = n; break;
-		case 0x14: /* LDA  */ t=T2;           SET(2,-1) T = ram[t]; break;
-		case 0x34: /* LDA2 */ t=T2;           SET(2, 0) N = ram[t++]; T = ram[t]; break;
-		case 0x15: /* STA  */ t=T2;n=L;       SET(3,-3) ram[t] = n; break;
-		case 0x35: /* STA2 */ t=T2;n=N2;      SET(4,-4) ram[t++] = n >> 8; ram[t] = n; break;
+		case 0x10: /* LDZ  */ t=T;            SET(1, 0) T = uxn.ram[t]; break;
+		case 0x30: /* LDZ2 */ t=T;            SET(1, 1) N = uxn.ram[t++]; T = uxn.ram[(Uint8)t]; break;
+		case 0x11: /* STZ  */ t=T;n=N;        SET(2,-2) uxn.ram[t] = n; break;
+		case 0x31: /* STZ2 */ t=T;n=H2;       SET(3,-3) uxn.ram[t++] = n >> 8; uxn.ram[(Uint8)t] = n; break;
+		case 0x12: /* LDR  */ t=T;            SET(1, 0) r = pc + (Sint8)t; T = uxn.ram[r]; break;
+		case 0x32: /* LDR2 */ t=T;            SET(1, 1) r = pc + (Sint8)t; N = uxn.ram[r++]; T = uxn.ram[r]; break;
+		case 0x13: /* STR  */ t=T;n=N;        SET(2,-2) r = pc + (Sint8)t; uxn.ram[r] = n; break;
+		case 0x33: /* STR2 */ t=T;n=H2;       SET(3,-3) r = pc + (Sint8)t; uxn.ram[r++] = n >> 8; uxn.ram[r] = n; break;
+		case 0x14: /* LDA  */ t=T2;           SET(2,-1) T = uxn.ram[t]; break;
+		case 0x34: /* LDA2 */ t=T2;           SET(2, 0) N = uxn.ram[t++]; T = uxn.ram[t]; break;
+		case 0x15: /* STA  */ t=T2;n=L;       SET(3,-3) uxn.ram[t] = n; break;
+		case 0x35: /* STA2 */ t=T2;n=N2;      SET(4,-4) uxn.ram[t++] = n >> 8; uxn.ram[t] = n; break;
 		case 0x16: /* DEI  */ t=T;            SET(1, 0) T = emu_dei(t); break;
 		case 0x36: /* DEI2 */ t=T;            SET(1, 1) N = emu_dei(t++); T = emu_dei(t); break;
 		case 0x17: /* DEO  */ t=T;n=N;        SET(2,-2) emu_deo(t, n); break;

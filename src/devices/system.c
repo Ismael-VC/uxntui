@@ -72,7 +72,7 @@ system_reboot(char *rom, int soft)
 {
 	system_zero(soft);
 	if(system_load(boot_rom))
-		if(uxn_eval(&uxn, PAGE_PROGRAM))
+		if(uxn_eval(PAGE_PROGRAM))
 			boot_rom = rom;
 }
 

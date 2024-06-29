@@ -41,4 +41,4 @@ extern Uxn uxn;
 
 /* built-ins */
 
-int uxn_eval(Uxn *u, Uint16 pc);
+int uxn_eval(Uint16 pc);

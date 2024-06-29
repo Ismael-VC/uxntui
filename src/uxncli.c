@@ -77,7 +77,7 @@ main(int argc, char **argv)
 		return system_error("Init", "Failed to initialize uxn.");
 	/* Game Loop */
 	uxn.dev[0x17] = argc - i;
-	if(uxn_eval(&uxn, PAGE_PROGRAM) && PEEK2(uxn.dev + 0x10)) {
+	if(uxn_eval(PAGE_PROGRAM) && PEEK2(uxn.dev + 0x10)) {
 		console_listen(i, argc, argv);
 		emu_run();
 	}

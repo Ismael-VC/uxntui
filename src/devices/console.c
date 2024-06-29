@@ -87,7 +87,7 @@ console_input(char c, int type)
 	Uint8 *d = &uxn.dev[0x10];
 	d[0x2] = c;
 	d[0x7] = type;
-	return uxn_eval(&uxn, PEEK2(d));
+	return uxn_eval(PEEK2(d));
 }
 
 void

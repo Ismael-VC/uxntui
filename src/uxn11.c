@@ -248,7 +248,7 @@ emu_run(void)
 			emu_event();
 		if(poll(&fds[1], 1, 0)) {
 			read(fds[1].fd, expirations, 8);
-			uxn_eval(&uxn, uxn.dev[0x20] << 8 | uxn.dev[0x21]);
+			uxn_eval(uxn.dev[0x20] << 8 | uxn.dev[0x21]);
 			if(screen_changed()) {
 				int x = uxn_screen.x1 * uxn_screen.scale, y = uxn_screen.y1 * uxn_screen.scale;
 				int w = uxn_screen.x2 * uxn_screen.scale - x, h = uxn_screen.y2 * uxn_screen.scale - y;
@@ -286,7 +286,7 @@ main(int argc, char **argv)
 	}
 	/* Game Loop */
 	uxn.dev[0x17] = argc - i;
-	if(uxn_eval(&uxn, PAGE_PROGRAM)) {
+	if(uxn_eval(PAGE_PROGRAM)) {
 		console_listen(i, argc, argv);
 		emu_run();
 	}
