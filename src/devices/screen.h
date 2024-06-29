@@ -9,10 +9,6 @@ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
 WITH REGARD TO THIS SOFTWARE.
 */
 
-#define SCREEN_VERSION 1
-#define SCREEN_DEIMASK 0x003c
-#define SCREEN_DEOMASK 0xc028
-
 typedef struct UxnScreen {
 	int width, height, x1, y1, x2, y2, scale;
 	Uint32 palette[4], *pixels;
@@ -27,9 +23,9 @@ void screen_fill(Uint8 *layer, int color);
 void screen_rect(Uint8 *layer, Uint16 x1, Uint16 y1, Uint16 x2, Uint16 y2, int color);
 void screen_palette(Uint8 *addr);
 void screen_resize(Uint16 width, Uint16 height, int scale);
-void screen_redraw(Uxn *u);
+void screen_redraw();
 
-Uint8 screen_dei(Uxn *u, Uint8 addr);
-void screen_deo(Uint8 *ram, Uint8 *d, Uint8 port);
+Uint8 screen_dei(Uint8 addr);
+void screen_deo(Uint8 *d, Uint8 port);
 
 #define twos(v) (v & 0x8000 ? (int)v - 0x10000 : (int)v)

@@ -116,26 +116,26 @@ draw_byte(Uint8 b, Uint16 x, Uint16 y, Uint8 color)
 }
 
 static void
-screen_debugger(Uxn *u)
+screen_debugger(void)
 {
 	int i;
 	for(i = 0; i < 0x08; i++) {
-		Uint8 pos = u->wst.ptr - 4 + i;
+		Uint8 pos = uxn.wst.ptr - 4 + i;
 		Uint8 color = i > 4 ? 0x01 : !pos ? 0xc :
 			i == 4                        ? 0x8 :
 											0x2;
-		draw_byte(u->wst.dat[pos], i * 0x18 + 0x8, uxn_screen.height - 0x18, color);
+		draw_byte(uxn.wst.dat[pos], i * 0x18 + 0x8, uxn_screen.height - 0x18, color);
 	}
 	for(i = 0; i < 0x08; i++) {
-		Uint8 pos = u->rst.ptr - 4 + i;
+		Uint8 pos = uxn.rst.ptr - 4 + i;
 		Uint8 color = i > 4 ? 0x01 : !pos ? 0xc :
 			i == 4                        ? 0x8 :
 											0x2;
-		draw_byte(u->rst.dat[pos], i * 0x18 + 0x8, uxn_screen.height - 0x10, color);
+		draw_byte(uxn.rst.dat[pos], i * 0x18 + 0x8, uxn_screen.height - 0x10, color);
 	}
 	screen_1bpp(uxn_screen.fg, &arrow[0], 0x68, uxn_screen.height - 0x20, 3, 1, 1);
 	for(i = 0; i < 0x20; i++)
-		draw_byte(u->ram[i], (i & 0x7) * 0x18 + 0x8, ((i >> 3) << 3) + 0x8, 1 + !!u->ram[i]);
+		draw_byte(uxn.ram[i], (i & 0x7) * 0x18 + 0x8, ((i >> 3) << 3) + 0x8, 1 + !!uxn.ram[i]);
 }
 
 void
@@ -205,7 +205,7 @@ screen_resize(Uint16 width, Uint16 height, int scale)
 }
 
 void
-screen_redraw(Uxn *u)
+screen_redraw(void)
 {
 	int i, x, y, k, l, s = uxn_screen.scale;
 	Uint8 *fg = uxn_screen.fg, *bg = uxn_screen.bg;
@@ -215,8 +215,8 @@ screen_redraw(Uxn *u)
 	Uint32 palette[16], *pixels = uxn_screen.pixels;
 	uxn_screen.x1 = uxn_screen.y1 = 9000;
 	uxn_screen.x2 = uxn_screen.y2 = 0;
-	if(u->dev[0x0e])
-		screen_debugger(u);
+	if(uxn.dev[0x0e])
+		screen_debugger();
 	for(i = 0; i < 16; i++)
 		palette[i] = uxn_screen.palette[(i >> 2) ? (i >> 2) : (i & 3)];
 	for(y = y1; y < y2; y++) {
@@ -238,7 +238,7 @@ screen_redraw(Uxn *u)
 static int rX, rY, rA, rMX, rMY, rMA, rML, rDX, rDY;
 
 Uint8
-screen_dei(Uxn *u, Uint8 addr)
+screen_dei(Uint8 addr)
 {
 	switch(addr) {
 	case 0x22: return uxn_screen.width >> 8;
@@ -251,12 +251,12 @@ screen_dei(Uxn *u, Uint8 addr)
 	case 0x2b: return rY;
 	case 0x2c: return rA >> 8;
 	case 0x2d: return rA;
-	default: return u->dev[addr];
+	default: return uxn.dev[addr];
 	}
 }
 
 void
-screen_deo(Uint8 *ram, Uint8 *d, Uint8 port)
+screen_deo(Uint8 *d, Uint8 port)
 {
 	switch(port) {
 	case 0x3: screen_resize(PEEK2(d + 2), uxn_screen.height, uxn_screen.scale); return;
@@ -308,10 +308,10 @@ screen_deo(Uint8 *ram, Uint8 *d, Uint8 port)
 		int dxy = rDX * fy, dyx = rDY * fx, addr_incr = rMA << (1 + twobpp);
 		if(twobpp)
 			for(i = 0; i <= rML; i++, x += dyx, y += dxy, rA += addr_incr)
-				screen_2bpp(layer, &ram[rA], x, y, color, fx, fy);
+				screen_2bpp(layer, &uxn.ram[rA], x, y, color, fx, fy);
 		else
 			for(i = 0; i <= rML; i++, x += dyx, y += dxy, rA += addr_incr)
-				screen_1bpp(layer, &ram[rA], x, y, color, fx, fy);
+				screen_1bpp(layer, &uxn.ram[rA], x, y, color, fx, fy);
 		if(fx < 0)
 			x1 = x, x2 = rX;
 		else

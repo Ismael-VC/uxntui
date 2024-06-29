@@ -5,7 +5,7 @@
 #include "system.h"
 
 /*
-Copyright (c) 2022-2023 Devine Lu Linvega, Andrew Alderwick
+Copyright (c) 2022-2024 Devine Lu Linvega, Andrew Alderwick
 
 Permission to use, copy, modify, and distribute this software for any
 purpose with or without fee is hereby granted, provided that the above
@@ -67,13 +67,6 @@ system_inspect(Uxn *u)
 	fprintf(stderr, "RST "), system_print(&u->rst);
 }
 
-int
-system_version(char *name, char *date)
-{
-	printf("%s, %s.\n", name, date);
-	return 0;
-}
-
 void
 system_reboot(Uxn *u, char *rom, int soft)
 {
@@ -84,12 +77,12 @@ system_reboot(Uxn *u, char *rom, int soft)
 }
 
 int
-system_boot(Uxn *u, Uint8 *ram, char *rom)
+system_boot(Uint8 *ram, char *rom)
 {
-	u->ram = ram;
-	system_zero(u, 0);
-	if(!system_load(u, rom))
-		if(!system_load(u, "boot.rom"))
+	uxn.ram = ram;
+	system_zero(&uxn, 0);
+	if(!system_load(&uxn, rom))
+		if(!system_load(&uxn, "boot.rom"))
 			return system_error("Could not load rom", rom);
 	boot_rom = rom;
 	return 1;

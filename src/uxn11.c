@@ -50,7 +50,7 @@ emu_dei(Uint8 addr)
 	switch(addr & 0xf0) {
 	case 0x00: return system_dei(&uxn, addr);
 	case 0x10: return console_dei(&uxn, addr);
-	case 0x20: return screen_dei(&uxn, addr);
+	case 0x20: return screen_dei(addr);
 	case 0xc0: return datetime_dei(addr);
 	}
 	return uxn.dev[addr];
@@ -68,7 +68,7 @@ emu_deo(Uint8 addr, Uint8 value)
 			screen_palette(&uxn.dev[0x8]);
 		break;
 	case 0x10: console_deo(&uxn, &uxn.dev[d], p); break;
-	case 0x20: screen_deo(uxn.ram, &uxn.dev[d], p); break;
+	case 0x20: screen_deo(&uxn.dev[d], p); break;
 	case 0xa0: file_deo(0, uxn.ram, &uxn.dev[d], p); break;
 	case 0xb0: file_deo(1, uxn.ram, &uxn.dev[d], p); break;
 	}
@@ -89,23 +89,23 @@ emu_resize(int w, int h)
 }
 
 static void
-emu_restart(Uxn *u, char *rom, int soft)
+emu_restart(char *rom, int soft)
 {
 	screen_resize(WIDTH, HEIGHT, uxn_screen.scale);
 	screen_rect(uxn_screen.bg, 0, 0, uxn_screen.width, uxn_screen.height, 0);
 	screen_rect(uxn_screen.fg, 0, 0, uxn_screen.width, uxn_screen.height, 0);
-	system_reboot(u, rom, soft);
+	system_reboot(&uxn, rom, soft);
 }
 
 static int
-emu_end(Uxn *u)
+emu_end(void)
 {
-	free(u->ram);
+	free(uxn.ram);
 	XDestroyImage(ximage);
 	XDestroyWindow(display, window);
 	XCloseDisplay(display);
 	exit(0);
-	return u->dev[0x0f] & 0x7f;
+	return uxn.dev[0x0f] & 0x7f;
 }
 
 static Uint8
@@ -134,7 +134,7 @@ toggle_scale(void)
 }
 
 static void
-emu_event(Uxn *u)
+emu_event(void)
 {
 	XEvent ev;
 	XNextEvent(display, &ev);
@@ -146,7 +146,7 @@ emu_event(Uxn *u)
 		XPutImage(display, window, DefaultGC(display, 0), ximage, 0, 0, PAD, PAD, w, h);
 	} break;
 	case ClientMessage:
-		u->dev[0x0f] = 0x80;
+		uxn.dev[0x0f] = 0x80;
 		break;
 	case KeyPress: {
 		KeySym sym;
@@ -154,41 +154,41 @@ emu_event(Uxn *u)
 		XLookupString((XKeyPressedEvent *)&ev, buf, 7, &sym, 0);
 		switch(sym) {
 		case XK_F1: toggle_scale(); break;
-		case XK_F2: u->dev[0x0e] = !u->dev[0x0e]; break;
-		case XK_F4: emu_restart(u, boot_rom, 0); break;
-		case XK_F5: emu_restart(u, boot_rom, 1); break;
+		case XK_F2: uxn.dev[0x0e] = !uxn.dev[0x0e]; break;
+		case XK_F4: emu_restart(boot_rom, 0); break;
+		case XK_F5: emu_restart(boot_rom, 1); break;
 		}
-		controller_down(&u->dev[0x80], get_button(sym));
-		controller_key(&u->dev[0x80], sym < 0x80 ? sym : (Uint8)buf[0]);
+		controller_down(&uxn.dev[0x80], get_button(sym));
+		controller_key(&uxn.dev[0x80], sym < 0x80 ? sym : (Uint8)buf[0]);
 	} break;
 	case KeyRelease: {
 		KeySym sym;
 		char buf[7];
 		XLookupString((XKeyPressedEvent *)&ev, buf, 7, &sym, 0);
-		controller_up(&u->dev[0x80], get_button(sym));
+		controller_up(&uxn.dev[0x80], get_button(sym));
 	} break;
 	case ButtonPress: {
 		XButtonPressedEvent *e = (XButtonPressedEvent *)&ev;
 		if(e->button == 4)
-			mouse_scroll(&u->dev[0x90], 0, 1);
+			mouse_scroll(&uxn.dev[0x90], 0, 1);
 		else if(e->button == 5)
-			mouse_scroll(&u->dev[0x90], 0, -1);
+			mouse_scroll(&uxn.dev[0x90], 0, -1);
 		else if(e->button == 6)
-			mouse_scroll(&u->dev[0x90], 1, 0);
+			mouse_scroll(&uxn.dev[0x90], 1, 0);
 		else if(e->button == 7)
-			mouse_scroll(&u->dev[0x90], -1, 0);
+			mouse_scroll(&uxn.dev[0x90], -1, 0);
 		else
-			mouse_down(&u->dev[0x90], 0x1 << (e->button - 1));
+			mouse_down(&uxn.dev[0x90], 0x1 << (e->button - 1));
 	} break;
 	case ButtonRelease: {
 		XButtonPressedEvent *e = (XButtonPressedEvent *)&ev;
-		mouse_up(&u->dev[0x90], 0x1 << (e->button - 1));
+		mouse_up(&uxn.dev[0x90], 0x1 << (e->button - 1));
 	} break;
 	case MotionNotify: {
 		XMotionEvent *e = (XMotionEvent *)&ev;
 		int x = clamp((e->x - PAD) / uxn_screen.scale, 0, uxn_screen.width - 1);
 		int y = clamp((e->y - PAD) / uxn_screen.scale, 0, uxn_screen.height - 1);
-		mouse_pos(&u->dev[0x90], x, y);
+		mouse_pos(&uxn.dev[0x90], x, y);
 	} break;
 	}
 }
@@ -227,7 +227,7 @@ display_init(void)
 }
 
 static int
-emu_run(Uxn *u)
+emu_run(void)
 {
 	int i = 1, n;
 	char expirations[8];
@@ -241,18 +241,18 @@ emu_run(Uxn *u)
 	fds[2].fd = STDIN_FILENO;
 	fds[0].events = fds[1].events = fds[2].events = POLLIN;
 	/* main loop */
-	while(!u->dev[0x0f]) {
+	while(!uxn.dev[0x0f]) {
 		if(poll(fds, 3, 1000) <= 0)
 			continue;
 		while(XPending(display))
-			emu_event(u);
+			emu_event();
 		if(poll(&fds[1], 1, 0)) {
 			read(fds[1].fd, expirations, 8);
-			uxn_eval(u, u->dev[0x20] << 8 | u->dev[0x21]);
+			uxn_eval(&uxn, uxn.dev[0x20] << 8 | uxn.dev[0x21]);
 			if(screen_changed()) {
 				int x = uxn_screen.x1 * uxn_screen.scale, y = uxn_screen.y1 * uxn_screen.scale;
 				int w = uxn_screen.x2 * uxn_screen.scale - x, h = uxn_screen.y2 * uxn_screen.scale - y;
-				screen_redraw(u);
+				screen_redraw();
 				XPutImage(display, window, DefaultGC(display, 0), ximage, x, y, x + PAD, y + PAD, w, h);
 			}
 		}
@@ -260,7 +260,7 @@ emu_run(Uxn *u)
 			n = read(fds[2].fd, coninp, CONINBUFSIZE - 1);
 			coninp[n] = 0;
 			for(i = 0; i < n; i++)
-				console_input(u, coninp[i], CONSOLE_STD);
+				console_input(&uxn, coninp[i], CONSOLE_STD);
 		}
 	}
 	return 1;
@@ -276,7 +276,7 @@ main(int argc, char **argv)
 		i++;
 	}
 	rom = i == argc ? "boot.rom" : argv[i++];
-	if(!system_boot(&uxn, (Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8)), rom)) {
+	if(!system_boot((Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8)), rom)) {
 		fprintf(stdout, "usage: %s [-v] file.rom [args..]\n", argv[0]);
 		return 0;
 	}
@@ -288,7 +288,7 @@ main(int argc, char **argv)
 	uxn.dev[0x17] = argc - i;
 	if(uxn_eval(&uxn, PAGE_PROGRAM)) {
 		console_listen(&uxn, i, argc, argv);
-		emu_run(&uxn);
+		emu_run();
 	}
-	return emu_end(&uxn);
+	return emu_end();
 }
