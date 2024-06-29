@@ -43,11 +43,11 @@ static pid_t child_pid;
 struct winsize ws = {24, 80, 8, 12};
 
 static void
-parse_args(Uxn *u, Uint8 *d)
+parse_args(Uint8 *d)
 {
 	Uint8 *port_addr = d + 0x3;
 	int addr = PEEK2(port_addr);
-	char *pos = (char *)&u->ram[addr];
+	char *pos = (char *)&uxn.ram[addr];
 	int i = 0;
 	do {
 		fork_args[i++] = pos;
@@ -82,21 +82,21 @@ clean_after_child(void)
 }
 
 int
-console_input(Uxn *u, char c, int type)
+console_input(char c, int type)
 {
-	Uint8 *d = &u->dev[0x10];
+	Uint8 *d = &uxn.dev[0x10];
 	d[0x2] = c;
 	d[0x7] = type;
-	return uxn_eval(u, PEEK2(d));
+	return uxn_eval(&uxn, PEEK2(d));
 }
 
 void
-console_listen(Uxn *u, int i, int argc, char **argv)
+console_listen(int i, int argc, char **argv)
 {
 	for(; i < argc; i++) {
 		char *p = argv[i];
-		while(*p) console_input(u, *p++, CONSOLE_ARG);
-		console_input(u, '\n', i == argc - 1 ? CONSOLE_END : CONSOLE_EOA);
+		while(*p) console_input(*p++, CONSOLE_ARG);
+		console_input('\n', i == argc - 1 ? CONSOLE_END : CONSOLE_EOA);
 	}
 }
 
@@ -191,12 +191,12 @@ kill_child(Uint8 *d, int options)
 }
 
 static void
-start_fork(Uxn *u, Uint8 *d)
+start_fork(Uint8 *d)
 {
 	fflush(stderr);
 	kill_child(d, 0);
 	child_mode = d[0x5];
-	parse_args(u, d);
+	parse_args(d);
 	if(child_mode >= 0x80)
 		start_fork_pty(d);
 	else
@@ -204,9 +204,9 @@ start_fork(Uxn *u, Uint8 *d)
 }
 
 Uint8
-console_dei(Uxn *u, Uint8 addr)
+console_dei(Uint8 addr)
 {
-	Uint8 port = addr & 0x0f, *d = &u->dev[addr & 0xf0];
+	Uint8 port = addr & 0x0f, *d = &uxn.dev[addr & 0xf0];
 	switch(port) {
 	case 0x6:
 	case 0x7: kill_child(d, WNOHANG);
@@ -215,11 +215,11 @@ console_dei(Uxn *u, Uint8 addr)
 }
 
 void
-console_deo(Uxn *u, Uint8 *d, Uint8 port)
+console_deo(Uint8 *d, Uint8 port)
 {
 	FILE *fd = NULL;
 	switch(port) {
-	case 0x5: /* Console/dead */ start_fork(u, d); break;
+	case 0x5: /* Console/dead */ start_fork(d); break;
 	case 0x6: /* Console/exit*/ kill_child(d, 0); break;
 	case 0x8: fd = stdout; break;
 	case 0x9: fd = stderr; break;

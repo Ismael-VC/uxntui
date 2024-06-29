@@ -25,7 +25,7 @@ emu_dei(Uint8 addr)
 {
 	switch(addr & 0xf0) {
 	case 0x00: return system_dei(addr);
-	case 0x10: return console_dei(&uxn, addr);
+	case 0x10: return console_dei(addr);
 	case 0xc0: return datetime_dei(addr);
 	}
 	return uxn.dev[addr];
@@ -38,30 +38,30 @@ emu_deo(Uint8 addr, Uint8 value)
 	uxn.dev[addr] = value;
 	switch(d) {
 	case 0x00: system_deo(&uxn.dev[d], p); break;
-	case 0x10: console_deo(&uxn, &uxn.dev[d], p); break;
+	case 0x10: console_deo(&uxn.dev[d], p); break;
 	case 0xa0: file_deo(0, uxn.ram, &uxn.dev[d], p); break;
 	case 0xb0: file_deo(1, uxn.ram, &uxn.dev[d], p); break;
 	}
 }
 
 static void
-emu_run(Uxn *u)
+emu_run(void)
 {
-	while(!u->dev[0x0f]) {
+	while(!uxn.dev[0x0f]) {
 		int c = fgetc(stdin);
 		if(c == EOF) {
-			console_input(u, 0x00, CONSOLE_END);
+			console_input(0x00, CONSOLE_END);
 			break;
 		}
-		console_input(u, (Uint8)c, CONSOLE_STD);
+		console_input((Uint8)c, CONSOLE_STD);
 	}
 }
 
 static int
-emu_end(Uxn *u)
+emu_end(void)
 {
-	free(u->ram);
-	return u->dev[0x0f] & 0x7f;
+	free(uxn.ram);
+	return uxn.dev[0x0f] & 0x7f;
 }
 
 int
@@ -78,8 +78,8 @@ main(int argc, char **argv)
 	/* Game Loop */
 	uxn.dev[0x17] = argc - i;
 	if(uxn_eval(&uxn, PAGE_PROGRAM) && PEEK2(uxn.dev + 0x10)) {
-		console_listen(&uxn, i, argc, argv);
-		emu_run(&uxn);
+		console_listen(i, argc, argv);
+		emu_run();
 	}
-	return emu_end(&uxn);
+	return emu_end();
 }

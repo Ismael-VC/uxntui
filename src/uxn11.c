@@ -49,7 +49,7 @@ emu_dei(Uint8 addr)
 {
 	switch(addr & 0xf0) {
 	case 0x00: return system_dei(addr);
-	case 0x10: return console_dei(&uxn, addr);
+	case 0x10: return console_dei(addr);
 	case 0x20: return screen_dei(addr);
 	case 0xc0: return datetime_dei(addr);
 	}
@@ -67,7 +67,7 @@ emu_deo(Uint8 addr, Uint8 value)
 		if(p > 0x7 && p < 0xe)
 			screen_palette(&uxn.dev[0x8]);
 		break;
-	case 0x10: console_deo(&uxn, &uxn.dev[d], p); break;
+	case 0x10: console_deo(&uxn.dev[d], p); break;
 	case 0x20: screen_deo(&uxn.dev[d], p); break;
 	case 0xa0: file_deo(0, uxn.ram, &uxn.dev[d], p); break;
 	case 0xb0: file_deo(1, uxn.ram, &uxn.dev[d], p); break;
@@ -260,7 +260,7 @@ emu_run(void)
 			n = read(fds[2].fd, coninp, CONINBUFSIZE - 1);
 			coninp[n] = 0;
 			for(i = 0; i < n; i++)
-				console_input(&uxn, coninp[i], CONSOLE_STD);
+				console_input(coninp[i], CONSOLE_STD);
 		}
 	}
 	return 1;
@@ -287,7 +287,7 @@ main(int argc, char **argv)
 	/* Game Loop */
 	uxn.dev[0x17] = argc - i;
 	if(uxn_eval(&uxn, PAGE_PROGRAM)) {
-		console_listen(&uxn, i, argc, argv);
+		console_listen(i, argc, argv);
 		emu_run();
 	}
 	return emu_end();
