@@ -245,44 +245,76 @@ file_delete(UxnFile *c)
 /* IO */
 
 void
-file_deo(Uint8 id, Uint8 port)
+file_deo(Uint8 port)
 {
-	UxnFile *c = &uxn_file[id];
 	Uint16 addr, len, res;
-	Uint8 *d = id ? &uxn.dev[0xb0] : &uxn.dev[0xa0];
 	switch(port) {
-	case 0x5:
-		addr = PEEK2(d + 0x4);
-		len = PEEK2(d + 0xa);
+	case 0xa5:
+		addr = PEEK2(&uxn.dev[0xa4]);
+		len = PEEK2(&uxn.dev[0xaa]);
 		if(len > 0x10000 - addr)
 			len = 0x10000 - addr;
-		res = file_stat(c, &uxn.ram[addr], len);
-		POKE2(d + 0x2, res);
+		res = file_stat(&uxn_file[0], &uxn.ram[addr], len);
+		POKE2(&uxn.dev[0xa2], res);
 		break;
-	case 0x6:
-		res = file_delete(c);
-		POKE2(d + 0x2, res);
+	case 0xa6:
+		res = file_delete(&uxn_file[0]);
+		POKE2(&uxn.dev[0xa2], res);
 		break;
-	case 0x9:
-		addr = PEEK2(d + 0x8);
-		res = file_init(c, (char *)&uxn.ram[addr], 0x10000 - addr, 0);
-		POKE2(d + 0x2, res);
+	case 0xa9:
+		addr = PEEK2(&uxn.dev[0xa8]);
+		res = file_init(&uxn_file[0], (char *)&uxn.ram[addr], 0x10000 - addr, 0);
+		POKE2(&uxn.dev[0xa2], res);
 		break;
-	case 0xd:
-		addr = PEEK2(d + 0xc);
-		len = PEEK2(d + 0xa);
+	case 0xad:
+		addr = PEEK2(&uxn.dev[0xac]);
+		len = PEEK2(&uxn.dev[0xaa]);
 		if(len > 0x10000 - addr)
 			len = 0x10000 - addr;
-		res = file_read(c, &uxn.ram[addr], len);
-		POKE2(d + 0x2, res);
+		res = file_read(&uxn_file[0], &uxn.ram[addr], len);
+		POKE2(&uxn.dev[0xa2], res);
 		break;
-	case 0xf:
-		addr = PEEK2(d + 0xe);
-		len = PEEK2(d + 0xa);
+	case 0xaf:
+		addr = PEEK2(&uxn.dev[0xae]);
+		len = PEEK2(&uxn.dev[0xaa]);
 		if(len > 0x10000 - addr)
 			len = 0x10000 - addr;
-		res = file_write(c, &uxn.ram[addr], len, d[0x7]);
-		POKE2(d + 0x2, res);
+		res = file_write(&uxn_file[0], &uxn.ram[addr], len, uxn.dev[0xa7]);
+		POKE2(&uxn.dev[0xa2], res);
+		break;
+	/* File 2 */
+	case 0xb5:
+		addr = PEEK2(&uxn.dev[0xb4]);
+		len = PEEK2(&uxn.dev[0xba]);
+		if(len > 0x10000 - addr)
+			len = 0x10000 - addr;
+		res = file_stat(&uxn_file[1], &uxn.ram[addr], len);
+		POKE2(&uxn.dev[0xb2], res);
+		break;
+	case 0xb6:
+		res = file_delete(&uxn_file[1]);
+		POKE2(&uxn.dev[0xb2], res);
+		break;
+	case 0xb9:
+		addr = PEEK2(&uxn.dev[0xb8]);
+		res = file_init(&uxn_file[1], (char *)&uxn.ram[addr], 0x10000 - addr, 0);
+		POKE2(&uxn.dev[0xb2], res);
+		break;
+	case 0xbd:
+		addr = PEEK2(&uxn.dev[0xbc]);
+		len = PEEK2(&uxn.dev[0xba]);
+		if(len > 0x10000 - addr)
+			len = 0x10000 - addr;
+		res = file_read(&uxn_file[1], &uxn.ram[addr], len);
+		POKE2(&uxn.dev[0xb2], res);
+		break;
+	case 0xbf:
+		addr = PEEK2(&uxn.dev[0xbe]);
+		len = PEEK2(&uxn.dev[0xba]);
+		if(len > 0x10000 - addr)
+			len = 0x10000 - addr;
+		res = file_write(&uxn_file[1], &uxn.ram[addr], len, uxn.dev[0xb7]);
+		POKE2(&uxn.dev[0xb2], res);
 		break;
 	}
 }

@@ -12,4 +12,4 @@ WITH REGARD TO THIS SOFTWARE.
 #define POLYFILEY 2
 #define DEV_FILE0 0xa
 
-void file_deo(Uint8 id, Uint8 port);
+void file_deo(Uint8 port);
