@@ -50,12 +50,7 @@ uxn_eval(Uint16 pc)
 			case 0x00: /* BRK   */ return 1;
 			case 0x20: /* JCI   */ if(!uxn.wst.dat[uxn.wst.ptr--]) { pc += 2; break; } /* fall-through */
 			case 0x40: /* JMI   */ rr = uxn.ram + pc; pc += 2 + PEEK2(rr); break;
-			case 0x60: /* JSI   */ uxn.rst.ptr += 2;
-			rr = uxn.ram + pc;
-			pc += 2; r = pc;
-			uxn.rst.dat[uxn.rst.ptr] = pc;
-			uxn.rst.dat[(Uint8)(uxn.rst.ptr - 1)] = pc >> 8;
-			pc += PEEK2(rr); break;
+			case 0x60: /* JSI   */ rr = uxn.ram + pc; pc += 2; uxn.rst.dat[++uxn.rst.ptr] = pc >> 8; uxn.rst.dat[++uxn.rst.ptr] = pc; pc += PEEK2(rr); break;
 			case 0xa0: /* LIT2  */ uxn.wst.dat[++uxn.wst.ptr] = uxn.ram[pc++]; /* fall-through */
 			case 0x80: /* LIT   */ uxn.wst.dat[++uxn.wst.ptr] = uxn.ram[pc++]; break;
 			case 0xe0: /* LIT2r */ uxn.rst.dat[++uxn.rst.ptr] = uxn.ram[pc++]; /* fall-through */
