@@ -30,9 +30,8 @@ WITH REGARD TO THIS SOFTWARE.
 #define T2_(v) { r = (v); T = r; N = r >> 8; }
 #define N2_(v) { r = (v); L = r; X = r >> 8; }
 #define L2_(v) { r = (v); Y = r; Z = r >> 8; }
-#define FLIP      { s = ins & 0x40 ? &uxn.wst : &uxn.rst; }
-#define SHIFT(y)  { s->ptr += (y); }
-#define SET(x, y) { SHIFT((ins & 0x80) ? x + y : y) }
+#define FLIP(y) { s = ins & 0x40 ? &uxn.wst : &uxn.rst; s->ptr += y; }
+#define SET(x, y) { s->ptr += (ins & 0x80) ? x + y : y; }
 
 int
 uxn_eval(Uint16 pc)
@@ -71,10 +70,10 @@ uxn_eval(Uint16 pc)
 			case 0x2c: /* JMP2 */ t=T2;           SET(2,-2) pc = t; break;
 			case 0x0d: /* JCN  */ t=T;n=N;        SET(2,-2) if(n) pc += (Sint8)t; break;
 			case 0x2d: /* JCN2 */ t=T2;n=L;       SET(3,-3) if(n) pc = t; break;
-			case 0x0e: /* JSR  */ t=T;            SET(1,-1) FLIP SHIFT(2) T2_(pc) pc += (Sint8)t; break;
-			case 0x2e: /* JSR2 */ t=T2;           SET(2,-2) FLIP SHIFT(2) T2_(pc) pc = t; break;
-			case 0x0f: /* STH  */ t=T;            SET(1,-1) FLIP SHIFT(1) T = t; break;
-			case 0x2f: /* STH2 */ t=T2;           SET(2,-2) FLIP SHIFT(2) T2_(t) break;
+			case 0x0e: /* JSR  */ t=T;            SET(1,-1) FLIP(2) T2_(pc) pc += (Sint8)t; break;
+			case 0x2e: /* JSR2 */ t=T2;           SET(2,-2) FLIP(2) T2_(pc) pc = t; break;
+			case 0x0f: /* STH  */ t=T;            SET(1,-1) FLIP(1) T = t; break;
+			case 0x2f: /* STH2 */ t=T2;           SET(2,-2) FLIP(2) T2_(t) break;
 			case 0x10: /* LDZ  */ t=T;            SET(1, 0) T = uxn.ram[t]; break;
 			case 0x30: /* LDZ2 */ t=T;            SET(1, 1) N = uxn.ram[t++]; T = uxn.ram[(Uint8)t]; break;
 			case 0x11: /* STZ  */ t=T;n=N;        SET(2,-2) uxn.ram[t] = n; break;
