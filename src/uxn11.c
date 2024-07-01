@@ -158,14 +158,14 @@ emu_event(void)
 		case XK_F4: emu_restart(boot_rom, 0); break;
 		case XK_F5: emu_restart(boot_rom, 1); break;
 		}
-		controller_down(&uxn.dev[0x80], get_button(sym));
-		controller_key(&uxn.dev[0x80], sym < 0x80 ? sym : (Uint8)buf[0]);
+		controller_down(get_button(sym));
+		controller_key(sym < 0x80 ? sym : (Uint8)buf[0]);
 	} break;
 	case KeyRelease: {
 		KeySym sym;
 		char buf[7];
 		XLookupString((XKeyPressedEvent *)&ev, buf, 7, &sym, 0);
-		controller_up(&uxn.dev[0x80], get_button(sym));
+		controller_up(get_button(sym));
 	} break;
 	case ButtonPress: {
 		XButtonPressedEvent *e = (XButtonPressedEvent *)&ev;
