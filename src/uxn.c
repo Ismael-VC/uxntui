@@ -47,12 +47,19 @@ uxn_eval(Uint16 pc)
 		/* IMM */
 		case 0x00: case 0x20:
 			switch(ins) {
-			case 0x00: /* BRK  */                       return 1;
-			case 0x20: /* JCI  */ t=T;        SHIFT(-1) if(!t) { pc += 2; break; } /* fall-through */
-			case 0x40: /* JMI  */                       rr = uxn.ram + pc; pc += 2 + PEEK2(rr); break;
-			case 0x60: /* JSI  */             SHIFT( 2) rr = uxn.ram + pc; pc += 2; T2_(pc); pc += PEEK2(rr); break;
-			case 0x80: /* LIT  */ case 0xc0:  SHIFT( 1) T = uxn.ram[pc++]; break;
-			case 0xa0: /* LIT2 */ case 0xe0:  SHIFT( 2) N = uxn.ram[pc++]; T = uxn.ram[pc++]; break;
+			case 0x00: /* BRK   */ return 1;
+			case 0x20: /* JCI   */ if(!uxn.wst.dat[uxn.wst.ptr--]) { pc += 2; break; } /* fall-through */
+			case 0x40: /* JMI   */ rr = uxn.ram + pc; pc += 2 + PEEK2(rr); break;
+			case 0x60: /* JSI   */ uxn.rst.ptr += 2;
+			rr = uxn.ram + pc;
+			pc += 2; r = pc;
+			uxn.rst.dat[uxn.rst.ptr] = pc;
+			uxn.rst.dat[(Uint8)(uxn.rst.ptr - 1)] = pc >> 8;
+			pc += PEEK2(rr); break;
+			case 0xa0: /* LIT2  */ uxn.wst.dat[++uxn.wst.ptr] = uxn.ram[pc++]; /* fall-through */
+			case 0x80: /* LIT   */ uxn.wst.dat[++uxn.wst.ptr] = uxn.ram[pc++]; break;
+			case 0xe0: /* LIT2r */ uxn.rst.dat[++uxn.rst.ptr] = uxn.ram[pc++]; /* fall-through */
+			case 0xc0: /* LITr  */ uxn.rst.dat[++uxn.rst.ptr] = uxn.ram[pc++]; break;
 			} break;
 		/* ALU */
 		case 0x01: /* INC  */ t=T;            SET(1, 0) T = t + 1; break;
