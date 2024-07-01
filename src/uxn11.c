@@ -170,25 +170,25 @@ emu_event(void)
 	case ButtonPress: {
 		XButtonPressedEvent *e = (XButtonPressedEvent *)&ev;
 		if(e->button == 4)
-			mouse_scroll(&uxn.dev[0x90], 0, 1);
+			mouse_scroll(0, 1);
 		else if(e->button == 5)
-			mouse_scroll(&uxn.dev[0x90], 0, -1);
+			mouse_scroll( 0, -1);
 		else if(e->button == 6)
-			mouse_scroll(&uxn.dev[0x90], 1, 0);
+			mouse_scroll(1, 0);
 		else if(e->button == 7)
-			mouse_scroll(&uxn.dev[0x90], -1, 0);
+			mouse_scroll(-1, 0);
 		else
-			mouse_down(&uxn.dev[0x90], 0x1 << (e->button - 1));
+			mouse_down(0x1 << (e->button - 1));
 	} break;
 	case ButtonRelease: {
 		XButtonPressedEvent *e = (XButtonPressedEvent *)&ev;
-		mouse_up(&uxn.dev[0x90], 0x1 << (e->button - 1));
+		mouse_up(0x1 << (e->button - 1));
 	} break;
 	case MotionNotify: {
 		XMotionEvent *e = (XMotionEvent *)&ev;
 		int x = clamp((e->x - PAD) / uxn_screen.scale, 0, uxn_screen.width - 1);
 		int y = clamp((e->y - PAD) / uxn_screen.scale, 0, uxn_screen.height - 1);
-		mouse_pos(&uxn.dev[0x90], x, y);
+		mouse_pos(x, y);
 	} break;
 	}
 }

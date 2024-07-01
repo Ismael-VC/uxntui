@@ -13,33 +13,33 @@ WITH REGARD TO THIS SOFTWARE.
 */
 
 void
-mouse_down(Uint8 *d, Uint8 mask)
+mouse_down(Uint8 mask)
 {
-	d[6] |= mask;
-	uxn_eval(PEEK2(d));
+	uxn.dev[0x96] |= mask;
+	uxn_eval(PEEK2(&uxn.dev[0x90]));
 }
 
 void
-mouse_up(Uint8 *d, Uint8 mask)
+mouse_up(Uint8 mask)
 {
-	d[6] &= (~mask);
-	uxn_eval(PEEK2(d));
+	uxn.dev[0x96] &= (~mask);
+	uxn_eval(PEEK2(&uxn.dev[0x90]));
 }
 
 void
-mouse_pos(Uint8 *d, Uint16 x, Uint16 y)
+mouse_pos(Uint16 x, Uint16 y)
 {
-	*(d + 2) = x >> 8, *(d + 3) = x;
-	*(d + 4) = y >> 8, *(d + 5) = y;
-	uxn_eval(PEEK2(d));
+	uxn.dev[0x92] = x >> 8, uxn.dev[0x93] = x;
+	uxn.dev[0x94] = y >> 8, uxn.dev[0x95] = y;
+	uxn_eval(PEEK2(&uxn.dev[0x90]));
 }
 
 void
-mouse_scroll(Uint8 *d, Uint16 x, Uint16 y)
+mouse_scroll(Uint16 x, Uint16 y)
 {
-	*(d + 0xa) = x >> 8, *(d + 0xb) = x;
-	*(d + 0xc) = -y >> 8, *(d + 0xd) = -y;
-	uxn_eval(PEEK2(d));
-	*(d + 0xa) = 0, *(d + 0xb) = 0;
-	*(d + 0xc) = 0, *(d + 0xd) = 0;
+	uxn.dev[0x9a] = x >> 8, uxn.dev[0x9b] = x;
+	uxn.dev[0x9c] = -y >> 8, uxn.dev[0x9d] = -y;
+	uxn_eval(PEEK2(&uxn.dev[0x90]));
+	uxn.dev[0x9a] = 0, uxn.dev[0x9b] = 0;
+	uxn.dev[0x9c] = 0, uxn.dev[0x9d] = 0;
 }
