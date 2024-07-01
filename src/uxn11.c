@@ -67,7 +67,7 @@ emu_deo(Uint8 addr, Uint8 value)
 		if(p > 0x7 && p < 0xe)
 			screen_palette();
 		break;
-	case 0x10: console_deo(p); break;
+	case 0x10: console_deo(addr); break;
 	case 0x20: screen_deo(p); break;
 	case 0xa0: file_deo(addr); break;
 	case 0xb0: file_deo(addr); break;

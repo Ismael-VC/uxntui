@@ -214,18 +214,13 @@ console_dei(Uint8 addr)
 }
 
 void
-console_deo(Uint8 port)
+console_deo(Uint8 addr)
 {
-	FILE *fd = NULL;
-	Uint8 *d = &uxn.dev[0x10];
-	switch(port) {
-	case 0x5: /* Console/dead */ start_fork(d); break;
-	case 0x6: /* Console/exit*/ kill_child(d, 0); break;
-	case 0x8: fd = stdout; break;
-	case 0x9: fd = stderr; break;
-	}
-	if(fd) {
-		fputc(d[port], fd);
-		fflush(fd);
+	FILE *fd;
+	switch(addr) {
+	case 0x15: /* Console/dead */ start_fork(&uxn.dev[0x10]); break;
+	case 0x16: /* Console/exit*/ kill_child(&uxn.dev[0x10], 0); break;
+	case 0x18: fd = stdout, fputc(uxn.dev[0x18], fd), fflush(fd); break;
+	case 0x19: fd = stderr, fputc(uxn.dev[0x19], fd), fflush(fd); break;
 	}
 }
