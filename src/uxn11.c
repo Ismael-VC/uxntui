@@ -172,7 +172,7 @@ emu_event(void)
 		if(e->button == 4)
 			mouse_scroll(0, 1);
 		else if(e->button == 5)
-			mouse_scroll( 0, -1);
+			mouse_scroll(0, -1);
 		else if(e->button == 6)
 			mouse_scroll(1, 0);
 		else if(e->button == 7)

@@ -34,34 +34,14 @@ emu_dei(Uint8 addr)
 void
 emu_deo(Uint8 addr, Uint8 value)
 {
-	Uint8 p = addr & 0x0f, d = addr & 0xf0;
+	Uint8 p = addr & 0x0f;
 	uxn.dev[addr] = value;
-	switch(d) {
+	switch(addr & 0xf0) {
 	case 0x00: system_deo(p); break;
 	case 0x10: console_deo(p); break;
 	case 0xa0: file_deo(0, p); break;
 	case 0xb0: file_deo(1, p); break;
 	}
-}
-
-static void
-emu_run(void)
-{
-	while(!uxn.dev[0x0f]) {
-		int c = fgetc(stdin);
-		if(c == EOF) {
-			console_input(0x00, CONSOLE_END);
-			break;
-		}
-		console_input((Uint8)c, CONSOLE_STD);
-	}
-}
-
-static int
-emu_end(void)
-{
-	free(uxn.ram);
-	return uxn.dev[0x0f] & 0x7f;
 }
 
 int
@@ -79,7 +59,15 @@ main(int argc, char **argv)
 	uxn.dev[0x17] = argc - i;
 	if(uxn_eval(PAGE_PROGRAM) && PEEK2(uxn.dev + 0x10)) {
 		console_listen(i, argc, argv);
-		emu_run();
+		while(!uxn.dev[0x0f]) {
+			int c = fgetc(stdin);
+			if(c == EOF) {
+				console_input(0x00, CONSOLE_END);
+				break;
+			}
+			console_input(c, CONSOLE_STD);
+		}
 	}
-	return emu_end();
+	free(uxn.ram);
+	return uxn.dev[0x0f] & 0x7f;
 }

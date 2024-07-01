@@ -82,12 +82,11 @@ clean_after_child(void)
 }
 
 int
-console_input(char c, int type)
+console_input(Uint8 c, int type)
 {
-	Uint8 *d = &uxn.dev[0x10];
-	d[0x2] = c;
-	d[0x7] = type;
-	return uxn_eval(PEEK2(d));
+	uxn.dev[0x12] = c;
+	uxn.dev[0x17] = type;
+	return uxn_eval(PEEK2(&uxn.dev[0x10]));
 }
 
 void
