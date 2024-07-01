@@ -101,12 +101,11 @@ system_dei(Uint8 addr)
 }
 
 void
-system_deo(Uint8 port)
+system_deo(Uint8 addr)
 {
-	Uint16 addr;
-	switch(port) {
+	switch(addr) {
 	case 0x3:
-		addr = PEEK2(uxn.dev + 2);
+		Uint16 addr = PEEK2(uxn.dev + 2);
 		if(uxn.ram[addr] == 0x0) {
 			Uint8 value = uxn.ram[addr + 7];
 			Uint16 i, length = PEEK2(uxn.ram + addr + 1);

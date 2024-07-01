@@ -26,6 +26,6 @@ void screen_resize(Uint16 width, Uint16 height, int scale);
 void screen_redraw();
 
 Uint8 screen_dei(Uint8 addr);
-void screen_deo(Uint8 port);
+void screen_deo(Uint8 addr);
 
 #define twos(v) (v & 0x8000 ? (int)v - 0x10000 : (int)v)

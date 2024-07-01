@@ -59,16 +59,15 @@ emu_dei(Uint8 addr)
 void
 emu_deo(Uint8 addr, Uint8 value)
 {
-	Uint8 p = addr & 0x0f, d = addr & 0xf0;
 	uxn.dev[addr] = value;
-	switch(d) {
+	switch(addr & 0xf0) {
 	case 0x00:
-		system_deo(p);
-		if(p > 0x7 && p < 0xe)
+		system_deo(addr);
+		if(addr > 0x7 && addr < 0xe)
 			screen_palette();
 		break;
 	case 0x10: console_deo(addr); break;
-	case 0x20: screen_deo(p); break;
+	case 0x20: screen_deo(addr); break;
 	case 0xa0: file_deo(addr); break;
 	case 0xb0: file_deo(addr); break;
 	}
