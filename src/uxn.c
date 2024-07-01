@@ -36,7 +36,7 @@ WITH REGARD TO THIS SOFTWARE.
 int
 uxn_eval(Uint16 pc)
 {
-	Uint16 t, n, l, r;
+	Uint16 t, n, l, x, r;
 	Uint8 *rr;
 	if(!pc || uxn.dev[0x0f]) return 0;
 	for(;;) {
@@ -51,11 +51,11 @@ uxn_eval(Uint16 pc)
 			case 0x03: /* NIP  */ t=T;            SET(2,-1) T = t; break;
 			case 0x23: /* NIP2 */ t=T,n=N;        SET(4,-2) T = t, N = n; break;
 			case 0x04: /* SWP  */ t=T;n=N;        SET(2, 0) T = n, N = t; break;
-			case 0x24: /* SWP2 */ t=T2,n=N2;      SET(4, 0) T2_(n) N2_(t) break;
+			case 0x24: /* SWP2 */ t=T,n=N,l=L,x=X;SET(4, 0) T = l, N = x, L = t, X = n; break;
 			case 0x05: /* ROT  */ t=T,n=N,l=L;    SET(3, 0) T = l, N = t, L = n; break;
 			case 0x25: /* ROT2 */ t=T2,n=N2,l=L2; SET(6, 0) T2_(l) N2_(t) L2_(n) break;
 			case 0x06: /* DUP  */ t=T;            SET(1, 1) T = t, N = t; break;
-			case 0x26: /* DUP2 */ t=T2;           SET(2, 2) T2_(t) N2_(t) break;
+			case 0x26: /* DUP2 */ t=T,n=N;        SET(2, 2) T = t, N = n, L = t, X = n; break;
 			case 0x07: /* OVR  */ t=T,n=N;        SET(2, 1) T = n, N = t, L = n; break;
 			case 0x27: /* OVR2 */ t=T2,n=N2;      SET(4, 2) T2_(n) N2_(t) L2_(n) break;
 			case 0x08: /* EQU  */ t=T,n=N;        SET(2,-1) T = n == t; break;
