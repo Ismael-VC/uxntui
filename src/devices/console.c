@@ -215,9 +215,10 @@ console_dei(Uint8 addr)
 }
 
 void
-console_deo(Uint8 *d, Uint8 port)
+console_deo(Uint8 port)
 {
 	FILE *fd = NULL;
+	Uint8 *d = &uxn.dev[0x10];
 	switch(port) {
 	case 0x5: /* Console/dead */ start_fork(d); break;
 	case 0x6: /* Console/exit*/ kill_child(d, 0); break;
