@@ -156,14 +156,14 @@ screen_rect(Uint8 *layer, Uint16 x1, Uint16 y1, Uint16 x2, Uint16 y2, int color)
 }
 
 void
-screen_palette(Uint8 *addr)
+screen_palette(void)
 {
 	int i, shift;
 	for(i = 0, shift = 4; i < 4; ++i, shift ^= 4) {
 		Uint8
-			r = (addr[0 + i / 2] >> shift) & 0xf,
-			g = (addr[2 + i / 2] >> shift) & 0xf,
-			b = (addr[4 + i / 2] >> shift) & 0xf;
+			r = (uxn.dev[0x8 + i / 2] >> shift) & 0xf,
+			g = (uxn.dev[0xa + i / 2] >> shift) & 0xf,
+			b = (uxn.dev[0xc + i / 2] >> shift) & 0xf;
 		uxn_screen.palette[i] = 0x0f000000 | r << 16 | g << 8 | b;
 		uxn_screen.palette[i] |= uxn_screen.palette[i] << 4;
 	}

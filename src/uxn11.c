@@ -65,7 +65,7 @@ emu_deo(Uint8 addr, Uint8 value)
 	case 0x00:
 		system_deo(p);
 		if(p > 0x7 && p < 0xe)
-			screen_palette(&uxn.dev[0x8]);
+			screen_palette();
 		break;
 	case 0x10: console_deo(p); break;
 	case 0x20: screen_deo(p); break;
