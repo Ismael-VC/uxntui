@@ -9,9 +9,7 @@ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
 WITH REGARD TO THIS SOFTWARE.
 */
 
-#define FILE_VERSION 1
-
 #define POLYFILEY 2
 #define DEV_FILE0 0xa
 
-void file_deo(Uint8 id, Uint8 *d, Uint8 port);
+void file_deo(Uint8 id, Uint8 port);

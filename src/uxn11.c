@@ -69,8 +69,8 @@ emu_deo(Uint8 addr, Uint8 value)
 		break;
 	case 0x10: console_deo(p); break;
 	case 0x20: screen_deo(p); break;
-	case 0xa0: file_deo(0, &uxn.dev[d], p); break;
-	case 0xb0: file_deo(1, &uxn.dev[d], p); break;
+	case 0xa0: file_deo(0, p); break;
+	case 0xb0: file_deo(1, p); break;
 	}
 }
 

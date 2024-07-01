@@ -9,8 +9,6 @@ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
 WITH REGARD TO THIS SOFTWARE.
 */
 
-#define CONTROL_VERSION 1
-
 void controller_down(Uint8 mask);
 void controller_up(Uint8 mask);
 void controller_key(Uint8 key);

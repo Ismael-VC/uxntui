@@ -245,10 +245,11 @@ file_delete(UxnFile *c)
 /* IO */
 
 void
-file_deo(Uint8 id, Uint8 *d, Uint8 port)
+file_deo(Uint8 id, Uint8 port)
 {
 	UxnFile *c = &uxn_file[id];
 	Uint16 addr, len, res;
+	Uint8 *d = id ? &uxn.dev[0xb0] : &uxn.dev[0xa0];
 	switch(port) {
 	case 0x5:
 		addr = PEEK2(d + 0x4);
