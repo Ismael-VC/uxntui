@@ -63,7 +63,7 @@ emu_deo(Uint8 addr, Uint8 value)
 	uxn.dev[addr] = value;
 	switch(d) {
 	case 0x00:
-		system_deo(&uxn.dev[d], p);
+		system_deo(p);
 		if(p > 0x7 && p < 0xe)
 			screen_palette(&uxn.dev[0x8]);
 		break;

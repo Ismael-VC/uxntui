@@ -101,12 +101,12 @@ system_dei(Uint8 addr)
 }
 
 void
-system_deo(Uint8 *d, Uint8 port)
+system_deo(Uint8 port)
 {
 	Uint16 addr;
 	switch(port) {
 	case 0x3:
-		addr = PEEK2(d + 2);
+		addr = PEEK2(uxn.dev + 2);
 		if(uxn.ram[addr] == 0x0) {
 			Uint8 value = uxn.ram[addr + 7];
 			Uint16 i, length = PEEK2(uxn.ram + addr + 1);
@@ -132,10 +132,10 @@ system_deo(Uint8 *d, Uint8 port)
 			fprintf(stderr, "Unknown Expansion Command 0x%02x\n", uxn.ram[addr]);
 		break;
 	case 0x4:
-		uxn.wst.ptr = d[4];
+		uxn.wst.ptr = uxn.dev[4];
 		break;
 	case 0x5:
-		uxn.rst.ptr = d[5];
+		uxn.rst.ptr = uxn.dev[5];
 		break;
 	case 0xe:
 		system_inspect();

@@ -9,7 +9,6 @@ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
 WITH REGARD TO THIS SOFTWARE.
 */
 
-#define SYSTEM_VERSION 2
 #define RAM_PAGES 0x10
 
 void system_reboot(char *rom, int soft);
@@ -18,6 +17,6 @@ int system_error(char *msg, const char *err);
 int system_boot(Uint8 *ram, char *rom);
 
 Uint8 system_dei(Uint8 addr);
-void system_deo(Uint8 *d, Uint8 port);
+void system_deo(Uint8 port);
 
 extern char *boot_rom;
