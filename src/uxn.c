@@ -20,7 +20,7 @@ WITH REGARD TO THIS SOFTWARE.
 #define FLP { s = ins & 0x40 ? &uxn.wst : &uxn.rst; }
 #define JMP(x) { if(m2) pc = (x); else pc += (Sint8)(x); }
 #define PO1(o) { o = s->dat[--*sp]; }
-#define PO2(o) { o = s->dat[--*sp] | (s->dat[--*sp] << 0x8); }
+#define PO2(o) { o = s->dat[--*sp] | (s->dat[--*sp] << 8); }
 #define POx(o) { if(m2) { PO2(o) } else PO1(o) }
 #define PU1(y) { s->dat[s->ptr++] = (y); }
 #define PU2(y) { tt = (y); s->dat[s->ptr++] = tt >> 0x8; s->dat[s->ptr++] = tt; }
@@ -46,11 +46,13 @@ uxn_eval(Uint16 pc)
 		case 0x00:
 		switch(ins) {
 			/* BRK */ case 0x00: return 1;
-			/* JCI */ case 0x20: PO1(b) if(!b) { pc += 2; break; } a = uxn.ram[pc++] << 8 | uxn.ram[pc++]; pc += a; break;
-			/* JMI */ case 0x40: a = uxn.ram[pc++] << 8 | uxn.ram[pc++]; pc += a; break;
-			/* JSI */ case 0x60: PU2(pc + 2) a = uxn.ram[pc++] << 8 | uxn.ram[pc++]; pc += a; break;
-			/* LIT2 */ case 0xa0: case 0xe0: PU1(uxn.ram[pc++]) PU1(uxn.ram[pc++]) break;
-			/* LIT  */ case 0x80: case 0xc0: PU1(uxn.ram[pc++]) break;
+			/* JCI */ case 0x20: if(uxn.wst.dat[--uxn.wst.ptr]) goto JMI; pc += 2; break;
+			/* JMI */ case 0x40: JMI: a = uxn.ram[pc++] << 8 | uxn.ram[pc++]; pc += a; break;
+			/* JSI */ case 0x60: tt = pc + 2; uxn.rst.dat[uxn.rst.ptr++] = tt >> 8; uxn.rst.dat[uxn.rst.ptr++] = tt; goto JMI;
+			/* LIT2  */ case 0xa0: uxn.wst.dat[uxn.wst.ptr++] = uxn.ram[pc++], uxn.wst.dat[uxn.wst.ptr++] = uxn.ram[pc++]; break;
+			/* LIT2r */ case 0xe0: uxn.rst.dat[uxn.rst.ptr++] = uxn.ram[pc++], uxn.rst.dat[uxn.rst.ptr++] = uxn.ram[pc++]; break;
+			/* LIT   */ case 0x80: uxn.wst.dat[uxn.wst.ptr++] = uxn.ram[pc++]; break;
+			/* LITr  */ case 0xc0: uxn.rst.dat[uxn.rst.ptr++] = uxn.ram[pc++]; break;
 		} break;
 		/* INC */ OPC(0x01, POx(a) PUx(a + 1))
 		/* POP */ OPC(0x02, POx(a))
