@@ -22,21 +22,20 @@ WITH REGARD TO THIS SOFTWARE.
 	case 0xe0|opc: {int _2=1,_r=1,a,b,c; Stack *s = &uxn.rst; Uint8 kp = uxn.rst.ptr, *sp = &kp; body break;}\
 }
 
+#define FLP { s = _r ? &uxn.wst : &uxn.rst; }
+#define JMI { pc += uxn.ram[pc++] << 8 | uxn.ram[pc++]; }
 #define JMP(x) { if(_2) pc = (x); else pc += (Sint8)(x); }
 #define POx(o) { if(_2) { PO2(o) } else PO1(o) }
 #define PUx(y) { if(_2) { PU2(y) } else PU1(y) }
-#define DEI(o, p) { if(_2) { o = (emu_dei(p) << 8) | emu_dei(p + 1); } else o = emu_dei(p); }
-#define DEO(p, y) { if(_2) { emu_deo(p, y >> 8); emu_deo(p + 1, y); } else emu_deo(p, y); }
-#define PEK(o, x, r) { if(_2) { r = (x); o = uxn.ram[r++] << 8 | uxn.ram[r]; } else o = uxn.ram[(x)]; }
-#define POK(x, y, r) { if(_2) { r = (x); uxn.ram[r++] = y >> 8; uxn.ram[r] = y; } else uxn.ram[(x)] = (y); }
 #define PO1(o) { o = s->dat[--*sp]; }
 #define PO2(o) { o = s->dat[--*sp] | (s->dat[--*sp] << 8); }
 #define PU1(y) { s->dat[s->ptr++] = (y); }
 #define PU2(y) { tt = (y); s->dat[s->ptr++] = tt >> 0x8; s->dat[s->ptr++] = tt; }
-#define FLP { s = _r ? &uxn.wst : &uxn.rst; }
-
 #define IMM(x, y) { uxn.x.dat[uxn.x.ptr++] = (y); }
-#define JMI { pc += uxn.ram[pc++] << 8 | uxn.ram[pc++]; }
+#define DEI(o, p) { if(_2) { o = (emu_dei(p) << 8) | emu_dei(p + 1); } else o = emu_dei(p); }
+#define DEO(p, y) { if(_2) { emu_deo(p, y >> 8); emu_deo(p + 1, y); } else emu_deo(p, y); }
+#define PEK(o, x, r) { if(_2) { r = (x); o = uxn.ram[r++] << 8 | uxn.ram[r]; } else o = uxn.ram[(x)]; }
+#define POK(x, y, r) { if(_2) { r = (x); uxn.ram[r++] = y >> 8; uxn.ram[r] = y; } else uxn.ram[(x)] = (y); }
 
 int
 uxn_eval(Uint16 pc)
@@ -50,10 +49,10 @@ uxn_eval(Uint16 pc)
 		/* JCI */ case 0x20: if(uxn.wst.dat[--uxn.wst.ptr]) { JMI break; } pc += 2; break;
 		/* JMI */ case 0x40: JMI break;
 		/* JSI */ case 0x60: tt = pc + 2; IMM(rst, tt >> 8) IMM(rst, tt) JMI break;
+		/* LI2 */ case 0xa0: IMM(wst, uxn.ram[pc++])
 		/* LIT */ case 0x80: IMM(wst, uxn.ram[pc++]) break;
-		/* LI2 */ case 0xa0: IMM(wst, uxn.ram[pc++]) IMM(wst, uxn.ram[pc++]); break;
+		/* L2r */ case 0xe0: IMM(rst, uxn.ram[pc++])
 		/* LIr */ case 0xc0: IMM(rst, uxn.ram[pc++]) break;
-		/* L2r */ case 0xe0: IMM(rst, uxn.ram[pc++]) IMM(rst, uxn.ram[pc++]) break;
 		/* INC */ OPC(0x01, POx(a) PUx(a + 1))
 		/* POP */ OPC(0x02, POx(a))
 		/* NIP */ OPC(0x03, POx(a) POx(b) PUx(a))
