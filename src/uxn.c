@@ -11,12 +11,6 @@ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
 WITH REGARD TO THIS SOFTWARE.
 */
 
-/* Registers
-[ Z ][ Y ][ X ][ L ][ N ][ T ] <
-[ . ][ . ][ . ][   H2   ][ . ] <
-[   L2   ][   N2   ][   T2   ] <
-*/
-
 #define FLP { s = ins & 0x40 ? &uxn.wst : &uxn.rst; }
 #define JMP(x) { if(m2) pc = (x); else pc += (Sint8)(x); }
 #define PO1(o) { o = s->dat[--*sp]; }
@@ -30,7 +24,16 @@ WITH REGARD TO THIS SOFTWARE.
 #define DEI(o, p) { if(m2) { o = (emu_dei(p) << 8) | emu_dei(p + 1); } else o = emu_dei(p); }
 #define DEO(p, y) { if(m2) { emu_deo(p, y >> 8); emu_deo(p + 1, y); } else emu_deo(p, y); }
 
-#define OPC(x, body) { case x: body break; }
+#define OPC(op, body) { \
+	case 0x00|0x00|0x00|op: {m2 = 0, s = &uxn.wst, sp = &s->ptr; body break;}\
+	case 0x00|0x00|0x20|op: {m2 = 1, s = &uxn.wst, sp = &s->ptr; body break;}\
+	case 0x00|0x40|0x00|op: {m2 = 0, s = &uxn.rst, sp = &s->ptr; body break;}\
+	case 0x00|0x40|0x20|op: {m2 = 1, s = &uxn.rst, sp = &s->ptr; body break;}\
+	case 0x80|0x00|0x00|op: {m2 = 0, s = &uxn.wst, kp = s->ptr, sp = &kp; body break;}\
+	case 0x80|0x00|0x20|op: {m2 = 1, s = &uxn.wst, kp = s->ptr, sp = &kp; body break;}\
+	case 0x80|0x40|0x00|op: {m2 = 0, s = &uxn.rst, kp = s->ptr, sp = &kp; body break;}\
+	case 0x80|0x40|0x20|op: {m2 = 1, s = &uxn.rst, kp = s->ptr, sp = &kp; body break;}\
+}
 
 int
 uxn_eval(Uint16 pc)
@@ -39,21 +42,17 @@ uxn_eval(Uint16 pc)
 	for(;;) {
 		Uint16 tt, a, b, c;
 		Uint8 t, kp, *sp, ins = uxn.ram[pc++];
-		/* 2 */ Uint8 m2 = ins & 0x20;
-		/* r */ Stack *s = ins & 0x40 ? &uxn.rst : &uxn.wst;
-		/* k */ if(ins & 0x80) kp = s->ptr, sp = &kp; else sp = &s->ptr;
-		switch(ins & 0x1f) {
-		case 0x00:
+		int m2 = 0;
+		Stack *s;
 		switch(ins) {
-			/* BRK */ case 0x00: return 1;
-			/* JCI */ case 0x20: if(uxn.wst.dat[--uxn.wst.ptr]) goto JMI; pc += 2; break;
-			/* JMI */ case 0x40: JMI: a = uxn.ram[pc++] << 8 | uxn.ram[pc++]; pc += a; break;
-			/* JSI */ case 0x60: tt = pc + 2; uxn.rst.dat[uxn.rst.ptr++] = tt >> 8; uxn.rst.dat[uxn.rst.ptr++] = tt; goto JMI;
-			/* LIT2  */ case 0xa0: uxn.wst.dat[uxn.wst.ptr++] = uxn.ram[pc++], uxn.wst.dat[uxn.wst.ptr++] = uxn.ram[pc++]; break;
-			/* LIT2r */ case 0xe0: uxn.rst.dat[uxn.rst.ptr++] = uxn.ram[pc++], uxn.rst.dat[uxn.rst.ptr++] = uxn.ram[pc++]; break;
-			/* LIT   */ case 0x80: uxn.wst.dat[uxn.wst.ptr++] = uxn.ram[pc++]; break;
-			/* LITr  */ case 0xc0: uxn.rst.dat[uxn.rst.ptr++] = uxn.ram[pc++]; break;
-		} break;
+		/* BRK */ case 0x00: return 1;
+		/* JCI */ case 0x20: if(uxn.wst.dat[--uxn.wst.ptr]) goto JMI; pc += 2; break;
+		/* JMI */ case 0x40: JMI: a = uxn.ram[pc++] << 8 | uxn.ram[pc++]; pc += a; break;
+		/* JSI */ case 0x60: tt = pc + 2; uxn.rst.dat[uxn.rst.ptr++] = tt >> 8; uxn.rst.dat[uxn.rst.ptr++] = tt; goto JMI;
+		/* LIT2  */ case 0xa0: uxn.wst.dat[uxn.wst.ptr++] = uxn.ram[pc++], uxn.wst.dat[uxn.wst.ptr++] = uxn.ram[pc++]; break;
+		/* LIT2r */ case 0xe0: uxn.rst.dat[uxn.rst.ptr++] = uxn.ram[pc++], uxn.rst.dat[uxn.rst.ptr++] = uxn.ram[pc++]; break;
+		/* LIT   */ case 0x80: uxn.wst.dat[uxn.wst.ptr++] = uxn.ram[pc++]; break;
+		/* LITr  */ case 0xc0: uxn.rst.dat[uxn.rst.ptr++] = uxn.ram[pc++]; break;
 		/* INC */ OPC(0x01, POx(a) PUx(a + 1))
 		/* POP */ OPC(0x02, POx(a))
 		/* NIP */ OPC(0x03, POx(a) POx(b) PUx(a))
