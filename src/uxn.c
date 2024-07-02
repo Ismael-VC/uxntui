@@ -34,8 +34,8 @@ WITH REGARD TO THIS SOFTWARE.
 #define IMM(x, y) { uxn.x.dat[uxn.x.ptr++] = (y); }
 #define DEI(o, p) { if(_2) { o = (emu_dei(p) << 8) | emu_dei(p + 1); } else o = emu_dei(p); }
 #define DEO(p, y) { if(_2) { emu_deo(p, y >> 8); emu_deo(p + 1, y); } else emu_deo(p, y); }
-#define PEK(o, x, r) { if(_2) { r = (x); o = uxn.ram[r] << 8 | uxn.ram[r + 1]; } else o = uxn.ram[(x)]; }
-#define POK(x, y, r) { if(_2) { r = (x); uxn.ram[r] = y >> 8; uxn.ram[r + 1] = y; } else uxn.ram[(x)] = (y); }
+#define PEK(o, x, r) { if(_2) { r = (x); o = uxn.ram[r++] << 8 | uxn.ram[r]; } else o = uxn.ram[(x)]; }
+#define POK(x, y, r) { if(_2) { r = (x); uxn.ram[r++] = y >> 8; uxn.ram[r] = y; } else uxn.ram[(x)] = (y); }
 
 int
 uxn_eval(Uint16 pc)
