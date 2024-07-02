@@ -26,16 +26,16 @@ WITH REGARD TO THIS SOFTWARE.
 #define JMI { pc += uxn.ram[pc++] << 8 | uxn.ram[pc++]; }
 #define JMP(x) { if(_2) pc = (x); else pc += (Sint8)(x); }
 #define POx(o) { if(_2) { PO2(o) } else PO1(o) }
-#define PUx(y) { if(_2) { PU2(y) } else PU1(y) }
 #define PO1(o) { o = s->dat[--*sp]; }
 #define PO2(o) { o = s->dat[--*sp] | (s->dat[--*sp] << 8); }
+#define PUx(y) { if(_2) { PU2(y) } else PU1(y) }
 #define PU1(y) { s->dat[s->ptr++] = (y); }
 #define PU2(y) { tt = (y); s->dat[s->ptr++] = tt >> 0x8; s->dat[s->ptr++] = tt; }
 #define IMM(x, y) { uxn.x.dat[uxn.x.ptr++] = (y); }
 #define DEI(o, p) { if(_2) { o = (emu_dei(p) << 8) | emu_dei(p + 1); } else o = emu_dei(p); }
 #define DEO(p, y) { if(_2) { emu_deo(p, y >> 8); emu_deo(p + 1, y); } else emu_deo(p, y); }
-#define PEK(o, x, r) { if(_2) { r = (x); o = uxn.ram[r++] << 8 | uxn.ram[r]; } else o = uxn.ram[(x)]; }
-#define POK(x, y, r) { if(_2) { r = (x); uxn.ram[r++] = y >> 8; uxn.ram[r] = y; } else uxn.ram[(x)] = (y); }
+#define PEK(o, x, r) { if(_2) { r = (x); o = uxn.ram[r] << 8 | uxn.ram[r + 1]; } else o = uxn.ram[(x)]; }
+#define POK(x, y, r) { if(_2) { r = (x); uxn.ram[r] = y >> 8; uxn.ram[r + 1] = y; } else uxn.ram[(x)] = (y); }
 
 int
 uxn_eval(Uint16 pc)

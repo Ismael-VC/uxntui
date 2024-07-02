@@ -51,7 +51,7 @@ main(int argc, char **argv)
 		return system_error("usage", "uxncli [-v] file.rom [args..]");
 	/* Read flags */
 	if(argv[i][0] == '-' && argv[i][1] == 'v')
-		return !printf("Uxncli - Console Varvara Emulator, 1 Jul 2024\n");
+		return !printf("Uxncli - Console Varvara Emulator, 2 Jul 2024\n");
 	if(!system_boot((Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8)), argv[i++]))
 		return system_error("Init", "Failed to initialize uxn.");
 	/* Game Loop */
