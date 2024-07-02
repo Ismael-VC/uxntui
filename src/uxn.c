@@ -11,40 +11,41 @@ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
 WITH REGARD TO THIS SOFTWARE.
 */
 
-#define JMP(x) { if(m2) pc = (x); else pc += (Sint8)(x); }
-#define POx(o) { if(m2) { PO2(o) } else PO1(o) }
-#define PUx(y) { if(m2) { PU2(y) } else PU1(y) }
-#define DEI(o, p) { if(m2) { o = (emu_dei(p) << 8) | emu_dei(p + 1); } else o = emu_dei(p); }
-#define DEO(p, y) { if(m2) { emu_deo(p, y >> 8); emu_deo(p + 1, y); } else emu_deo(p, y); }
-#define PEK(o, x, r) { if(m2) { r = (x); o = uxn.ram[r++] << 8 | uxn.ram[r]; } else o = uxn.ram[(x)]; }
-#define POK(x, y, r) { if(m2) { r = (x); uxn.ram[r++] = y >> 8; uxn.ram[r] = y; } else uxn.ram[(x)] = (y); }
+#define OPC(opc, body) {\
+	case 0x00|opc: {int _2=0,_r=0,a,b,c; Stack *s = &uxn.wst; Uint8 *sp = &uxn.wst.ptr; body break;}\
+	case 0x20|opc: {int _2=1,_r=0,a,b,c; Stack *s = &uxn.wst; Uint8 *sp = &uxn.wst.ptr; body break;}\
+	case 0x40|opc: {int _2=0,_r=1,a,b,c; Stack *s = &uxn.rst; Uint8 *sp = &uxn.rst.ptr; body break;}\
+	case 0x60|opc: {int _2=1,_r=1,a,b,c; Stack *s = &uxn.rst; Uint8 *sp = &uxn.rst.ptr; body break;}\
+	case 0x80|opc: {int _2=0,_r=0,a,b,c; Stack *s = &uxn.wst; Uint8 kp = uxn.wst.ptr, *sp = &kp; body break;}\
+	case 0xa0|opc: {int _2=1,_r=0,a,b,c; Stack *s = &uxn.wst; Uint8 kp = uxn.wst.ptr, *sp = &kp; body break;}\
+	case 0xc0|opc: {int _2=0,_r=1,a,b,c; Stack *s = &uxn.rst; Uint8 kp = uxn.rst.ptr, *sp = &kp; body break;}\
+	case 0xe0|opc: {int _2=1,_r=1,a,b,c; Stack *s = &uxn.rst; Uint8 kp = uxn.rst.ptr, *sp = &kp; body break;}\
+}
+
+#define JMP(x) { if(_2) pc = (x); else pc += (Sint8)(x); }
+#define POx(o) { if(_2) { PO2(o) } else PO1(o) }
+#define PUx(y) { if(_2) { PU2(y) } else PU1(y) }
+#define DEI(o, p) { if(_2) { o = (emu_dei(p) << 8) | emu_dei(p + 1); } else o = emu_dei(p); }
+#define DEO(p, y) { if(_2) { emu_deo(p, y >> 8); emu_deo(p + 1, y); } else emu_deo(p, y); }
+#define PEK(o, x, r) { if(_2) { r = (x); o = uxn.ram[r++] << 8 | uxn.ram[r]; } else o = uxn.ram[(x)]; }
+#define POK(x, y, r) { if(_2) { r = (x); uxn.ram[r++] = y >> 8; uxn.ram[r] = y; } else uxn.ram[(x)] = (y); }
 #define PO1(o) { o = s->dat[--*sp]; }
 #define PO2(o) { o = s->dat[--*sp] | (s->dat[--*sp] << 8); }
 #define PU1(y) { s->dat[s->ptr++] = (y); }
 #define PU2(y) { tt = (y); s->dat[s->ptr++] = tt >> 0x8; s->dat[s->ptr++] = tt; }
+#define FLP { s = _r ? &uxn.wst : &uxn.rst; }
+
 #define IMM(x, y) { uxn.x.dat[uxn.x.ptr++] = (y); }
 #define JMI { pc += uxn.ram[pc++] << 8 | uxn.ram[pc++]; }
-#define FLP { s = ins & 0x40 ? &uxn.wst : &uxn.rst; }
-
-#define OPC(opc, body) {\
-	case 0x00|opc: {int m2 = 0; Stack *s = &uxn.wst; Uint8 *sp = &uxn.wst.ptr; body break;}\
-	case 0x20|opc: {int m2 = 1; Stack *s = &uxn.wst; Uint8 *sp = &uxn.wst.ptr; body break;}\
-	case 0x40|opc: {int m2 = 0; Stack *s = &uxn.rst; Uint8 *sp = &uxn.rst.ptr; body break;}\
-	case 0x60|opc: {int m2 = 1; Stack *s = &uxn.rst; Uint8 *sp = &uxn.rst.ptr; body break;}\
-	case 0x80|opc: {int m2 = 0; Stack *s = &uxn.wst; Uint8 kp = uxn.wst.ptr, *sp = &kp; body break;}\
-	case 0xa0|opc: {int m2 = 1; Stack *s = &uxn.wst; Uint8 kp = uxn.wst.ptr, *sp = &kp; body break;}\
-	case 0xc0|opc: {int m2 = 0; Stack *s = &uxn.rst; Uint8 kp = uxn.rst.ptr, *sp = &kp; body break;}\
-	case 0xe0|opc: {int m2 = 1; Stack *s = &uxn.rst; Uint8 kp = uxn.rst.ptr, *sp = &kp; body break;}\
-}
 
 int
 uxn_eval(Uint16 pc)
 {
 	if(!pc || uxn.dev[0x0f]) return 0;
 	for(;;) {
-		Uint16 tt, a, b, c;
-		Uint8 t, ins = uxn.ram[pc++];
-		switch(ins) {
+		Uint8 t;
+		Uint16 tt;
+		switch(uxn.ram[pc++]) {
 		/* BRK */ case 0x00: return 1;
 		/* JCI */ case 0x20: if(uxn.wst.dat[--uxn.wst.ptr]) { JMI break; } pc += 2; break;
 		/* JMI */ case 0x40: JMI break;
