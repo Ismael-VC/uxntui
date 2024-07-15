@@ -3,6 +3,7 @@
 |0013
 
 	@Zeropage &byte $1 &short $2
+	@id $1
 
 |0100
 
@@ -11,40 +12,45 @@
 	( part 1
 		> LIT2: Puts a short on the stack
 		> LIT: Puts a byte on the stack
-		> #18 DEO: Write a letter in terminal
-		> ;meta: Push short
-		> #06 DEO: Write to metadata ports )
+		> #06 DEO: Write to metadata ports
+		> #18 DEO: Write a letter in terminal )
 
-	[ LIT2 "kO ] #18 DEO #18 DEO #0a18 DEO
 	;meta #06 DEO2
+	[ LIT2 "kO ] #18 DEO #18 DEO
+	[ LIT2 "1 18 ] DEO #0a18 DEO
 
 	( part 2
 		> LITr: Put a byte on return stack
 		> STH: Move a byte from working stack to return stack
 		> STH2r: Move a short from return stack to working stack )
 
-	[ LITr "k ] [ LIT "O ] STH STH2r #18 DEO #18 DEO #0a18 DEO
+	[ LITr "k ] [ LIT "O ] STH STH2r #18 DEO #18 DEO
+	[ LIT2 "2 18 ] DEO #0a18 DEO
 
 	( part 3
 		> LIT2r: Put a short on return stack
 		> DUP: Duplicate byte
 		> ADDr: Add bytes on return stack )
 
-	[ LIT2r "k 4d ] #01 DUP STH ADDr STH ADDr STH2r #18 DEO #18 DEO #0a18 DEO
+	[ LIT2r "k 4d ] #01 DUP STH ADDr STH ADDr STH2r #18 DEO #18 DEO
+	[ LIT2 "3 18 ] DEO #0a18 DEO
 
 	( part 4
-		> JSI: Subroutine to relative absolute address
+		> JSI: Subroutine to relative short address
 		> JMP2r: Jumps to absolute address on return stack )
 
 	subroutine
+	[ LIT2 "4 18 ] DEO #0a18 DEO
 
 	( part 5
 		> POP2: Removes a short from the stack
 		> INC2: Increments short on stack
-		> LDAk: Non-destructive load byte from absolute address
-		> JCI: Conditional subroutine to relative absolute address )
+		> DUP2: Duplicate short
+		> LDA: load byte from absolute address
+		> JCI: Conditional subroutine to relative short address )
 
-	;Dict/ok pstr #0a18 DEO
+	;Dict/ok pstr
+	[ LIT2 "5 18 ] DEO #0a18 DEO
 
 	( part 6
 		> GTH2k: Non-destructive greater-than short
@@ -69,6 +75,8 @@
 	POP2 #1111 #2222 ADD2 #3333 EQU2
 	STHr AND STHr AND
 	;Dict/stack-wrap test-part
+
+	( restore stack ) #0000 #0000
 
 	( Part 8
 		> Testing RAM wrapping
@@ -111,7 +119,7 @@ BRK
 	( name ) "Opctest 0a
 	( details ) "A 20 "Testing 20 "Program 0a
 	( author ) "By 20 "Devine 20 "Lu 20 "Linvega 0a
-	( date ) "1 20 "Nov 20 "2023 $2
+	( date ) "18 20 "Feb 20 "2024 $2
 
 @test-part ( f name* -- )
 	pstr ?{
@@ -123,26 +131,28 @@ BRK
 
 	LDA2k JSR2 DUP ?&pass
 		;Dict/missed pstr
-		[ LIT2 &name $2 ] pstr/ #0a18 DEO
-		#01 ;on-reset/fail STA JMP2r
+		[ LIT2 &name $2 ] pstr
+		[ LIT2 "# 18 ] DEO
+		[ LIT2 "a -id ] LDZ ADD #18 DEO
+		#0a18 DEO
+		#01 ;on-reset/fail STA
 		&pass
+	.id LDZ INC .id STZ
 
 JMP2r
 
 @set ( name* -- f )
 
 	;run-test/name STA2 #01
+	[ LIT2 ff -id ] STZ
 
 JMP2r
 
 @pstr ( str* -- )
-
-	&w ( -- )
-		LDAk #18 DEO
-		INC2 & LDAk ?&w
-	POP2
-
-JMP2r
+	DUP2 LDA
+		DUP ?{ POP POP2 JMP2r }
+		#18 DEO
+	INC2 !pstr
 
 @tests
 =op-equ [
@@ -216,7 +226,7 @@ JMP2r
 =op-jmi [
 	=op-jmi/a ]
 =op-jsi [
-	=op-jsi/a =op-jsi/b ]
+	=op-jsi/a =op-jsi/b =op-jsi/c =op-jsi/d ]
 	&end
 
 @op-equ ;Dict/equ !set
@@ -406,6 +416,8 @@ JMP2r
 @op-jsi ;Dict/jsi !set
 	&a #02 #04 routine #06 EQU JMP2r
 	&b ;&return special &return JMP2r
+	&c ,&skip-c JMP &routine-c ADD JMP2r &skip-c #02 #04 op-jsi/routine-c #06 EQU JMP2r
+	&d ,&skip-d JMP &routine-d ADD JMP2r &skip-d #02 #04 op-jsi-far-routine-d #06 EQU JMP2r
 
 @special ( routine* -- f )
 
@@ -416,7 +428,7 @@ JMP2r
 JMP2r
 
 @routine ( a b -- c ) ADD JMP2r
-@subroutine ( -- ) [ LIT2 "kO ] #18 DEO #18 DEO #0a18 DEO JMP2r
+@subroutine ( -- ) [ LIT2 "kO ] #18 DEO #18 DEO JMP2r
 @Absolute &byte $1 &short $2
 
 @Dict [
@@ -441,3 +453,4 @@ JMP2r
 	&jmi "JMI $1 &jci "JCI $1 &jsi "JSI $1
 ]
 
+|7000 @op-jsi-far-routine-d op-jsi/routine-d JMP2r

@@ -5,7 +5,7 @@ EMU_src=${CLI_src} src/devices/screen.c src/devices/controller.c src/devices/mou
 RELEASE_flags=-DNDEBUG -O2 -g0 -s
 DEBUG_flags=-std=c89 -D_POSIX_C_SOURCE=199309L -DDEBUG -Wall -Wno-unknown-pragmas -Wpedantic -Wshadow -Wextra -Werror=implicit-int -Werror=incompatible-pointer-types -Werror=int-conversion -Wvla -g -Og -fsanitize=address -fsanitize=undefined
 
-.PHONY: all debug dest run test install uninstall format clean archive
+.PHONY: all debug dest run test install uninstall format clean grab archive
 
 all: dest bin/uxnasm bin/uxncli bin/uxn11
 
@@ -25,6 +25,8 @@ uninstall:
 	@ rm -f ~/bin/uxn11 ~/bin/uxnasm ~/bin/uxncli
 format:
 	@ clang-format -i src/uxnasm.c src/uxncli.c src/uxn11.c src/devices/*
+grab:
+	@ cp ../uxn-utils/cli/opctest/opctest.tal etc/opctest.tal
 archive:
 	@ cp src/uxnasm.c ../oscean/etc/uxnasm.c.txt
 clean:
