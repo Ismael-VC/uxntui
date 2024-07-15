@@ -36,9 +36,10 @@ bin/uxncli: ${CLI_src} src/uxncli.c
 	@ cc ${RELEASE_flags} ${CFLAGS} ${CLI_src} src/uxncli.c -lutil -o bin/uxncli
 bin/uxn11: ${EMU_src} src/uxn11.c
 	@ cc ${RELEASE_flags} ${CFLAGS} ${EMU_src} src/uxn11.c -lX11 -lutil -o bin/uxn11
+
 bin/uxnasm-debug: src/uxnasm.c
-	@ cc ${DEBUG_flags} ${CFLAGS} src/uxnasm.c -o bin/uxnasm
+	@ cc ${DEBUG_flags} ${CFLAGS} src/uxnasm.c -o bin/uxnasm-debug
 bin/uxncli-debug: ${CLI_src} src/uxncli.c
-	@ cc ${DEBUG_flags} ${CFLAGS} ${CLI_src} src/uxncli.c -lutil -o bin/uxncli
+	@ cc ${DEBUG_flags} ${CFLAGS} ${CLI_src} src/uxncli.c -lutil -o bin/uxncli-debug
 bin/uxn11-debug: ${EMU_src} src/uxn11.c
-	@ cc ${DEBUG_flags} ${CFLAGS} ${EMU_src} src/uxn11.c -lX11 -lutil -o bin/uxn11
+	@ cc ${DEBUG_flags} ${CFLAGS} ${EMU_src} src/uxn11.c -lX11 -lutil -o bin/uxn11-debug

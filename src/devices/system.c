@@ -102,7 +102,7 @@ void
 system_deo(Uint8 port)
 {
 	switch(port) {
-	case 0x3:
+	case 0x3: {
 		Uint16 addr = PEEK2(uxn.dev + 2);
 		if(uxn.ram[addr] == 0x0) {
 			Uint8 value = uxn.ram[addr + 7];
@@ -128,6 +128,7 @@ system_deo(Uint8 port)
 		} else
 			fprintf(stderr, "Unknown Expansion Command 0x%02x\n", uxn.ram[addr]);
 		break;
+	}
 	case 0x4:
 		uxn.wst.ptr = uxn.dev[4];
 		break;

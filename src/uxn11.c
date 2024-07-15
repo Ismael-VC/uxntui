@@ -154,6 +154,7 @@ emu_event(void)
 		switch(sym) {
 		case XK_F1: toggle_scale(); break;
 		case XK_F2: uxn.dev[0x0e] = !uxn.dev[0x0e]; break;
+		case XK_F3: uxn.dev[0x0f] = 0xff; break;
 		case XK_F4: emu_restart(boot_rom, 0); break;
 		case XK_F5: emu_restart(boot_rom, 1); break;
 		}
@@ -168,16 +169,13 @@ emu_event(void)
 	} break;
 	case ButtonPress: {
 		XButtonPressedEvent *e = (XButtonPressedEvent *)&ev;
-		if(e->button == 4)
-			mouse_scroll(0, 1);
-		else if(e->button == 5)
-			mouse_scroll(0, -1);
-		else if(e->button == 6)
-			mouse_scroll(1, 0);
-		else if(e->button == 7)
-			mouse_scroll(-1, 0);
-		else
-			mouse_down(0x1 << (e->button - 1));
+		switch(e->button) {
+		case 4: mouse_scroll(0, 1); break;
+		case 5: mouse_scroll(0, -1); break;
+		case 6: mouse_scroll(1, 0); break;
+		case 7: mouse_scroll(-1, 0); break;
+		default: mouse_down(0x1 << (e->button - 1));
+		}
 	} break;
 	case ButtonRelease: {
 		XButtonPressedEvent *e = (XButtonPressedEvent *)&ev;
@@ -196,9 +194,9 @@ static int
 display_init(void)
 {
 	Atom wmDelete;
-	static Visual *visual;
+	Visual *visual;
 	XColor black = {0};
-	static char empty[] = {0};
+	char empty[] = {0};
 	Pixmap bitmap;
 	Cursor blank;
 	display = XOpenDisplay(NULL);
@@ -229,8 +227,7 @@ static int
 emu_run(void)
 {
 	int i = 1, n;
-	char expirations[8];
-	char coninp[CONINBUFSIZE];
+	char expirations[8], coninp[CONINBUFSIZE];
 	struct pollfd fds[3];
 	static const struct itimerspec screen_tspec = {{0, 16666666}, {0, 16666666}};
 	/* timer */
@@ -275,15 +272,11 @@ main(int argc, char **argv)
 		i++;
 	}
 	rom = i == argc ? "boot.rom" : argv[i++];
-	if(!system_boot((Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8)), rom)) {
-		fprintf(stdout, "usage: %s [-v] file.rom [args..]\n", argv[0]);
-		return 0;
-	}
-	if(!display_init()) {
-		fprintf(stdout, "Could not open display.\n");
-		return 0;
-	}
-	/* Game Loop */
+	if(!system_boot((Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8)), rom))
+		return !fprintf(stdout, "usage: %s [-v] file.rom [args..]\n", argv[0]);
+	if(!display_init())
+		return !fprintf(stdout, "Could not open display.\n");
+	/* Event Loop */
 	uxn.dev[0x17] = argc - i;
 	if(uxn_eval(PAGE_PROGRAM)) {
 		console_listen(i, argc, argv);
