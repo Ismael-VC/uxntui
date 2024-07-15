@@ -43,30 +43,41 @@ emu_deo(Uint8 addr, Uint8 value)
 	}
 }
 
+static void
+emu_run(void)
+{
+	while(!uxn.dev[0x0f]) {
+		int c = fgetc(stdin);
+		if(c == EOF) {
+			console_input(0x00, CONSOLE_END);
+			break;
+		}
+		console_input(c, CONSOLE_STD);
+	}
+}
+
+static int
+emu_end(void)
+{
+	free(uxn.ram);
+	return uxn.dev[0x0f] & 0x7f;
+}
+
 int
 main(int argc, char **argv)
 {
 	int i = 1;
-	if(i == argc)
-		return system_error("usage", "uxncli [-v] file.rom [args..]");
-	/* Read flags */
-	if(argv[i][0] == '-' && argv[i][1] == 'v')
-		return !printf("Uxncli - Console Varvara Emulator, 2 Jul 2024\n");
-	if(!system_boot((Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8)), argv[i++]))
-		return system_error("Init", "Failed to initialize uxn.");
-	/* Game Loop */
-	uxn.dev[0x17] = argc - i;
-	if(uxn_eval(PAGE_PROGRAM) && PEEK2(uxn.dev + 0x10)) {
-		console_listen(i, argc, argv);
-		while(!uxn.dev[0x0f]) {
-			int c = fgetc(stdin);
-			if(c == EOF) {
-				console_input(0x00, CONSOLE_END);
-				break;
-			}
-			console_input(c, CONSOLE_STD);
-		}
+	char *rom;
+	if(i != argc && argv[i][0] == '-' && argv[i][1] == 'v') {
+		fprintf(stdout, "Uxncli - Console Varvara Emulator, 15 Jul 2024.\n");
+		i++;
 	}
-	free(uxn.ram);
-	return uxn.dev[0x0f] & 0x7f;
+	rom = i == argc ? "boot.rom" : argv[i++];
+	if(!system_boot((Uint8 *)calloc(0x10000 * RAM_PAGES, sizeof(Uint8)), rom))
+		return !fprintf(stdout, "usage: %s [-v] file.rom [args..]\n", argv[0]);
+	/* Event Loop */
+	uxn.dev[0x17] = argc - i;
+	if(uxn_eval(PAGE_PROGRAM) && PEEK2(uxn.dev + 0x10))
+		console_listen(i, argc, argv), emu_run();
+	return emu_end();
 }

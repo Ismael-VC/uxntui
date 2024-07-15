@@ -268,7 +268,7 @@ main(int argc, char **argv)
 	int i = 1;
 	char *rom;
 	if(i != argc && argv[i][0] == '-' && argv[i][1] == 'v') {
-		fprintf(stdout, "Uxn11 - Varvara Emulator, 2 Jul 2024.\n");
+		fprintf(stdout, "Uxn11 - Varvara Emulator, 15 Jul 2024.\n");
 		i++;
 	}
 	rom = i == argc ? "boot.rom" : argv[i++];
@@ -278,9 +278,7 @@ main(int argc, char **argv)
 		return !fprintf(stdout, "Could not open display.\n");
 	/* Event Loop */
 	uxn.dev[0x17] = argc - i;
-	if(uxn_eval(PAGE_PROGRAM)) {
-		console_listen(i, argc, argv);
-		emu_run();
-	}
+	if(uxn_eval(PAGE_PROGRAM))
+		console_listen(i, argc, argv), emu_run();
 	return emu_end();
 }

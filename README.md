@@ -46,8 +46,11 @@ The file device is _sandboxed_, meaning that it should not be able to read or wr
 
 ## Emulator Controls
 
-- `F2` toggle on-screen debugger
-- `F4` load boot.rom, or reload rom
+- `F1` toggle zoom
+- `F2` toggle debugger
+- `F3` quit
+- `F4` reboot
+- `F5` reboot(soft)
 
 ### Buttons
 
