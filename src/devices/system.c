@@ -16,18 +16,16 @@ WITH REGARD TO THIS SOFTWARE.
 */
 
 char *boot_rom;
-Uint16 dev_vers[0x10];
 
 static void
 system_zero(int soft)
 {
 	int i;
-	for(i = 0x100 * soft; i < 0x10000; i++)
+	for(i = soft ? 0x100 : 0; i < 0x10000; i++)
 		uxn.ram[i] = 0;
 	for(i = 0x0; i < 0x100; i++)
 		uxn.dev[i] = 0;
-	uxn.wst.ptr = 0;
-	uxn.rst.ptr = 0;
+	uxn.wst.ptr = uxn.rst.ptr = 0;
 }
 
 static int
@@ -52,19 +50,19 @@ system_print(Stack *s)
 	fprintf(stderr, "< \n");
 }
 
+void
+system_inspect(void)
+{
+	fprintf(stderr, "WST "), system_print(&uxn.wst);
+	fprintf(stderr, "RST "), system_print(&uxn.rst);
+}
+
 int
 system_error(char *msg, const char *err)
 {
 	fprintf(stderr, "%s: %s\n", msg, err);
 	fflush(stderr);
 	return 0;
-}
-
-void
-system_inspect(void)
-{
-	fprintf(stderr, "WST "), system_print(&uxn.wst);
-	fprintf(stderr, "RST "), system_print(&uxn.rst);
 }
 
 void

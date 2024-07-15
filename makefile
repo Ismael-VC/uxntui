@@ -13,6 +13,8 @@ dest:
 	@ mkdir -p bin
 run: all bin/uxnasm bin/uxncli bin/uxn11
 	@ bin/uxn11 
+debug: bin/uxnasm-debug bin/uxncli-debug bin/uxn11-debug
+	@ bin/uxncli-debug bin/opctest.rom
 test: all
 	@ bin/uxnasm -v && ./bin/uxncli -v && ./bin/uxn11 -v
 	@ bin/uxnasm etc/opctest.tal bin/opctest.rom
@@ -34,3 +36,9 @@ bin/uxncli: ${CLI_src} src/uxncli.c
 	@ cc ${RELEASE_flags} ${CFLAGS} ${CLI_src} src/uxncli.c -lutil -o bin/uxncli
 bin/uxn11: ${EMU_src} src/uxn11.c
 	@ cc ${RELEASE_flags} ${CFLAGS} ${EMU_src} src/uxn11.c -lX11 -lutil -o bin/uxn11
+bin/uxnasm-debug: src/uxnasm.c
+	@ cc ${DEBUG_flags} ${CFLAGS} src/uxnasm.c -o bin/uxnasm
+bin/uxncli-debug: ${CLI_src} src/uxncli.c
+	@ cc ${DEBUG_flags} ${CFLAGS} ${CLI_src} src/uxncli.c -lutil -o bin/uxncli
+bin/uxn11-debug: ${EMU_src} src/uxn11.c
+	@ cc ${DEBUG_flags} ${CFLAGS} ${EMU_src} src/uxn11.c -lX11 -lutil -o bin/uxn11
