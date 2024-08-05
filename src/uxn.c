@@ -22,6 +22,8 @@ WITH REGARD TO THIS SOFTWARE.
 	case 0xe0|opc: {int _2=1,_r=1,a,b,c; Stack *s = &uxn.rst; Uint8 kp = uxn.rst.ptr, *sp = &kp; body break;}\
 }
 
+/* Microcode */
+
 #define FLP { s = _r ? &uxn.wst : &uxn.rst; }
 #define JMI { pc += uxn.ram[pc++] << 8 | uxn.ram[pc++]; }
 #define JMP(x) { if(_2) pc = (x); else pc += (Sint8)(x); }
@@ -30,12 +32,12 @@ WITH REGARD TO THIS SOFTWARE.
 #define PO2(o) { o = s->dat[--*sp] | (s->dat[--*sp] << 8); }
 #define PUx(y) { if(_2) { PU2(y) } else PU1(y) }
 #define PU1(y) { s->dat[s->ptr++] = (y); }
-#define PU2(y) { tt = (y); s->dat[s->ptr++] = tt >> 0x8; s->dat[s->ptr++] = tt; }
+#define PU2(y) { tt = (y); PU1(tt >> 8) PU1(tt) }
 #define IMM(x, y) { uxn.x.dat[uxn.x.ptr++] = (y); }
-#define DEI(o, p) { if(_2) { o = (emu_dei(p) << 8) | emu_dei(p + 1); } else o = emu_dei(p); }
-#define DEO(p, y) { if(_2) { emu_deo(p, y >> 8); emu_deo(p + 1, y); } else emu_deo(p, y); }
+#define DEI(p, o) { if(_2) { o = (emu_dei(p) << 8) | emu_dei(p + 1); } else o = emu_dei(p); }
+#define DEO(p, y) { if(_2) { emu_deo(p, y >> 8), emu_deo(p + 1, y); } else emu_deo(p, y); }
 #define PEK(o, x, r) { if(_2) { r = (x); o = uxn.ram[r++] << 8 | uxn.ram[r]; } else o = uxn.ram[(x)]; }
-#define POK(x, y, r) { if(_2) { r = (x); uxn.ram[r++] = y >> 8; uxn.ram[r] = y; } else uxn.ram[(x)] = (y); }
+#define POK(x, y, r) { if(_2) { r = (x); uxn.ram[r++] = y >> 8, uxn.ram[r] = y; } else uxn.ram[(x)] = (y); }
 
 int
 uxn_eval(Uint16 pc)
@@ -74,7 +76,7 @@ uxn_eval(Uint16 pc)
 		/* STR */ OPC(0x13, PO1(a) POx(b) POK(pc + (Sint8)a, b, tt))
 		/* LDA */ OPC(0x14, PO2(a) PEK(b, a, tt) PUx(b))
 		/* STA */ OPC(0x15, PO2(a) POx(b) POK(a, b, tt))
-		/* DEI */ OPC(0x16, PO1(a) DEI(b, a) PUx(b))
+		/* DEI */ OPC(0x16, PO1(a) DEI(a, b) PUx(b))
 		/* DEO */ OPC(0x17, PO1(a) POx(b) DEO(a, b))
 		/* ADD */ OPC(0x18, POx(a) POx(b) PUx(b + a))
 		/* SUB */ OPC(0x19, POx(a) POx(b) PUx(b - a))
