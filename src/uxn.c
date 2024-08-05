@@ -12,14 +12,14 @@ WITH REGARD TO THIS SOFTWARE.
 */
 
 #define OPC(opc, body) {\
-	case 0x00|opc: {int _2=0,_r=0,a,b,c; Stack *s = &uxn.wst; Uint8 *sp = &uxn.wst.ptr; body break;}\
-	case 0x20|opc: {int _2=1,_r=0,a,b,c; Stack *s = &uxn.wst; Uint8 *sp = &uxn.wst.ptr; body break;}\
-	case 0x40|opc: {int _2=0,_r=1,a,b,c; Stack *s = &uxn.rst; Uint8 *sp = &uxn.rst.ptr; body break;}\
-	case 0x60|opc: {int _2=1,_r=1,a,b,c; Stack *s = &uxn.rst; Uint8 *sp = &uxn.rst.ptr; body break;}\
-	case 0x80|opc: {int _2=0,_r=0,a,b,c; Stack *s = &uxn.wst; Uint8 kp = uxn.wst.ptr, *sp = &kp; body break;}\
-	case 0xa0|opc: {int _2=1,_r=0,a,b,c; Stack *s = &uxn.wst; Uint8 kp = uxn.wst.ptr, *sp = &kp; body break;}\
-	case 0xc0|opc: {int _2=0,_r=1,a,b,c; Stack *s = &uxn.rst; Uint8 kp = uxn.rst.ptr, *sp = &kp; body break;}\
-	case 0xe0|opc: {int _2=1,_r=1,a,b,c; Stack *s = &uxn.rst; Uint8 kp = uxn.rst.ptr, *sp = &kp; body break;}\
+	case 0x00|opc: {enum{_2=0,_r=0}; s = &uxn.wst, sp = &uxn.wst.ptr; body break;}\
+	case 0x20|opc: {enum{_2=1,_r=0}; s = &uxn.wst, sp = &uxn.wst.ptr; body break;}\
+	case 0x40|opc: {enum{_2=0,_r=1}; s = &uxn.rst, sp = &uxn.rst.ptr; body break;}\
+	case 0x60|opc: {enum{_2=1,_r=1}; s = &uxn.rst, sp = &uxn.rst.ptr; body break;}\
+	case 0x80|opc: {enum{_2=0,_r=0}; s = &uxn.wst, kp = uxn.wst.ptr, sp = &kp; body break;}\
+	case 0xa0|opc: {enum{_2=1,_r=0}; s = &uxn.wst, kp = uxn.wst.ptr, sp = &kp; body break;}\
+	case 0xc0|opc: {enum{_2=0,_r=1}; s = &uxn.rst, kp = uxn.rst.ptr, sp = &kp; body break;}\
+	case 0xe0|opc: {enum{_2=1,_r=1}; s = &uxn.rst, kp = uxn.rst.ptr, sp = &kp; body break;}\
 }
 
 /* Microcode */
@@ -42,10 +42,12 @@ WITH REGARD TO THIS SOFTWARE.
 int
 uxn_eval(Uint16 pc)
 {
+	int a,b,c;
+	Uint8 t, kp, *sp;
+	Uint16 tt;
+	Stack *s;
 	if(!pc || uxn.dev[0x0f]) return 0;
 	for(;;) {
-		Uint8 t;
-		Uint16 tt;
 		switch(uxn.ram[pc++]) {
 		/* BRK */ case 0x00: return 1;
 		/* JCI */ case 0x20: if(uxn.wst.dat[--uxn.wst.ptr]) { JMI break; } pc += 2; break;
