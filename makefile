@@ -5,6 +5,8 @@ EMU_src=${CLI_src} src/devices/screen.c src/devices/controller.c src/devices/mou
 RELEASE_flags=-DNDEBUG -O2 -g0 -s
 DEBUG_flags=-std=c89 -D_POSIX_C_SOURCE=199309L -DDEBUG -Wall -Wno-unknown-pragmas -Wpedantic -Wshadow -Wextra -Werror=implicit-int -Werror=incompatible-pointer-types -Werror=int-conversion -Wvla -g -Og -fsanitize=address -fsanitize=undefined
 
+PREFIX=${HOME}/.local
+
 .PHONY: all debug dest run test install uninstall format clean grab archive
 
 all: dest bin/uxnasm bin/uxncli bin/uxn11
@@ -12,7 +14,7 @@ all: dest bin/uxnasm bin/uxncli bin/uxn11
 dest:
 	@ mkdir -p bin
 run: all bin/uxnasm bin/uxncli bin/uxn11
-	@ bin/uxn11 
+	@ bin/uxn11
 debug: bin/uxnasm-debug bin/uxncli-debug bin/uxn11-debug
 	@ bin/uxncli-debug bin/opctest.rom
 test: all
@@ -20,7 +22,10 @@ test: all
 	@ bin/uxnasm etc/opctest.tal bin/opctest.rom
 	@ bin/uxncli bin/opctest.rom
 install: all
-	@ cp bin/uxn11 bin/uxnasm bin/uxncli ~/bin/
+	@ mkdir -p ${PREFIX}/bin
+	@ cp bin/uxn11 bin/uxnasm bin/uxncli ${PREFIX}/bin
+	@ mkdir -p ${PREFIX}/share/man/man7
+	@ cp doc/man/uxntal.7 ${PREFIX}/share/man/man7
 uninstall:
 	@ rm -f ~/bin/uxn11 ~/bin/uxnasm ~/bin/uxncli
 format:

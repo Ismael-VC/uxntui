@@ -4,6 +4,20 @@ An emulator for the [Uxn stack-machine](https://wiki.xxiivv.com/site/uxn.html), 
 
 ## Building 
 
+### Makefile
+
+For your convenience a [Makefile](https://en.wikipedia.org/wiki/Make_(software)#Makefile) is provided. You can run `make install` to build and install the files.
+
+By default, files are installed into `~/.local` but this can be overridden using `PREFIX`:
+
+```sh
+# installs files into ~/.local/bin and ~/.local/share
+$ make install
+
+# installs files into /opt/uxn/bin and /opt/uxn/share
+$ make PREFIX=/opt/uxn install
+```
+
 ### Graphical
 
 All you need is X11.
@@ -31,6 +45,16 @@ The first parameter is the rom file, the subsequent arguments will be accessible
 ```sh
 bin/uxnemu bin/polycat.rom arg1 arg2
 ```
+
+## Manual
+
+A manual page is provided documenting the Uxntal language:
+
+```sh
+man ./doc/man/uxntal.7
+```
+
+After running `make install` the man page should be found by `man uxntal`.
 
 ## Devices
 
