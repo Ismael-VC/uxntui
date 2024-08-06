@@ -75,14 +75,18 @@ Regular instructions have a single stack effect which is modified in a predictab
 
 For example the generic effect for \fBADD\fP is ( x y -- x+y ). The eight combinations of modes have the following effects:
 
-    \fBADD\fP    ( x^ y^   -- x+y^ )         sum two bytes using \fBwst\fP
-    \fBADDr\fP   ( [x^ y^] -- [x+y^] )       sum two bytes using \fBrst\fP
-    \fBADD2\fP   ( x* y*   -- x+y* )         sum two shorts using \fBwst\fP
-    \fBADD2r\fP  ( [x* y*] -- [x+y*] )       sum two shorts using \fBrst\fP
-    \fBADDk\fP   ( x^ y^   -- x^ y^ x+y^ )   sum two bytes using \fBwst\fP, retain arguments
-    \fBADDkr\fP  ( [x^ y^] -- [x^ y^ x+y^] ) sum two bytes using \fBrst\fP, retain arguments
-    \fBADD2k\fP  ( x* y*   -- x* y* x+y* )   sum two shorts using \fBwst\fP, retain arguments
-    \fBADD2kr\fP ( [x* y*] -- [x* y* x+y*] ) sum two shorts using \fBrst\fP, retain arguments
+.nf
+
+    \fBADD\fP    ( x^ y^   -- x+y^ )         sum bytes from \fBwst\fP
+    \fBADDr\fP   ( [x^ y^] -- [x+y^] )       sum bytes from \fBrst\fP
+    \fBADD2\fP   ( x* y*   -- x+y* )         sum shorts from \fBwst\fP
+    \fBADD2r\fP  ( [x* y*] -- [x+y*] )       sum shorts from \fBrst\fP
+    \fBADDk\fP   ( x^ y^   -- x^ y^ x+y^ )   sum and keep bytes from \fBwst\fP
+    \fBADDkr\fP  ( [x^ y^] -- [x^ y^ x+y^] ) sum and keep bytes from \fBrst\fP
+    \fBADD2k\fP  ( x* y*   -- x* y* x+y* )   sum and keep shorts from \fBwst\fP
+    \fBADD2kr\fP ( [x* y*] -- [x* y* x+y*] ) sum and keep shorts from \fBrst\fP
+
+.fi
 
 Thus for regular instructions writing a "generic" effect (leaving sigils off values whose size depends on \fIshort mode\fP) is sufficient to describe its behavior across all eight variations. Note that some instructions always read values of a fixed size. For example the boolean condition read by \fBJCN\fP is always one byte, no matter what modes are used.
 
@@ -98,77 +102,65 @@ We consider the top of the stack to be the first value of the stack, and count b
 
 .BR
 
-.SS INC
-( x -- x+1 )
+.SS INC ( x -- x+1 )
 
 Increment the top value of the stack by 1.
 
 Overflow will be truncated, so \fB#ff INC\fP will evaluate to \fB0x00\fP.
 
-.SS POP
-( x -- )
+.SS POP ( x -- )
 
 Remove the top value of the stack.
 
 \fBPOPk\fP is guaranteed to have no effect (it will not change the stack).
 
-.SS NIP
-( x y -- y )
+.SS NIP ( x y -- y )
 
 Remove the second value of the stack.
 
 \fBNIPk\fP is guaranteed to have no effect (it will not change the stack).
 
-.SS SWP
-( x y -- y x )
+.SS SWP ( x y -- y x )
 
 Swap the top two values of the stack.
 
-.SS ROT
-( x y z -- y z x )
+.SS ROT ( x y z -- y z x )
 
 Rotate the top three values of the stack. The lowest becomes the top and the others are each shifted down one place.
 
-.SS DUP
-( x -- x x )
+.SS DUP ( x -- x x )
 
 Place a copy of the top value of the stack on top of the stack.
 
-.SS OVR
-( x y -- x y x )
+.SS OVR ( x y -- x y x )
 
 Place a copy of the second value of the stack on top of the stack.
 
-.SS EQU
-( x y -- x==y^ )
+.SS EQU ( x y -- x==y^ )
 
 Test whether the top two values of the stack are equal.
 
 Result is guaranteed to be boolean (\fB0x00\fP or \fB0x01\fP).
 
-.SS NEQ
-( x y -- x!=y^ )
+.SS NEQ ( x y -- x!=y^ )
 
 Test whether the top two values of the stack are not equal.
 
 Result is guaranteed to be boolean (\fB0x00\fP or \fB0x01\fP).
 
-.SS GTH
-( x y -- x>y^ )
+.SS GTH ( x y -- x>y^ )
 
 Test whether the second value of the stack is greater than the top.
 
 Result is guaranteed to be boolean (\fB0x00\fP or \fB0x01\fP).
 
-.SS LTH
-( x y -- x<y^ )
+.SS LTH ( x y -- x<y^ )
 
 Test whether the second value of the stack is less than the top.
 
 Result is guaranteed to be boolean (\fB0x00\fP or \fB0x01\fP).
 
-.SS JMP
-( x -- ; pc <- x )
+.SS JMP ( x -- ; pc <- x )
 
 Jump to a location.
 
@@ -178,15 +170,13 @@ It is common to \fBJMP\fP with boolean bytes (0-1) to handle simple conditionals
 
     @max ( x^ y^ -- max^ ) GTHk JMP SWP POP JMP2r
 
-.SS JCN
-( x bool^ -- ; pc <- x if bool )
+.SS JCN ( x bool^ -- ; pc <- x if bool )
 
 Jump to a location when a condition is true.
 
 The program counter (\fIpc\fP) is updated when \fIbool\fP is non-zero. When \fIx\fP is a byte, it is treated as relative (\fBpc += x\fP) and when \fIx\fP is a short it is treated as absolute (\fBpc = x\fP).
 
-.SS JSR
-( x -- [pc+1*] )
+.SS JSR ( x -- [pc+1*] )
 
 Jump to a location, saving a reference to return to.
 
@@ -194,82 +184,69 @@ Stores the next address to execute before unconditionally updating the program c
 
 The saved address will always be a short regardless of \fIshort mode\fP.
 
-.SS STH
-( x -- [x] )
+.SS STH ( x -- [x] )
 
 Move the top value of the stack to the return stack.
 
-.SS LDZ
-( zp^ -- x )
+.SS LDZ ( zp^ -- x )
 
 Load data from a zero-page address (\fB0x00 - 0xff\fP).
 
-.SS STZ
-( x zp^ -- )
+.SS STZ ( x zp^ -- )
 
 Store data at a zero-page address (\fB0x00 - 0xff\fP).
 
-.SS LDR
-( rel^ -- x )
+.SS LDR ( rel^ -- x )
 
 Load data from a relative address (\fBpc + x\fP).
 
 Note that unlike \fBLDZk\fP and \fBLDAk\fP the \fBLDRk\fP instruction is not very useful, since a relative address is usually only meaningful when run from a particular address (i.e. for a particular \fIpc\fP value).
 
-.SS STR
-( x rel^ -- )
+.SS STR ( x rel^ -- )
 
 Store data at a relative address (\fBpc + x\fP).
 
 Note that unlike \fBSTZk\fP and \fBSTAk\fP the \fBSTRk\fP instruction is not very useful, since a relative address is usually only meaningful when run from a particular address (i.e. for a particular \fIpc\fP value).
 
-.SS LDA
-( abs* -- x )
+.SS LDA ( abs* -- x )
 
 Load data from an absolute address (\fB0x0000 - 0xffff\fP).
 
-.SS STA
-( x abs* -- )
+.SS STA ( x abs* -- )
 
 Store data at an absolute address (\fB0x0000 - 0xffff\fP).
 
-.SS DEI
-( dev^ -- x )
+.SS DEI ( dev^ -- x )
 
 Read data from a device port (\fB0x00 - 0xff\fP).
 
 Reading from some ports may have an effect on the underlying VM; in other cases it will simply read values from device memory. See Varvara device documentation for more details.
 
-.SS DEO
-( x dev^ -- )
+.SS DEO ( x dev^ -- )
 
 Write data to a device port (\fB0x00 - 0xff\fP).
 
 Writing to some ports may have an effect on the underlying VM; in other cases it will simply write values to device memory. See Varvara device documentation for more details.
 
-.SS ADD
-( x y -- x+y )
+.SS ADD ( x y -- x+y )
 
 Add the top two values of the stack.
 
 Overflow will be truncated, so \fB#ff #03 ADD\fP will evaluate to \fB0x02\fP.
 
-.SS SUB
-( x y -- x-y )
+.SS SUB ( x y -- x-y )
 
 Subtract the top of the stack from the second value of the stack.
 
 Underflow will be truncated, so \fB#01 #03 SUB\fP will evaluate to \fB0xfe\fP.
 
-.SS MUL
-( x y -- xy )
+.SS MUL ( x y -- xy )
 
 Multiply the top two values of the stack.
 
 Overflow will be truncated, so \fB#11 #11 MUL\fP will evaluate to \fB0x21\fP.
 
-.SS DIV
-( x y -- x/y )
+.SS DIV ( x y -- x/y )
 
 Divide the second value of the stack by the top of the stack.
 
@@ -281,23 +258,19 @@ Unlike \fBADD\fP, \fBSUB\fP, and \fBMUL\fP, \fBDIV\fP does not behave correctly 
 
 There is no \fIremainder\fP instruction, but the phrase \fBDIVk MUL SUB\fP can be used to compute the remainder.
 
-.SS AND
-( x y -- x&y )
+.SS AND ( x y -- x&y )
 
 Compute the bitwise union of the top two values of the stack.
 
-.SS ORA
-( x y -- x|y )
+.SS ORA ( x y -- x|y )
 
 Compute the bitwise intersection of the top two values of the stack.
 
-.SS EOR
-( x y -- x^y )
+.SS EOR ( x y -- x^y )
 
 Compute the bitwise exclusive-or (\fIxor\fP) of the top two values of the stack.
 
-.SS SFT
-( x rl^ -- (x>>l)<<r )
+.SS SFT ( x rl^ -- (x>>l)<<r )
 
 Compute a bit shift of the second value of the stack; the directions and distances are determined by the top value of the stack.
 
@@ -325,7 +298,7 @@ The "immediate jump" instructions are produced by the assembler. They interpret 
 
  \fBJMI\fP ( -- )       jump to \fIaddr\fP unconditionally
  \fBJCI\fP ( bool^ -- ) jump to \fIaddr\fP if \fIbool\fP is non-zero
- \fBJSI\fP ( -- [pc*] ) jump to \fIaddr\fP saving the current address (\fIpc\fP) on the return stack
+ \fBJSI\fP ( -- [pc*] ) jump to \fIaddr\fP saving the current address (\fIpc\fP) on \fIrst\fP
 
 (The instruction pointer will be moved forward 2 bytes, past the relative address.)
 
@@ -356,8 +329,8 @@ Literal values can be updated dynamically using store instructions:
 
 .SH SEE ALSO
 
-  https://wiki.xxiivv.com/site/uxntal_opcodes.html      \fIUxntal Opcodes\fP
-  https://wiki.xxiivv.com/site/uxntal_syntax.html       \fIUxntal Syntax\fP
-  https://wiki.xxiivv.com/site/uxntal_modes.html        \fIUxntal Modes\fP
-  https://wiki.xxiivv.com/site/uxntal_immediate.html    \fIImmediate opcodes\fP
-  https://wiki.xxiivv.com/site/varvara.html             \fIVarvara\fP
+ https://wiki.xxiivv.com/site/uxntal_opcodes.html   \fIUxntal Opcodes\fP
+ https://wiki.xxiivv.com/site/uxntal_syntax.html    \fIUxntal Syntax\fP
+ https://wiki.xxiivv.com/site/uxntal_modes.html     \fIUxntal Modes\fP
+ https://wiki.xxiivv.com/site/uxntal_immediate.html \fIImmediate opcodes\fP
+ https://wiki.xxiivv.com/site/varvara.html          \fIVarvara\fP
