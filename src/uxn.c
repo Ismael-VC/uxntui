@@ -12,28 +12,31 @@ WITH REGARD TO THIS SOFTWARE.
 */
 
 #define OPC(opc, init, body) {\
-	case 0x00|opc: {enum{_2=0,_r=0}; s = &uxn.wst; init; body; break;}\
-	case 0x20|opc: {enum{_2=1,_r=0}; s = &uxn.wst; init; body; break;}\
-	case 0x40|opc: {enum{_2=0,_r=1}; s = &uxn.rst; init; body; break;}\
-	case 0x60|opc: {enum{_2=1,_r=1}; s = &uxn.rst; init; body; break;}\
-	case 0x80|opc: {enum{_2=0,_r=0}; s = &uxn.wst, k = uxn.wst.ptr; init; uxn.wst.ptr = k; body; break;}\
-	case 0xa0|opc: {enum{_2=1,_r=0}; s = &uxn.wst, k = uxn.wst.ptr; init; uxn.wst.ptr = k; body; break;}\
-	case 0xc0|opc: {enum{_2=0,_r=1}; s = &uxn.rst, k = uxn.rst.ptr; init; uxn.rst.ptr = k; body; break;}\
-	case 0xe0|opc: {enum{_2=1,_r=1}; s = &uxn.rst, k = uxn.rst.ptr; init; uxn.rst.ptr = k; body; break;}\
+	case 0x00|opc: {enum{_2=0,_r=0}; init; body; break;}\
+	case 0x20|opc: {enum{_2=1,_r=0}; init; body; break;}\
+	case 0x40|opc: {enum{_2=0,_r=1}; init; body; break;}\
+	case 0x60|opc: {enum{_2=1,_r=1}; init; body; break;}\
+	case 0x80|opc: {enum{_2=0,_r=0}; k = uxn.wst.ptr; init; uxn.wst.ptr = k; body; break;}\
+	case 0xa0|opc: {enum{_2=1,_r=0}; k = uxn.wst.ptr; init; uxn.wst.ptr = k; body; break;}\
+	case 0xc0|opc: {enum{_2=0,_r=1}; k = uxn.rst.ptr; init; uxn.rst.ptr = k; body; break;}\
+	case 0xe0|opc: {enum{_2=1,_r=1}; k = uxn.rst.ptr; init; uxn.rst.ptr = k; body; break;}\
 }
 
 /* Microcode */
 
-#define FLP { s = _r ? &uxn.wst : &uxn.rst; }
+#define INC(s) uxn.s.dat[uxn.s.ptr++]
+#define DEC(s) uxn.s.dat[--uxn.s.ptr]
 #define JMI { pc += uxn.ram[pc++] << 8 | uxn.ram[pc++]; }
 #define JMP(x) { if(_2) pc = (x); else pc += (Sint8)(x); }
 #define POx(o) { if(_2) { PO2(o) } else PO1(o) }
-#define PO1(o) { o = s->dat[--s->ptr]; }
-#define PO2(o) { o = s->dat[--s->ptr] | (s->dat[--s->ptr] << 8); }
+#define PO2(o) { if(_r) o = DEC(rst) | (DEC(rst) << 8); else o = DEC(wst) | (DEC(wst) << 8); }
+#define PO1(o) { if(_r) o = DEC(rst); else o = DEC(wst); }
 #define PUx(y) { if(_2) { PU2(y) } else PU1(y) }
-#define PU1(y) { s->dat[s->ptr++] = (y); }
 #define PU2(y) { tt = (y); PU1(tt >> 8) PU1(tt) }
-#define IMM(x, y) { uxn.x.dat[uxn.x.ptr++] = (y); }
+#define PU1(y) { if(_r) INC(rst) = y; else INC(wst) = y; }
+#define PFx(y) { if(_2) { PF2(y) } else PF1(y) }
+#define PF2(y) { tt = (y); PF1(tt >> 8) PF1(tt) }
+#define PF1(y) { if(_r) INC(wst) = y; else INC(rst) = y; }
 #define DEI(p, o) { if(_2) { o = (emu_dei(p) << 8) | emu_dei(p + 1); } else o = emu_dei(p); }
 #define DEO(p, y) { if(_2) { emu_deo(p, y >> 8), emu_deo(p + 1, y); } else emu_deo(p, y); }
 #define PEK(o, x, r) { if(_2) { r = (x); o = uxn.ram[r++] << 8 | uxn.ram[r]; } else o = uxn.ram[(x)]; }
@@ -45,18 +48,17 @@ uxn_eval(Uint16 pc)
 	int a,b,c,k;
 	Uint8 t;
 	Uint16 tt;
-	Stack *s;
 	if(!pc || uxn.dev[0x0f]) return 0;
 	for(;;) {
 		switch(uxn.ram[pc++]) {
 		/* BRK */ case 0x00: return 1;
-		/* JCI */ case 0x20: if(uxn.wst.dat[--uxn.wst.ptr]) { JMI break; } pc += 2; break;
+		/* JCI */ case 0x20: if(DEC(wst)) { JMI break; } pc += 2; break;
 		/* JMI */ case 0x40: JMI break;
-		/* JSI */ case 0x60: tt = pc + 2; IMM(rst, tt >> 8) IMM(rst, tt) JMI break;
-		/* LI2 */ case 0xa0: IMM(wst, uxn.ram[pc++])
-		/* LIT */ case 0x80: IMM(wst, uxn.ram[pc++]) break;
-		/* L2r */ case 0xe0: IMM(rst, uxn.ram[pc++])
-		/* LIr */ case 0xc0: IMM(rst, uxn.ram[pc++]) break;
+		/* JSI */ case 0x60: tt = pc + 2; INC(rst) = tt >> 8; INC(rst) = tt; JMI break;
+		/* LI2 */ case 0xa0: INC(wst) = uxn.ram[pc++];
+		/* LIT */ case 0x80: INC(wst) = uxn.ram[pc++]; break;
+		/* L2r */ case 0xe0: INC(rst) = uxn.ram[pc++];
+		/* LIr */ case 0xc0: INC(rst) = uxn.ram[pc++]; break;
 		/* INC */ OPC(0x01, POx(a), PUx(a + 1))
 		/* POP */ OPC(0x02, POx(a), 0)
 		/* NIP */ OPC(0x03, POx(a) POx(b), PUx(a))
@@ -70,8 +72,8 @@ uxn_eval(Uint16 pc)
 		/* LTH */ OPC(0x0b, POx(a) POx(b), PU1(b < a))
 		/* JMP */ OPC(0x0c, POx(a), JMP(a))
 		/* JCN */ OPC(0x0d, POx(a) PO1(b), if(b) JMP(a))
-		/* JSR */ OPC(0x0e, POx(a), FLP PU2(pc) JMP(a))
-		/* STH */ OPC(0x0f, POx(a), FLP PUx(a))
+		/* JSR */ OPC(0x0e, POx(a), PF2(pc) JMP(a))
+		/* STH */ OPC(0x0f, POx(a), PFx(a))
 		/* LDZ */ OPC(0x10, PO1(a), PEK(b, a, t) PUx(b))
 		/* STZ */ OPC(0x11, PO1(a) POx(b), POK(a, b, t))
 		/* LDR */ OPC(0x12, PO1(a), PEK(b, pc + (Sint8)a, tt) PUx(b))
