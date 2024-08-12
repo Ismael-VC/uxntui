@@ -68,7 +68,7 @@ main(int argc, char **argv)
 	int i = 1;
 	char *rom;
 	if(i != argc && argv[i][0] == '-' && argv[i][1] == 'v') {
-		fprintf(stdout, "Uxncli - Console Varvara Emulator, 11 Aug 2024.\n");
+		fprintf(stdout, "Uxncli - Console Varvara Emulator, 12 Aug 2024.\n");
 		i++;
 	}
 	rom = i == argc ? "boot.rom" : argv[i++];
