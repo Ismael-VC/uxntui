@@ -16,10 +16,10 @@ WITH REGARD TO THIS SOFTWARE.
 	case 0x20|opc: {enum{_2=1,_r=0}; s = &uxn.wst; init; body; break;}\
 	case 0x40|opc: {enum{_2=0,_r=1}; s = &uxn.rst; init; body; break;}\
 	case 0x60|opc: {enum{_2=1,_r=1}; s = &uxn.rst; init; body; break;}\
-	case 0x80|opc: {enum{_2=0,_r=0}; s = &uxn.wst, k = uxn.wst.ptr; init; s->ptr = k; body; break;}\
-	case 0xa0|opc: {enum{_2=1,_r=0}; s = &uxn.wst, k = uxn.wst.ptr; init; s->ptr = k; body; break;}\
-	case 0xc0|opc: {enum{_2=0,_r=1}; s = &uxn.rst, k = uxn.rst.ptr; init; s->ptr = k; body; break;}\
-	case 0xe0|opc: {enum{_2=1,_r=1}; s = &uxn.rst, k = uxn.rst.ptr; init; s->ptr = k; body; break;}\
+	case 0x80|opc: {enum{_2=0,_r=0}; s = &uxn.wst, k = uxn.wst.ptr; init; uxn.wst.ptr = k; body; break;}\
+	case 0xa0|opc: {enum{_2=1,_r=0}; s = &uxn.wst, k = uxn.wst.ptr; init; uxn.wst.ptr = k; body; break;}\
+	case 0xc0|opc: {enum{_2=0,_r=1}; s = &uxn.rst, k = uxn.rst.ptr; init; uxn.rst.ptr = k; body; break;}\
+	case 0xe0|opc: {enum{_2=1,_r=1}; s = &uxn.rst, k = uxn.rst.ptr; init; uxn.rst.ptr = k; body; break;}\
 }
 
 /* Microcode */
