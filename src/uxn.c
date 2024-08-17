@@ -34,12 +34,10 @@ WITH REGARD TO THIS SOFTWARE.
 #define PUx(y) if(_2) { PU2(y) } else PU1(y)
 #define PU2(y) tt = (y); PU1(tt >> 8) PU1(tt)
 #define PU1(y) if(_r) INC(rst) = y; else INC(wst) = y;
-#define PFx(y) if(_2) { PF2(y) } else PF1(y)
-#define PF2(y) tt = (y); PF1(tt >> 8) PF1(tt)
-#define PF1(y) if(_r) INC(wst) = y; else INC(rst) = y;
+#define PUR(y) if(_r) INC(wst) = y; else INC(rst) = y;
 #define GET(o,p) if(_2) PO1(p) PO1(o)
 #define PUT(y,z) PU1(y) if(_2) PU1(z)
-#define DEI(i,o,p) o = emu_dei(i); if(_2) p = emu_dei(i + 1);
+#define DEI(i,o,p) o =emu_dei(i); if(_2) p =emu_dei(i + 1);
 #define DEO(i,y,z) emu_deo(i, y); if(_2) emu_deo(i + 1, z);
 #define PEK(i,o,p,r) o = uxn.ram[i]; if(_2) r = i + 1, p = uxn.ram[r];
 #define POK(i,y,z,r) uxn.ram[i] = y; if(_2) r = i + 1, uxn.ram[r] = z;
@@ -75,7 +73,7 @@ uxn_eval(Uint16 pc)
 		/* JMP */ OPC(0x0c, POx(a),JMP(a))
 		/* JCN */ OPC(0x0d, POx(a) PO1(b), if(b) JMP(a))
 		/* JSR */ OPC(0x0e, POx(a),PF2(pc) JMP(a))
-		/* STH */ OPC(0x0f, POx(a),PFx(a))
+		/* STH */ OPC(0x0f, GET(a,b),PUR(a) if(_2) PUR(b))
 		/* LDZ */ OPC(0x10, PO1(a),PEK(a,b,c,t) PUT(b,c))
 		/* STZ */ OPC(0x11, PO1(a) GET(b,c),POK(a,b,c,t))
 		/* LDR */ OPC(0x12, PO1(a),PEK(pc+(Sint8)a,b,c,tt) PUT(b,c))
