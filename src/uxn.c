@@ -42,8 +42,8 @@ WITH REGARD TO THIS SOFTWARE.
 #define PUT(x,y) PU1(x) if(_2) PU1(y)
 #define DEI(p, o) if(_2) { o = (emu_dei(p) << 8) | emu_dei(p + 1); } else o = emu_dei(p);
 #define DEO(p, y) if(_2) { emu_deo(p, y >> 8), emu_deo(p + 1, y); } else emu_deo(p, y);
-#define PEK(o, p, x, r) if(_2) { r = (x); o = uxn.ram[r++], p = uxn.ram[r]; } else o = uxn.ram[(x)];
-#define POK(x, y, z, r) if(_2) { r = (x); uxn.ram[r++] = y, uxn.ram[r] = z; } else uxn.ram[(x)] = (y);
+#define PEK(o, p, x, r) o = uxn.ram[x]; if(_2) { r = x + 1; p = uxn.ram[r]; } 
+#define POK(x, y, z, r) uxn.ram[x] = y; if(_2) { r = x + 1; uxn.ram[r] = z; }
 
 int
 uxn_eval(Uint16 pc)
