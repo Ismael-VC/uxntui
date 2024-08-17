@@ -37,13 +37,13 @@ WITH REGARD TO THIS SOFTWARE.
 #define PFx(y) if(_2) { PF2(y) } else PF1(y)
 #define PF2(y) tt = (y); PF1(tt >> 8) PF1(tt)
 #define PF1(y) if(_r) INC(wst) = y; else INC(rst) = y;
-#define DEI(p, o) if(_2) { o = (emu_dei(p) << 8) | emu_dei(p + 1); } else o = emu_dei(p);
-#define DEO(p, y) if(_2) { emu_deo(p, y >> 8), emu_deo(p + 1, y); } else emu_deo(p, y);
-#define PEK(o, x, r) if(_2) { r = (x); o = uxn.ram[r++] << 8 | uxn.ram[r]; } else o = uxn.ram[(x)];
-#define POK(x, y, r) if(_2) { r = (x); uxn.ram[r++] = y >> 8, uxn.ram[r] = y; } else uxn.ram[(x)] = (y);
 
 #define GET(x,y) if(_2) PO1(y) PO1(x)
 #define PUT(x,y) PU1(x) if(_2) PU1(y)
+#define DEI(p, o) if(_2) { o = (emu_dei(p) << 8) | emu_dei(p + 1); } else o = emu_dei(p);
+#define DEO(p, y) if(_2) { emu_deo(p, y >> 8), emu_deo(p + 1, y); } else emu_deo(p, y);
+#define PEK(o, x, r) if(_2) { r = (x); o = uxn.ram[r++] << 8 | uxn.ram[r]; } else o = uxn.ram[(x)];
+#define POK(x, y, z, r) if(_2) { r = (x); uxn.ram[r++] = y, uxn.ram[r] = z; } else uxn.ram[(x)] = (y);
 
 int
 uxn_eval(Uint16 pc)
@@ -78,11 +78,11 @@ uxn_eval(Uint16 pc)
 		/* JSR */ OPC(0x0e, POx(a),PF2(pc) JMP(a))
 		/* STH */ OPC(0x0f, POx(a),PFx(a))
 		/* LDZ */ OPC(0x10, PO1(a),PEK(b, a, t) PUx(b))
-		/* STZ */ OPC(0x11, PO1(a) POx(b),POK(a, b, t))
+		/* STZ */ OPC(0x11, PO1(a) GET(b,c),POK(a, b, c, t))
 		/* LDR */ OPC(0x12, PO1(a),PEK(b, pc + (Sint8)a, tt) PUx(b))
-		/* STR */ OPC(0x13, PO1(a) POx(b),POK(pc + (Sint8)a, b, tt))
+		/* STR */ OPC(0x13, PO1(a) GET(b,c),POK(pc + (Sint8)a, b, c, tt))
 		/* LDA */ OPC(0x14, PO2(a),PEK(b, a, tt) PUx(b))
-		/* STA */ OPC(0x15, PO2(a) POx(b),POK(a, b, tt))
+		/* STA */ OPC(0x15, PO2(a) GET(b,c),POK(a, b, c, tt))
 		/* DEI */ OPC(0x16, PO1(a),DEI(a, b) PUx(b))
 		/* DEO */ OPC(0x17, PO1(a) POx(b),DEO(a, b))
 		/* ADD */ OPC(0x18, POx(a) POx(b),PUx(b + a))
