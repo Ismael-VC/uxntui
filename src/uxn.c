@@ -25,19 +25,19 @@ WITH REGARD TO THIS SOFTWARE.
 /* Microcode */
 
 #define JMI pc += uxn.ram[pc++] << 8 | uxn.ram[pc++];
-#define JMP(i) if(_2) pc = (i); else pc += (Sint8)(i);
+#define JMP(i) if(_2) pc = i; else pc += (Sint8)i;
 #define REM if(_r) uxn.rst.ptr -= 1 + _2; else uxn.wst.ptr -= 1 + _2;
 #define INC(s) uxn.s.dat[uxn.s.ptr++]
 #define DEC(s) uxn.s.dat[--uxn.s.ptr]
-#define PO1(o) if(_r) o = DEC(rst); else o = DEC(wst);
-#define PU1(i) if(_r) INC(rst) = i; else INC(wst) = i;
-#define PUx(i) if(_2) { tt = (i); PU1(tt >> 8) PU1(tt) } else PU1(i)
-#define RP1(i) if(_r) INC(wst) = i; else INC(rst) = i;
 #define POx(o) if(_2) { PO2(o) } else PO1(o)
+#define PO1(o) if(_r) o = DEC(rst); else o = DEC(wst);
 #define PO2(o) if(_r) o = DEC(rst) | (DEC(rst) << 8); else o = DEC(wst) | (DEC(wst) << 8);
-#define PUT(i) PU1(i[0]) if(_2) PU1(i[1])
+#define PUx(i) if(_2) { tt = (i); PU1(tt >> 8) PU1(tt) } else PU1(i)
+#define PU1(i) if(_r) INC(rst) = i; else INC(wst) = i;
+#define RP1(i) if(_r) INC(wst) = i; else INC(rst) = i;
 #define GET(o) if(_2) PO1(o[1]) PO1(o[0])
-#define DEI(i,o) o[0] =emu_dei(i); if(_2) o[1] =emu_dei(i + 1); PUT(o)
+#define PUT(i) PU1(i[0]) if(_2) PU1(i[1])
+#define DEI(i,o) o[0] = emu_dei(i); if(_2) o[1] = emu_dei(i + 1); PUT(o)
 #define DEO(i,j) emu_deo(i, j[0]); if(_2) emu_deo(i + 1, j[1]);
 #define PEK(i,o,m) o[0] = uxn.ram[i]; if(_2) o[1] = uxn.ram[(i + 1) & m]; PUT(o)
 #define POK(i,j,m) uxn.ram[i] = j[0]; if(_2) uxn.ram[(i + 1) & m] = j[1];
