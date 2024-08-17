@@ -42,10 +42,13 @@ WITH REGARD TO THIS SOFTWARE.
 #define PEK(o, x, r) if(_2) { r = (x); o = uxn.ram[r++] << 8 | uxn.ram[r]; } else o = uxn.ram[(x)];
 #define POK(x, y, r) if(_2) { r = (x); uxn.ram[r++] = y >> 8, uxn.ram[r] = y; } else uxn.ram[(x)] = (y);
 
+#define GET(x,y) if(_2) PO1(y) PO1(x)
+#define PUT(x,y) PU1(x) if(_2) PU1(y)
+
 int
 uxn_eval(Uint16 pc)
 {
-	int a,b,c,k;
+	int a,b,c,d,e,f,k;
 	Uint8 t;
 	Uint16 tt;
 	if(!pc || uxn.dev[0x0f]) return 0;
@@ -60,12 +63,12 @@ uxn_eval(Uint16 pc)
 		/* L2r */ case 0xe0: INC(rst) = uxn.ram[pc++];
 		/* LIr */ case 0xc0: INC(rst) = uxn.ram[pc++]; break;
 		/* INC */ OPC(0x01, POx(a),PUx(a + 1))
-		/* POP */ OPC(0x02, POx(a),0)
-		/* NIP */ OPC(0x03, POx(a) POx(b),PUx(a))
-		/* SWP */ OPC(0x04, POx(a) POx(b),PUx(a) PUx(b))
-		/* ROT */ OPC(0x05, POx(a) POx(b) POx(c),PUx(b) PUx(a) PUx(c))
-		/* DUP */ OPC(0x06, POx(a),PUx(a) PUx(a))
-		/* OVR */ OPC(0x07, POx(a) POx(b),PUx(b) PUx(a) PUx(b))
+		/* POP */ OPC(0x02, GET(a,b),0)
+		/* NIP */ OPC(0x03, GET(a,b) GET(c,d),PUT(a,b))
+		/* SWP */ OPC(0x04, GET(a,b) GET(c,d),PUT(a,b) PUT(c,d))
+		/* ROT */ OPC(0x05, GET(a,b) GET(c,d) GET(e,f),PUT(c,d) PUT(a,b) PUT(e,f))
+		/* DUP */ OPC(0x06, GET(a,b),PUT(a,b) PUT(a,b))
+		/* OVR */ OPC(0x07, GET(a,b) GET(c,d),PUT(c,d) PUT(a,b) PUT(c,d))
 		/* EQU */ OPC(0x08, POx(a) POx(b),PU1(b == a))
 		/* NEQ */ OPC(0x09, POx(a) POx(b),PU1(b != a))
 		/* GTH */ OPC(0x0a, POx(a) POx(b),PU1(b > a))
