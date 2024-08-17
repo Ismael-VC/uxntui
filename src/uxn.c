@@ -42,7 +42,7 @@ WITH REGARD TO THIS SOFTWARE.
 #define PUT(x,y) PU1(x) if(_2) PU1(y)
 #define DEI(p, o) if(_2) { o = (emu_dei(p) << 8) | emu_dei(p + 1); } else o = emu_dei(p);
 #define DEO(p, y) if(_2) { emu_deo(p, y >> 8), emu_deo(p + 1, y); } else emu_deo(p, y);
-#define PEK(o, x, r) if(_2) { r = (x); o = uxn.ram[r++] << 8 | uxn.ram[r]; } else o = uxn.ram[(x)];
+#define PEK(o, p, x, r) if(_2) { r = (x); o = uxn.ram[r++], p = uxn.ram[r]; } else o = uxn.ram[(x)];
 #define POK(x, y, z, r) if(_2) { r = (x); uxn.ram[r++] = y, uxn.ram[r] = z; } else uxn.ram[(x)] = (y);
 
 int
@@ -77,11 +77,11 @@ uxn_eval(Uint16 pc)
 		/* JCN */ OPC(0x0d, POx(a) PO1(b), if(b) JMP(a))
 		/* JSR */ OPC(0x0e, POx(a),PF2(pc) JMP(a))
 		/* STH */ OPC(0x0f, POx(a),PFx(a))
-		/* LDZ */ OPC(0x10, PO1(a),PEK(b, a, t) PUx(b))
+		/* LDZ */ OPC(0x10, PO1(a),PEK(b, c, a, t) PUT(b,c))
 		/* STZ */ OPC(0x11, PO1(a) GET(b,c),POK(a, b, c, t))
-		/* LDR */ OPC(0x12, PO1(a),PEK(b, pc + (Sint8)a, tt) PUx(b))
+		/* LDR */ OPC(0x12, PO1(a),PEK(b, c, pc + (Sint8)a, tt) PUT(b,c))
 		/* STR */ OPC(0x13, PO1(a) GET(b,c),POK(pc + (Sint8)a, b, c, tt))
-		/* LDA */ OPC(0x14, PO2(a),PEK(b, a, tt) PUx(b))
+		/* LDA */ OPC(0x14, PO2(a),PEK(b, c, a, tt) PUT(b,c))
 		/* STA */ OPC(0x15, PO2(a) GET(b,c),POK(a, b, c, tt))
 		/* DEI */ OPC(0x16, PO1(a),DEI(a, b) PUx(b))
 		/* DEO */ OPC(0x17, PO1(a) POx(b),DEO(a, b))
