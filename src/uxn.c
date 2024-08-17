@@ -24,10 +24,10 @@ WITH REGARD TO THIS SOFTWARE.
 
 /* Microcode */
 
+#define JMI pc += uxn.ram[pc++] << 8 | uxn.ram[pc++];
+#define JMP(j) if(_2) pc = (j); else pc += (Sint8)(j);
 #define INC(s) uxn.s.dat[uxn.s.ptr++]
 #define DEC(s) uxn.s.dat[--uxn.s.ptr]
-#define JMI pc += uxn.ram[pc++] << 8 | uxn.ram[pc++];
-#define JMP(x) if(_2) pc = (x); else pc += (Sint8)(x);
 #define POx(o) if(_2) { PO2(o) } else PO1(o)
 #define PO2(o) if(_r) o = DEC(rst) | (DEC(rst) << 8); else o = DEC(wst) | (DEC(wst) << 8);
 #define PO1(o) if(_r) o = DEC(rst); else o = DEC(wst);
@@ -37,13 +37,12 @@ WITH REGARD TO THIS SOFTWARE.
 #define PFx(y) if(_2) { PF2(y) } else PF1(y)
 #define PF2(y) tt = (y); PF1(tt >> 8) PF1(tt)
 #define PF1(y) if(_r) INC(wst) = y; else INC(rst) = y;
-
-#define GET(x,y) if(_2) PO1(y) PO1(x)
-#define PUT(x,y) PU1(x) if(_2) PU1(y)
-#define DEI(p, o) if(_2) { o = (emu_dei(p) << 8) | emu_dei(p + 1); } else o = emu_dei(p);
-#define DEO(p, y) if(_2) { emu_deo(p, y >> 8), emu_deo(p + 1, y); } else emu_deo(p, y);
-#define PEK(o, p, x, r) o = uxn.ram[x]; if(_2) { r = x + 1; p = uxn.ram[r]; } 
-#define POK(x, y, z, r) uxn.ram[x] = y; if(_2) { r = x + 1; uxn.ram[r] = z; }
+#define GET(o,p) if(_2) PO1(p) PO1(o)
+#define PUT(y,z) PU1(y) if(_2) PU1(z)
+#define DEI(i,o,p) o = emu_dei(i); if(_2) p = emu_dei(i + 1);
+#define DEO(i,y,z) emu_deo(i, y); if(_2) emu_deo(i + 1, z);
+#define PEK(i,o,p,r) o = uxn.ram[i]; if(_2) r = i + 1, p = uxn.ram[r];
+#define POK(i,y,z,r) uxn.ram[i] = y; if(_2) r = i + 1, uxn.ram[r] = z;
 
 int
 uxn_eval(Uint16 pc)
@@ -77,14 +76,14 @@ uxn_eval(Uint16 pc)
 		/* JCN */ OPC(0x0d, POx(a) PO1(b), if(b) JMP(a))
 		/* JSR */ OPC(0x0e, POx(a),PF2(pc) JMP(a))
 		/* STH */ OPC(0x0f, POx(a),PFx(a))
-		/* LDZ */ OPC(0x10, PO1(a),PEK(b, c, a, t) PUT(b,c))
-		/* STZ */ OPC(0x11, PO1(a) GET(b,c),POK(a, b, c, t))
-		/* LDR */ OPC(0x12, PO1(a),PEK(b, c, pc + (Sint8)a, tt) PUT(b,c))
-		/* STR */ OPC(0x13, PO1(a) GET(b,c),POK(pc + (Sint8)a, b, c, tt))
-		/* LDA */ OPC(0x14, PO2(a),PEK(b, c, a, tt) PUT(b,c))
-		/* STA */ OPC(0x15, PO2(a) GET(b,c),POK(a, b, c, tt))
-		/* DEI */ OPC(0x16, PO1(a),DEI(a, b) PUx(b))
-		/* DEO */ OPC(0x17, PO1(a) POx(b),DEO(a, b))
+		/* LDZ */ OPC(0x10, PO1(a),PEK(a,b,c,t) PUT(b,c))
+		/* STZ */ OPC(0x11, PO1(a) GET(b,c),POK(a,b,c,t))
+		/* LDR */ OPC(0x12, PO1(a),PEK(pc+(Sint8)a,b,c,tt) PUT(b,c))
+		/* STR */ OPC(0x13, PO1(a) GET(b,c),POK(pc+(Sint8)a,b,c,tt))
+		/* LDA */ OPC(0x14, PO2(a),PEK(a,b,c,tt) PUT(b,c))
+		/* STA */ OPC(0x15, PO2(a) GET(b,c),POK(a,b,c,tt))
+		/* DEI */ OPC(0x16, PO1(a),DEI(a,b,c) PUT(b,c))
+		/* DEO */ OPC(0x17, PO1(a) GET(b,c),DEO(a,b,c))
 		/* ADD */ OPC(0x18, POx(a) POx(b),PUx(b + a))
 		/* SUB */ OPC(0x19, POx(a) POx(b),PUx(b - a))
 		/* MUL */ OPC(0x1a, POx(a) POx(b),PUx(b * a))
