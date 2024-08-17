@@ -24,6 +24,7 @@ WITH REGARD TO THIS SOFTWARE.
 
 /* Microcode */
 
+#define REM if(_r) uxn.rst.ptr -= 1 + _2; else uxn.wst.ptr -= 1 + _2;
 #define JMI pc += uxn.ram[pc++] << 8 | uxn.ram[pc++];
 #define JMP(j) if(_2) pc = (j); else pc += (Sint8)(j);
 #define INC(s) uxn.s.dat[uxn.s.ptr++]
@@ -60,8 +61,8 @@ uxn_eval(Uint16 pc)
 		/* L2r */ case 0xe0: INC(rst) = uxn.ram[pc++];
 		/* LIr */ case 0xc0: INC(rst) = uxn.ram[pc++]; break;
 		/* INC */ OPC(0x01, POx(a),PUx(a + 1))
-		/* POP */ OPC(0x02, GET(a,b),0)
-		/* NIP */ OPC(0x03, GET(a,b) GET(c,d),PUT(a,b))
+		/* POP */ OPC(0x02, REM,0)
+		/* NIP */ OPC(0x03, GET(a,b) REM,PUT(a,b))
 		/* SWP */ OPC(0x04, GET(a,b) GET(c,d),PUT(a,b) PUT(c,d))
 		/* ROT */ OPC(0x05, GET(a,b) GET(c,d) GET(e,f),PUT(c,d) PUT(a,b) PUT(e,f))
 		/* DUP */ OPC(0x06, GET(a,b),PUT(a,b) PUT(a,b))
