@@ -32,7 +32,7 @@ WITH REGARD TO THIS SOFTWARE.
 #define POx(o) if(_2) { PO2(o) } else PO1(o)
 #define PO1(o) if(_r) o = DEC(rst); else o = DEC(wst);
 #define PO2(o) if(_r) o = DEC(rst) | (DEC(rst) << 8); else o = DEC(wst) | (DEC(wst) << 8);
-#define PUx(i) if(_2) { tt = (i); PU1(tt >> 8) PU1(tt) } else PU1(i)
+#define PUx(i) if(_2) { c = (i); PU1(c >> 8) PU1(c) } else PU1(i)
 #define PU1(i) if(_r) INC(rst) = i; else INC(wst) = i;
 #define RP1(i) if(_r) INC(wst) = i; else INC(rst) = i;
 #define GET(o) if(_2) PO1(o[1]) PO1(o[0])
@@ -45,15 +45,14 @@ WITH REGARD TO THIS SOFTWARE.
 int
 uxn_eval(Uint16 pc)
 {
-	int a,b,x[2],y[2],z[2];
-	Uint16 tt;
+	int a, b, c, x[2], y[2], z[2];
 	if(!pc || uxn.dev[0x0f]) return 0;
 	for(;;) {
 		switch(uxn.ram[pc++]) {
 		/* BRK */ case 0x00: return 1;
 		/* JCI */ case 0x20: if(DEC(wst)) { JMI break; } pc += 2; break;
 		/* JMI */ case 0x40: JMI break;
-		/* JSI */ case 0x60: tt = pc + 2; INC(rst) = tt >> 8; INC(rst) = tt; JMI break;
+		/* JSI */ case 0x60: c = pc + 2; INC(rst) = c >> 8; INC(rst) = c; JMI break;
 		/* LI2 */ case 0xa0: INC(wst) = uxn.ram[pc++];
 		/* LIT */ case 0x80: INC(wst) = uxn.ram[pc++]; break;
 		/* L2r */ case 0xe0: INC(rst) = uxn.ram[pc++];
