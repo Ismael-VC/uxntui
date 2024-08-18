@@ -102,7 +102,6 @@ emu_end(void)
 	XDestroyImage(ximage);
 	XDestroyWindow(display, window);
 	XCloseDisplay(display);
-	exit(0);
 	return uxn.dev[0x0f] & 0x7f;
 }
 
