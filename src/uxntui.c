@@ -263,10 +263,12 @@ emu_run(void)
 int
 main(int argc, char **argv)
 {
+	fprintf(stdout, "\e[2J\e[%d;%dH");
+	fflush(stdout);
 	int i = 1;
 	char *rom;
 	if(i != argc && argv[i][0] == '-' && argv[i][1] == 'v') {
-		fprintf(stdout, "Uxn11 - Varvara Emulator, 18 Aug 2024.\n");
+		fprintf(stdout, "UxnTUI - Varvara Emulator, 23 Aug 2024.\n");
 		exit(0);
 	}
 	rom = i == argc ? "boot.rom" : argv[i++];

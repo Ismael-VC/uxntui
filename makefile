@@ -9,27 +9,27 @@ PREFIX=${HOME}/.local
 
 .PHONY: all debug dest run test install uninstall format clean grab archive
 
-all: dest bin/uxnasm bin/uxncli bin/uxn11
+all: dest bin/uxnasm bin/uxncli bin/uxntui
 
 dest:
 	@ mkdir -p bin
-run: all bin/uxnasm bin/uxncli bin/uxn11
-	@ bin/uxn11
-debug: bin/uxnasm-debug bin/uxncli-debug bin/uxn11-debug
+run: all bin/uxnasm bin/uxncli bin/uxntui
+	@ bin/uxntui
+debug: bin/uxnasm-debug bin/uxncli-debug bin/uxntui-debug
 	@ bin/uxncli-debug bin/opctest.rom
 test: all
-	@ bin/uxnasm -v && ./bin/uxncli -v && ./bin/uxn11 -v
+	@ bin/uxnasm -v && ./bin/uxncli -v && ./bin/uxntui -v
 	@ bin/uxnasm etc/opctest.tal bin/opctest.rom
 	@ bin/uxncli bin/opctest.rom
 install: all
 	@ mkdir -p ${PREFIX}/bin
-	@ cp bin/uxn11 bin/uxnasm bin/uxncli ${PREFIX}/bin
+	@ cp bin/uxntui bin/uxnasm bin/uxncli ${PREFIX}/bin
 	@ mkdir -p ${PREFIX}/share/man/man7
 	@ cp doc/man/uxntal.7 ${PREFIX}/share/man/man7
 uninstall:
-	@ rm -f ~/bin/uxn11 ~/bin/uxnasm ~/bin/uxncli
+	@ rm -f ~/bin/uxntui ~/bin/uxnasm ~/bin/uxncli
 format:
-	@ clang-format -i src/uxnasm.c src/uxncli.c src/uxn11.c src/devices/*
+	@ clang-format -i src/uxnasm.c src/uxncli.c src/uxntui.c src/devices/*
 grab:
 	@ cp ../uxn-utils/cli/opctest/opctest.tal etc/opctest.tal
 archive:
@@ -41,12 +41,12 @@ bin/uxnasm: src/uxnasm.c
 	@ cc ${RELEASE_flags} ${CFLAGS} src/uxnasm.c -o bin/uxnasm
 bin/uxncli: ${CLI_src} src/uxncli.c
 	@ cc ${RELEASE_flags} ${CFLAGS} ${CLI_src} src/uxncli.c -lutil -o bin/uxncli
-bin/uxn11: ${EMU_src} src/uxn11.c
-	@ cc ${RELEASE_flags} ${CFLAGS} ${EMU_src} src/uxn11.c -lX11 -lutil -o bin/uxn11
+bin/uxntui: ${EMU_src} src/uxntui.c
+	@ cc ${RELEASE_flags} ${CFLAGS} ${EMU_src} src/uxntui.c -lX11 -lutil -o bin/uxntui
 
 bin/uxnasm-debug: src/uxnasm.c
 	@ cc ${DEBUG_flags} ${CFLAGS} src/uxnasm.c -o bin/uxnasm-debug
 bin/uxncli-debug: ${CLI_src} src/uxncli.c
 	@ cc ${DEBUG_flags} ${CFLAGS} ${CLI_src} src/uxncli.c -lutil -o bin/uxncli-debug
-bin/uxn11-debug: ${EMU_src} src/uxn11.c
-	@ cc ${DEBUG_flags} ${CFLAGS} ${EMU_src} src/uxn11.c -lX11 -lutil -o bin/uxn11-debug
+bin/uxntui-debug: ${EMU_src} src/uxntui.c
+	@ cc ${DEBUG_flags} ${CFLAGS} ${EMU_src} src/uxntui.c -lX11 -lutil -o bin/uxntui-debug
