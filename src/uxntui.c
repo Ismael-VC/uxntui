@@ -188,37 +188,57 @@ emu_event(void)
 	}
 }
 
-static int
-display_init(void)
-{
-	Atom wmDelete;
-	Visual *visual;
-	XColor black = {0};
-	char empty[] = {0};
-	Pixmap bitmap;
-	Cursor blank;
-	display = XOpenDisplay(NULL);
-	if(!display)
-		return system_error("init", "Display failed");
-	screen_resize(WIDTH, HEIGHT, 1);
-	/* start window */
-	visual = DefaultVisual(display, 0);
-	if(visual->class != TrueColor)
-		return system_error("init", "True-color visual failed");
-	window = XCreateSimpleWindow(display, RootWindow(display, 0), 0, 0, uxn_screen.width + PAD * 2, uxn_screen.height + PAD * 2, 1, 0, 0);
-	XSelectInput(display, window, ButtonPressMask | ButtonReleaseMask | PointerMotionMask | ExposureMask | KeyPressMask | KeyReleaseMask);
-	wmDelete = XInternAtom(display, "WM_DELETE_WINDOW", True);
-	XSetWMProtocols(display, window, &wmDelete, 1);
-	XStoreName(display, window, boot_rom);
-	XMapWindow(display, window);
-	ximage = XCreateImage(display, visual, DefaultDepth(display, DefaultScreen(display)), ZPixmap, 0, (char *)uxn_screen.pixels, uxn_screen.width, uxn_screen.height, 32, 0);
-	/* hide cursor */
-	bitmap = XCreateBitmapFromData(display, window, empty, 1, 1);
-	blank = XCreatePixmapCursor(display, bitmap, bitmap, &black, &black, 0, 0);
-	XDefineCursor(display, window, blank);
-	XFreeCursor(display, blank);
-	XFreePixmap(display, bitmap);
-	return 1;
+static int display_init(void) {
+    Atom wmDelete;
+    Visual *visual;
+    XColor black = {0};
+    char empty[] = {0};
+    Pixmap bitmap;
+    Cursor blank;
+    display = XOpenDisplay(NULL);
+    if (!display)
+        return system_error("init", "Display failed");
+
+    screen_resize(WIDTH, HEIGHT, 1);
+
+    // Allocate memory for screen buffers
+    Uint16 w = uxn_screen.width, h = uxn_screen.height;
+    uxn_screen.virt_screen = malloc(w * h * sizeof(Uint32));
+    uxn_screen.prev_screen = malloc(w * h * sizeof(Uint32));
+    uxn_screen.curr_screen = malloc(w * h * sizeof(Uint32));
+
+    if (!uxn_screen.virt_screen || !uxn_screen.prev_screen || !uxn_screen.curr_screen) {
+        perror("Failed to allocate memory for screen buffers");
+        return 0; // Indicate failure
+    }
+
+    // Initialize screen buffers
+    memset(uxn_screen.virt_screen, 0, w * h * sizeof(Uint32));
+    memset(uxn_screen.prev_screen, 0, w * h * sizeof(Uint32));
+    memset(uxn_screen.curr_screen, 0, w * h * sizeof(Uint32));
+
+    // Start window
+    visual = DefaultVisual(display, 0);
+    if (visual->class != TrueColor)
+        return system_error("init", "True-color visual failed");
+
+    window = XCreateSimpleWindow(display, RootWindow(display, 0), 0, 0, uxn_screen.width + PAD * 2, uxn_screen.height + PAD * 2, 1, 0, 0);
+    XSelectInput(display, window, ButtonPressMask | ButtonReleaseMask | PointerMotionMask | ExposureMask | KeyPressMask | KeyReleaseMask);
+    wmDelete = XInternAtom(display, "WM_DELETE_WINDOW", True);
+    XSetWMProtocols(display, window, &wmDelete, 1);
+    XStoreName(display, window, boot_rom);
+    XMapWindow(display, window);
+
+    ximage = XCreateImage(display, visual, DefaultDepth(display, DefaultScreen(display)), ZPixmap, 0, (char *)uxn_screen.pixels, uxn_screen.width, uxn_screen.height, 32, 0);
+
+    // Hide cursor
+    bitmap = XCreateBitmapFromData(display, window, empty, 1, 1);
+    blank = XCreatePixmapCursor(display, bitmap, bitmap, &black, &black, 0, 0);
+    XDefineCursor(display, window, blank);
+    XFreeCursor(display, blank);
+    XFreePixmap(display, bitmap);
+
+    return 1; // Indicate success
 }
 
 static int

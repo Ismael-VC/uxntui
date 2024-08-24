@@ -204,43 +204,63 @@ screen_resize(Uint16 width, Uint16 height, int scale)
 	screen_change(0, 0, width, height);
 }
 
-void
-screen_redraw(void)
-{
-	int i, x, y, k, l, s = uxn_screen.scale;
-	Uint8 *fg = uxn_screen.fg, *bg = uxn_screen.bg;
-	Uint16 w = uxn_screen.width, h = uxn_screen.height;
-	Uint16 x1 = uxn_screen.x1, y1 = uxn_screen.y1;
-	Uint16 x2 = uxn_screen.x2 > w ? w : uxn_screen.x2, y2 = uxn_screen.y2 > h ? h : uxn_screen.y2;
-	Uint32 palette[16], *pixels = uxn_screen.pixels;
-	uxn_screen.x1 = uxn_screen.y1 = 9000;
-	uxn_screen.x2 = uxn_screen.y2 = 0;
-	if(uxn.dev[0x0e])
-		screen_debugger();
-	for(i = 0; i < 16; i++)
-		palette[i] = uxn_screen.palette[(i >> 2) ? (i >> 2) : (i & 3)];
-	for(y = y1; y < y2; y++) {
-		int ys = y * s;
-		int o = y * w;
-		for(x = x1, i = x1 + o; x < x2; x++, i++) {
-			int c = palette[fg[i] << 2 | bg[i]];
-			for(k = 0; k < s; k++) {
-				int oo = ((ys + k) * w + x) * s;
-				for(l = 0; l < s; l++) {
-					pixels[oo + l] = c;
-					int r = (c >> 16) & 0xFF;
-					int g = (c >> 8) & 0xFF;
-					int b = c & 0xFF;
-					fprintf(
-						stdout,
-						"\e[%d;%dH\e[38;2;%d;%d;%dm█\e[m",
-						y+1, x+1, r, g, b
-					);
-					fflush(stdout);
-				}
-			}
-		}
-	}
+void screen_redraw(void) {
+    int x, y, k, l, s = uxn_screen.scale;
+    Uint8 *fg = uxn_screen.fg, *bg = uxn_screen.bg;
+    Uint16 w = uxn_screen.width, h = uxn_screen.height;
+    Uint16 x1 = uxn_screen.x1, y1 = uxn_screen.y1;
+    Uint16 x2 = uxn_screen.x2 > w ? w : uxn_screen.x2, y2 = uxn_screen.y2 > h ? h : uxn_screen.y2;
+    Uint32 palette[16], *pixels = uxn_screen.pixels;
+
+    // Set up the palette
+    for (int i = 0; i < 16; i++)
+        palette[i] = uxn_screen.palette[(i >> 2) ? (i >> 2) : (i & 3)];
+
+    // Update the virtual screen buffer
+    for (y = y1; y < y2; y++) {
+        int ys = y * s;
+        int o = y * w;
+        for (x = x1; x < x2; x++) {
+            int c = palette[fg[x + o] << 2 | bg[x + o]];
+            for (k = 0; k < s; k++) {
+                int oo = ((ys + k) * w + x) * s;
+                for (l = 0; l < s; l++) {
+                    uxn_screen.virt_screen[oo + l] = c;
+                }
+            }
+        }
+    }
+
+    // Draw only the changed pixels
+    for (y = y1; y < y2; y++) {
+        int ys = y * s;
+        for (x = x1; x < x2; x++) {
+            int pixel_index = x + y * w;
+            Uint32 current_pixel = uxn_screen.virt_screen[pixel_index];
+
+            if (current_pixel != uxn_screen.prev_screen[pixel_index]) {
+                // Extract RGB components
+                int r = (current_pixel >> 16) & 0xFF;
+                int g = (current_pixel >> 8) & 0xFF;
+                int b = current_pixel & 0xFF;
+
+                // Output ANSI code to draw the pixel
+                fprintf(
+                    stdout,
+                    "\e[%d;%dH\e[38;2;%d;%d;%dm█\e[m",
+                    y + 1, x + 1, r, g, b
+                );
+
+                // Update the current screen buffer
+                uxn_screen.curr_screen[pixel_index] = current_pixel;
+            }
+        }
+    }
+
+    // Update the previous screen buffer
+    memcpy(uxn_screen.prev_screen, uxn_screen.curr_screen, w * h * sizeof(Uint32));
+
+    fflush(stdout);
 }
 
 /* screen registers */
