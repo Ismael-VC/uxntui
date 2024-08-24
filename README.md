@@ -20,7 +20,7 @@ $ make PREFIX=/opt/uxn install
 
 ### Graphical
 
-All you need is X11.
+All you need is a tty or pts terminal.
 
 ```sh
 gcc -Os -DNDEBUG -g0 -s src/uxn.c src/devices/system.c src/devices/console.c src/devices/screen.c src/devices/controller.c src/devices/mouse.c src/devices/file.c src/devices/datetime.c src/uxntui.c -o bin/uxntui -lX11
