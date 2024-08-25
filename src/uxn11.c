@@ -266,7 +266,7 @@ main(int argc, char **argv)
 	int i = 1;
 	char *rom;
 	if(i != argc && argv[i][0] == '-' && argv[i][1] == 'v') {
-		fprintf(stdout, "Uxn11 - Varvara Emulator, 22 Aug 2024.\n");
+		fprintf(stdout, "Uxn11 - Varvara Emulator, 25 Aug 2024.\n");
 		exit(0);
 	}
 	rom = i == argc ? "boot.rom" : argv[i++];
