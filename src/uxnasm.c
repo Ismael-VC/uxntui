@@ -219,6 +219,7 @@ makeref(char *label, char rune, Uint16 addr, Context *ctx)
 	if(label[0] == '{') {
 		lambda_stack[lambda_ptr++] = lambda_len;
 		r->name = push(makelambda(lambda_len++), 0);
+		if(label[1]) return error_asm("Label invalid");
 	} else if(label[0] == '&' || label[0] == '/') {
 		r->name = join(scope, '/', label + 1);
 	} else
@@ -380,7 +381,7 @@ build(char *rompath)
 	if(!(dst = fopen(rompath, "wb")))
 		return !error_top("Output file invalid", rompath);
 	for(i = 0; i < labels_len; i++)
-		if(labels[i].name[0] - 'A' > 25 && !labels[i].refs)
+		if(!labels[i].refs && (unsigned char)(labels[i].name[0] - 'A') > 25)
 			printf("-- Unused label: %s\n", labels[i].name);
 	fwrite(data + PAGE, length - PAGE, 1, dst);
 	printf(
@@ -410,7 +411,7 @@ main(int argc, char *argv[])
 {
 	ptr = PAGE;
 	copy("on-reset", scope, 0);
-	if(argc == 2 && scmp(argv[1], "-v", 2)) return !printf("Uxnasm - Uxntal Assembler, 30 May 2024.\n");
+	if(argc == 2 && scmp(argv[1], "-v", 2)) return !printf("Uxnasm - Uxntal Assembler, 25 Aug 2024.\n");
 	if(argc != 3) return error_top("usage", "uxnasm [-v] input.tal output.rom");
 	if(!assemble(argv[1])) return 1;
 	if(!resolve(argv[2])) return 1;
