@@ -49,6 +49,7 @@ emu_dei(Uint8 addr)
 {
 	switch(addr & 0xf0) {
 	case 0x00: return system_dei(addr);
+	case 0x10: return console_dei(addr);
 	case 0x20: return screen_dei(addr);
 	case 0xc0: return datetime_dei(addr);
 	}
@@ -89,6 +90,7 @@ emu_resize(int w, int h)
 static void
 emu_restart(char *rom, int soft)
 {
+	close_console();
 	screen_resize(WIDTH, HEIGHT, uxn_screen.scale);
 	screen_rect(uxn_screen.bg, 0, 0, uxn_screen.width, uxn_screen.height, 0);
 	screen_rect(uxn_screen.fg, 0, 0, uxn_screen.width, uxn_screen.height, 0);
@@ -98,6 +100,7 @@ emu_restart(char *rom, int soft)
 static int
 emu_end(void)
 {
+	close_console();
 	free(uxn.ram);
 	XDestroyImage(ximage);
 	XDestroyWindow(display, window);
