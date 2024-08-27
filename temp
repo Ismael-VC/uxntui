@@ -1,0 +1,171 @@
+diff --git a/src/uxntui.c b/src/uxntui.c
+index bd1ab79..b3f43ca 100644
+--- a/src/uxntui.c
++++ b/src/uxntui.c
+@@ -1,6 +1,9 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
++#include <termios.h>
++#include <fcntl.h>
++
+ // #include <X11/Xlib.h>
+ // #include <X11/Xutil.h>
+ // #include <X11/keysymdef.h>
+@@ -18,6 +21,8 @@
+ #include "devices/datetime.h"
+ 
+ Uxn uxn;
++static struct termios oldt;
++
+ 
+ /*
+ Copyright (c) 2022 Devine Lu Linvega
+@@ -38,6 +43,9 @@ WITH REGARD TO THIS SOFTWARE.
+ #define HEIGHT (40 * 8)
+ #define PAD 2
+ #define CONINBUFSIZE 256
++#define CTRL_END 0x01
++#define SHIFT_PAGE_DOWN 0x02
++#define META_PAGE_UP 0x04
+ 
+ static int
+ clamp(int val, int min, int max)
+@@ -96,10 +104,56 @@ emu_restart(char *rom, int soft)
+ 	system_reboot(rom, soft);
+ }
+ 
++void setup_terminal() {
++    struct termios newt;
++
++    // Save old terminal settings
++    tcgetattr(STDIN_FILENO, &oldt);
++
++    // Set new terminal settings
++    newt = oldt;
++    newt.c_lflag &= ~(ICANON | ECHO);
++    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
++
++    // Set non-blocking mode
++    fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL) | O_NONBLOCK);
++}
++
++// Function to restore terminal settings
++void restore_terminal() {
++    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
++
++    // Reset non-blocking mode
++    fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL) & ~O_NONBLOCK);
++}
++
++
+ static int
+ emu_end(void)
+ {
+-	free(uxn.ram);
++    if (uxn.ram) {
++        free(uxn.ram);
++        uxn.ram = NULL; // Avoid dangling pointer
++    }
++
++    if (uxn_screen.virt_screen) {
++        free(uxn_screen.virt_screen);
++        uxn_screen.virt_screen = NULL;
++    }
++
++    if (uxn_screen.prev_screen) {
++        free(uxn_screen.prev_screen);
++        uxn_screen.prev_screen = NULL;
++    }
++
++    if (uxn_screen.curr_screen) {
++        free(uxn_screen.curr_screen);
++        uxn_screen.curr_screen = NULL;
++    }
++
++    // Restore terminal settings if necessary
++    restore_terminal();
++
+ 	// XDestroyImage(ximage);
+ 	// XDestroyWindow(display, window);
+ 	// XCloseDisplay(display);
+@@ -107,20 +161,42 @@ emu_end(void)
+ }
+ 
+ static Uint8
+-get_button(/* KeySym sym */void)
++get_button(void)
+ {
+-	// switch(sym) {
+-	// case XK_Up: return 0x10;
+-	// case XK_Down: return 0x20;
+-	// case XK_Left: return 0x40;
+-	// case XK_Right: return 0x80;
+-	// case XK_Control_L: return 0x01;
+-	// case XK_Alt_L: return 0x02;
+-	// case XK_Shift_L: return 0x04;
+-	// case XK_Home: return 0x08;
+-	// case XK_Meta_L: return 0x02;
+-	// }
+-	return 0x00;
++    int ch;
++    Uint8 button = 0;
++
++    // Read input character
++    ch = getchar();
++
++    if (ch == 27) { // ESC sequence
++        int next_char = getchar();
++        if (next_char == '[') {
++            switch (getchar()) {
++                case 'A': button = 0x10; break; // Up arrow
++                case 'B': button = 0x20; break; // Down arrow
++                case 'D': button = 0x40; break; // Left arrow
++                case 'C': button = 0x80; break; // Right arrow
++                case '5': // Page Up or Meta key
++                    if (getchar() == '~') {
++                        button = META_PAGE_UP;
++                    }
++                    break;
++                case '6': // Page Down or Shift key
++                    if (getchar() == '~') {
++                        button = SHIFT_PAGE_DOWN;
++                    }
++                    break;
++                case '4': // End or Ctrl key
++                    if (getchar() == '~') {
++                        button = CTRL_END;
++                    }
++                    break;
++            }
++        }
++    }
++
++    return button;
+ }
+ 
+ static void
+@@ -200,6 +276,8 @@ static int display_init(void) {
+     // if (!display)
+     //     return system_error("init", "Display failed");
+ 
++	setup_terminal();
++
+     screen_resize(WIDTH, HEIGHT, 1);
+ 
+     // Allocate memory for screen buffers
+@@ -249,12 +327,12 @@ emu_run(void)
+ 	char expirations[8], coninp[CONINBUFSIZE];
+ 	struct pollfd fds[3];
+ 	static const struct itimerspec screen_tspec = {{0, 16666666}, {0, 16666666}};
+-	/* timer */
+ 	// fds[0].fd = XConnectionNumber(display);
++	/* timer */
+ 	fds[1].fd = timerfd_create(CLOCK_MONOTONIC, 0);
+ 	timerfd_settime(fds[1].fd, 0, &screen_tspec, NULL);
+ 	fds[2].fd = STDIN_FILENO;
+-	fds[0].events = fds[1].events = fds[2].events = POLLIN;
++	/* fds[0].events = */ fds[1].events = fds[2].events = POLLIN;
+ 	/* main loop */
+ 	while(!uxn.dev[0x0f]) {
+ 		if(poll(fds, 3, 1000) <= 0)

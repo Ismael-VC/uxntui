@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <termios.h>
+#include <fcntl.h>
+
 // #include <X11/Xlib.h>
 // #include <X11/Xutil.h>
 // #include <X11/keysymdef.h>
@@ -18,6 +21,10 @@
 #include "devices/datetime.h"
 
 Uxn uxn;
+static struct termios oldt;
+static int using_alternate_buffer = 0;
+
+
 
 /*
 Copyright (c) 2022 Devine Lu Linvega
@@ -38,6 +45,9 @@ WITH REGARD TO THIS SOFTWARE.
 #define HEIGHT (40 * 8)
 #define PAD 2
 #define CONINBUFSIZE 256
+#define CTRL_END 0x01
+#define SHIFT_PAGE_DOWN 0x02
+#define META_PAGE_UP 0x04
 
 static int
 clamp(int val, int min, int max)
@@ -96,10 +106,76 @@ emu_restart(char *rom, int soft)
 	system_reboot(rom, soft);
 }
 
+// Function to restore terminal settings
+void restore_terminal() {
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+
+    // Reset non-blocking mode
+    fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL) & ~O_NONBLOCK);
+}
+
+
+void setup_terminal() {
+    struct termios newt;
+
+    // Get the current terminal settings
+    tcgetattr(STDIN_FILENO, &oldt);
+
+    // Register the cleanup function to reset the terminal on exit
+    atexit(restore_terminal);
+
+    // Copy the original settings to new settings
+    newt = oldt;
+
+    // Clear specific input mode flags
+    newt.c_iflag &= ~(IGNBRK | BRKINT | IGNPAR | PARMRK | INPCK | ISTRIP | INLCR | IGNCR | ICRNL | IXON | IXOFF);
+
+    // Set output mode flags
+    newt.c_oflag &= ~ONLCR; // Disable mapping NL to CR-NL on output
+
+    // Clear specific local mode flags
+    newt.c_lflag &= ~(ICANON | ECHO | ISIG); // Disable canonical mode, echo, and signals
+    newt.c_lflag &= ~(IUCLC | XCASE | IMAXBEL); // Disable upper-lower case conversion, extended ASCII case conversion, and bell on input line too long
+
+    // Set control mode flags
+    newt.c_cflag &= ~(PARENB | PARODD); // Disable parity generation and checking
+
+    // Set control characters
+    newt.c_cc[VMIN] = 1; // Minimum number of characters for non-canonical read
+    newt.c_cc[VTIME] = 0; // Timeout for non-canonical read (in deciseconds)
+
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+
+    // Set non-blocking mode
+    fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL) | O_NONBLOCK);
+}
+
 static int
 emu_end(void)
 {
-	free(uxn.ram);
+    if (uxn.ram) {
+        free(uxn.ram);
+        uxn.ram = NULL; // Avoid dangling pointer
+    }
+
+    if (uxn_screen.virt_screen) {
+        free(uxn_screen.virt_screen);
+        uxn_screen.virt_screen = NULL;
+    }
+
+    if (uxn_screen.prev_screen) {
+        free(uxn_screen.prev_screen);
+        uxn_screen.prev_screen = NULL;
+    }
+
+    if (uxn_screen.curr_screen) {
+        free(uxn_screen.curr_screen);
+        uxn_screen.curr_screen = NULL;
+    }
+
+    // Restore terminal settings if necessary
+    restore_terminal();
+
 	// XDestroyImage(ximage);
 	// XDestroyWindow(display, window);
 	// XCloseDisplay(display);
@@ -107,20 +183,51 @@ emu_end(void)
 }
 
 static Uint8
-get_button(/* KeySym sym */void)
+get_button(void)
 {
-	// switch(sym) {
-	// case XK_Up: return 0x10;
-	// case XK_Down: return 0x20;
-	// case XK_Left: return 0x40;
-	// case XK_Right: return 0x80;
-	// case XK_Control_L: return 0x01;
-	// case XK_Alt_L: return 0x02;
-	// case XK_Shift_L: return 0x04;
-	// case XK_Home: return 0x08;
-	// case XK_Meta_L: return 0x02;
-	// }
-	return 0x00;
+    int ch;
+    Uint8 button = 0;
+
+    // Read input character
+    ch = getchar();
+
+    if (ch == 27) { // ESC sequence
+        int next_char = getchar();
+        if (next_char == '[') {
+            switch (getchar()) {
+                case 'A': button = 0x10; break; // Up arrow
+                case 'B': button = 0x20; break; // Down arrow
+                case 'D': button = 0x40; break; // Left arrow
+                case 'C': button = 0x80; break; // Right arrow
+                case '5': // Page Up or Meta key
+                    if (getchar() == '~') {
+                        button = META_PAGE_UP;
+                    }
+                    break;
+                case '6': // Page Down or Shift key
+                    if (getchar() == '~') {
+                        button = SHIFT_PAGE_DOWN;
+                    }
+                    break;
+                case '4': // End or Ctrl key
+                    if (getchar() == '~') {
+                        button = CTRL_END;
+                    }
+                    break;
+            }
+        } else if (next_char == EOF) {
+            // Handle simple ESC keypress for buffer toggle
+            if (using_alternate_buffer) {
+                printf("\033[?1049l"); // Switch back to the main buffer
+                using_alternate_buffer = 0;
+            } else {
+                printf("\033[?1049h"); // Switch to the alternate buffer
+                using_alternate_buffer = 1;
+            }
+        }
+    }
+
+    return button;
 }
 
 static void
@@ -161,7 +268,7 @@ emu_event(void)
 	// 	controller_key(sym < 0x80 ? sym : (Uint8)buf[0]);
 	// } break;
 	// case KeyRelease: {
-	// 	KeySym sym;
+	//	KeySym sym;
 	// 	char buf[7];
 	// 	XLookupString((XKeyPressedEvent *)&ev, buf, 7, &sym, 0);
 	// 	controller_up(get_button(sym));
@@ -187,6 +294,54 @@ emu_event(void)
 	// 	mouse_pos(x, y);
 	// } break;
 	// }
+
+    // Call get_button() to fetch the current button state
+    Uint8 button = get_button();
+
+    // If a button was pressed, handle it
+    if (button) {
+        switch (button) {
+            case 0x10: // Up arrow
+                // Handle up arrow press
+                controller_down(button);
+                // Use specific key codes if necessary
+                controller_key(0x10);
+                break;
+            case 0x20: // Down arrow
+                // Handle down arrow press
+                controller_down(button);
+                controller_key(0x20);
+                break;
+            case 0x40: // Left arrow
+                // Handle left arrow press
+                controller_down(button);
+                controller_key(0x40);
+                break;
+            case 0x80: // Right arrow
+                // Handle right arrow press
+                controller_down(button);
+                controller_key(0x80);
+                break;
+            case CTRL_END:
+                // Handle Ctrl+End or similar key
+                controller_down(button);
+                controller_key(CTRL_END);
+                break;
+            case SHIFT_PAGE_DOWN:
+                // Handle Shift+Page Down or similar key
+                controller_down(button);
+                controller_key(SHIFT_PAGE_DOWN);
+                break;
+            case META_PAGE_UP:
+                // Handle Meta+Page Up or similar key
+                controller_down(button);
+                controller_key(META_PAGE_UP);
+                break;
+            default:
+                // Handle other keys or sequences
+                break;
+        }
+    }
 }
 
 static int display_init(void) {
@@ -199,6 +354,8 @@ static int display_init(void) {
     // display = XOpenDisplay(NULL);
     // if (!display)
     //     return system_error("init", "Display failed");
+
+	setup_terminal();
 
     screen_resize(WIDTH, HEIGHT, 1);
 
@@ -245,40 +402,56 @@ static int display_init(void) {
 static int
 emu_run(void)
 {
-	int i = 1, n;
-	char expirations[8], coninp[CONINBUFSIZE];
-	struct pollfd fds[3];
-	static const struct itimerspec screen_tspec = {{0, 16666666}, {0, 16666666}};
-	/* timer */
-	// fds[0].fd = XConnectionNumber(display);
-	fds[1].fd = timerfd_create(CLOCK_MONOTONIC, 0);
-	timerfd_settime(fds[1].fd, 0, &screen_tspec, NULL);
-	fds[2].fd = STDIN_FILENO;
-	fds[0].events = fds[1].events = fds[2].events = POLLIN;
-	/* main loop */
-	while(!uxn.dev[0x0f]) {
-		if(poll(fds, 3, 1000) <= 0)
-			continue;
-		// while(XPending(display))
-		// 	emu_event();
-		if(poll(&fds[1], 1, 0)) {
-			read(fds[1].fd, expirations, 8);
-			uxn_eval(uxn.dev[0x20] << 8 | uxn.dev[0x21]);
-			if(screen_changed()) {
-				int x = uxn_screen.x1 * uxn_screen.scale, y = uxn_screen.y1 * uxn_screen.scale;
-				int w = uxn_screen.x2 * uxn_screen.scale - x, h = uxn_screen.y2 * uxn_screen.scale - y;
-				screen_redraw();
-				// XPutImage(display, window, DefaultGC(display, 0), ximage, x, y, x + PAD, y + PAD, w, h);
-			}
-		}
-		if((fds[2].revents & POLLIN) != 0) {
-			n = read(fds[2].fd, coninp, CONINBUFSIZE - 1);
-			coninp[n] = 0;
-			for(i = 0; i < n; i++)
-				console_input(coninp[i], CONSOLE_STD);
-		}
-	}
-	return 1;
+    int i = 1, n;
+    char expirations[8], coninp[CONINBUFSIZE];
+    struct pollfd fds[3];
+    static const struct itimerspec screen_tspec = {{0, 16666666}, {0, 16666666}};
+
+    // Timer file descriptor
+    fds[1].fd = timerfd_create(CLOCK_MONOTONIC, 0);
+    timerfd_settime(fds[1].fd, 0, &screen_tspec, NULL);
+
+    // Standard input file descriptor
+    fds[2].fd = STDIN_FILENO;
+
+    // Set the events we are interested in
+    fds[1].events = fds[2].events = POLLIN;
+
+    /* main loop */
+    while (!uxn.dev[0x0f]) {
+    	emu_event();
+        if (poll(fds, 1, 0) > 0)
+            // emu_event(); // Call emu_event() if there's input
+
+        // Poll for input events (timer or stdin)
+        if (poll(fds + 1, 2, 1000) <= 0) // Only poll fds[1] and fds[2]
+            continue;
+
+        // Handle timer events
+        if (fds[1].revents & POLLIN) {
+            read(fds[1].fd, expirations, 8);
+            uxn_eval(uxn.dev[0x20] << 8 | uxn.dev[0x21]);
+            if (screen_changed()) {
+                int x = uxn_screen.x1 * uxn_screen.scale;
+                int y = uxn_screen.y1 * uxn_screen.scale;
+                int w = uxn_screen.x2 * uxn_screen.scale - x;
+                int h = uxn_screen.y2 * uxn_screen.scale - y;
+                screen_redraw();
+                // XPutImage(display, window, DefaultGC(display, 0), ximage, x, y, x + PAD, y + PAD, w, h);
+            }
+        }
+
+        // Handle standard input events
+        if (fds[2].revents & POLLIN) {
+            n = read(fds[2].fd, coninp, CONINBUFSIZE - 1);
+            coninp[n] = 0;
+            for (i = 0; i < n; i++) {
+                console_input(coninp[i], CONSOLE_STD);
+            }
+            // emu_event(); // Call emu_event() to handle input
+        }
+    }
+    return 1;
 }
 
 int
