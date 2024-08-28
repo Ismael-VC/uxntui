@@ -200,6 +200,7 @@ display_init(void)
 	char empty[] = {0};
 	Pixmap bitmap;
 	Cursor blank;
+	XClassHint class = { "uxn11", "Uxn" };
 	display = XOpenDisplay(NULL);
 	if(!display)
 		return system_error("init", "Display failed");
@@ -213,6 +214,7 @@ display_init(void)
 	wmDelete = XInternAtom(display, "WM_DELETE_WINDOW", True);
 	XSetWMProtocols(display, window, &wmDelete, 1);
 	XStoreName(display, window, boot_rom);
+	XSetClassHint(display, window, &class);
 	XMapWindow(display, window);
 	ximage = XCreateImage(display, visual, DefaultDepth(display, DefaultScreen(display)), ZPixmap, 0, (char *)uxn_screen.pixels, uxn_screen.width, uxn_screen.height, 32, 0);
 	/* hide cursor */
