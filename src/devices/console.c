@@ -49,11 +49,11 @@ static pid_t child_pid;
  * (other bits ignored for now )
  */
 
-#define CMD_LIVE 0x15 // 0x00 not started, 0x01 running, 0xff dead
-#define CMD_EXIT 0x16 // if dead, exit code of process
-#define CMD_ADDR 0x1c // address to read command args from
-#define CMD_MODE 0x1e // mode to execute, 0x00 to 0x07
-#define CMD_EXEC 0x1f // write to execute programs, etc
+#define CMD_LIVE 0x15 /* 0x00 not started, 0x01 running, 0xff dead */
+#define CMD_EXIT 0x16 /* if dead, exit code of process */
+#define CMD_ADDR 0x1c /* address to read command args from */
+#define CMD_MODE 0x1e /* mode to execute, 0x00 to 0x07 */
+#define CMD_EXEC 0x1f /* write to execute programs, etc */
 
 /* call after we're sure the process has exited */
 static void
@@ -76,10 +76,10 @@ clean_after_child(void)
 static void
 start_fork_pipe(void)
 {
-	fflush(stdout);
 	pid_t pid;
 	pid_t parent_pid = getpid();
 	int addr = PEEK2(&uxn.dev[CMD_ADDR]);
+	fflush(stdout);
 	if(child_mode & 0x08) {
 		uxn.dev[CMD_EXIT] = uxn.dev[CMD_LIVE] = 0x00;
 		return;
@@ -110,10 +110,11 @@ start_fork_pipe(void)
 
 #ifdef __linux__
 		int r = prctl(PR_SET_PDEATHSIG, SIGTERM);
-		if (r == -1) { perror(0); exit(6); }
-		// test in case the original parent exited just
-		// before the prctl() call
-		if (getppid() != parent_pid) exit(13);
+		if(r == -1) {
+			perror(0);
+			exit(6);
+		}
+		if(getppid() != parent_pid) exit(13);
 #endif
 
 		if(child_mode & 0x01) {
