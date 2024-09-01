@@ -29,6 +29,7 @@
 #include <errno.h>
 #include <windows.h>
 #include <process.h>
+#include <string.h>
 #include <direct.h> // For _fullpath
 
 static HANDLE to_child_read;
@@ -111,6 +112,7 @@ clean_after_child(void)
 static void
 start_fork_pipe(void)
 {
+int addr = PEEK2(&uxn.dev[CMD_ADDR]);
 #ifdef _WIN32
     SECURITY_ATTRIBUTES sa = { sizeof(SECURITY_ATTRIBUTES), NULL, TRUE };
 
@@ -127,18 +129,36 @@ start_fork_pipe(void)
     }
 
     PROCESS_INFORMATION pi;
-    STARTUPINFO si = { sizeof(STARTUPINFO), 0 };
+    STARTUPINFO si; //  = { sizeof(STARTUPINFO), 0 };
+    BOOL success;
+
+    // Initialize structures
+    ZeroMemory(&si, sizeof(si));
+    si.cb = sizeof(si);
+    ZeroMemory(&pi, sizeof(pi));
+    
     si.hStdInput = to_child_read;
     si.hStdOutput = from_child_write;
     si.hStdError = from_child_write;
     si.dwFlags |= STARTF_USESTDHANDLES;
-    printf("arg: %s", fork_args[2]);
+    fork_args[2] = (char *)&uxn.ram[addr];
+    
+	char args[1024];
+    strcpy(args, fork_args[0]);
+    strcat(args, " ");
+    strcat(args, fork_args[1]);
+    strcat(args, " ");
+    strcat(args, fork_args[2]);
 
-    if (!CreateProcess(NULL, fork_args[2], NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi)) {
+    printf("arg: %s", args);
+
+    if (!CreateProcess(NULL, args, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
         printf("CreateProcess failed (%d).\n", GetLastError());
         uxn.dev[CMD_EXIT] = uxn.dev[CMD_LIVE] = 0xff;
         return;
     }
+
+	WaitForSingleObject(pi.hProcess, 0);
 
     child_process = pi.hProcess;
     CloseHandle(pi.hThread);
