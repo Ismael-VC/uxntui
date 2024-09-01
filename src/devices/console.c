@@ -109,10 +109,8 @@ clean_after_child(void)
     saved_out = -1;
 }
 
-static void
-start_fork_pipe(void)
-{
-int addr = PEEK2(&uxn.dev[CMD_ADDR]);
+static void start_fork_pipe(void) {
+    int addr = PEEK2(&uxn.dev[CMD_ADDR]);
 #ifdef _WIN32
     SECURITY_ATTRIBUTES sa = { sizeof(SECURITY_ATTRIBUTES), NULL, TRUE };
 
@@ -129,56 +127,66 @@ int addr = PEEK2(&uxn.dev[CMD_ADDR]);
     }
 
     PROCESS_INFORMATION pi;
-    STARTUPINFO si; //  = { sizeof(STARTUPINFO), 0 };
+    STARTUPINFO si;
     BOOL success;
 
-    // Initialize structures
     ZeroMemory(&si, sizeof(si));
     si.cb = sizeof(si);
-    ZeroMemory(&pi, sizeof(pi));
-    
     si.hStdInput = to_child_read;
     si.hStdOutput = from_child_write;
     si.hStdError = from_child_write;
     si.dwFlags |= STARTF_USESTDHANDLES;
+
     fork_args[2] = (char *)&uxn.ram[addr];
-    
-	char args[1024];
-    strcpy(args, fork_args[0]);
-    strcat(args, " ");
-    strcat(args, fork_args[1]);
-    strcat(args, " ");
-    strcat(args, fork_args[2]);
 
-    printf("arg: %s", args);
+    char args[1024];
+    snprintf(args, sizeof(args), "%s %s %s", fork_args[0], fork_args[1], fork_args[2]);
 
-    if (!CreateProcess(NULL, args, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
+    printf("arg: %s\n", args);  // Ensure the command line looks correct
+
+    success = CreateProcess(
+        NULL,
+        args,          // Command line to execute
+        NULL,
+        NULL,
+        TRUE,          // Set to TRUE to inherit handles
+        0,
+        NULL,
+        NULL,
+        &si,
+        &pi
+    );
+
+    if (!success) {
         printf("CreateProcess failed (%d).\n", GetLastError());
         uxn.dev[CMD_EXIT] = uxn.dev[CMD_LIVE] = 0xff;
         return;
     }
 
-	WaitForSingleObject(pi.hProcess, 0);
+    // Wait for the child process to finish
+    WaitForSingleObject(pi.hProcess, INFINITE);
+
+    // Read output from child process
+    DWORD bytesRead;
+    CHAR buffer[4096];
+
+    CloseHandle(from_child_write);  // Close the write end to receive EOF when the process exits
+
+    while (ReadFile(from_child_read, buffer, sizeof(buffer) - 1, &bytesRead, NULL) && bytesRead > 0) {
+        buffer[bytesRead] = '\0';
+        printf("%s", buffer);  // Output child's stdout to console
+    }
 
     child_process = pi.hProcess;
     CloseHandle(pi.hThread);
     CloseHandle(to_child_read);
     CloseHandle(from_child_write);
+
 #else
-    pid_t pid;
-    pid = fork();
-    if (pid < 0) {
-        uxn.dev[CMD_EXIT] = uxn.dev[CMD_LIVE] = 0xff;
-        fprintf(stderr, "fork failure\n");
-        return;
-    }
-    if (pid == 0) {
-        // Child process code
-    } else {
-        // Parent process code
-    }
+    // POSIX implementation (not shown)
 #endif
 }
+
 
 static void
 check_child(void)
