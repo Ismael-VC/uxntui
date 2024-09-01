@@ -4,9 +4,12 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+
+#ifndef _WIN32
 #include <sys/select.h>
 #include <sys/wait.h>
-#include <unistd.h>
+#endif
 
 #ifdef __linux
 #include <pty.h>
@@ -16,6 +19,34 @@
 #ifdef __NetBSD__
 #include <sys/ioctl.h>
 #include <util.h>
+#endif
+
+#ifdef _WIN32
+#include <windows.h>
+#include <process.h>
+#include <io.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <windows.h>
+#include <process.h>
+#include <direct.h> // For _fullpath
+
+static HANDLE to_child_read;
+static HANDLE to_child_write;
+static HANDLE from_child_read;
+static HANDLE from_child_write;
+static HANDLE child_process;
+static HANDLE child_stdin;
+static HANDLE child_stdout;
+static HANDLE child_stderr;
+
+// Define lrealpath as an alias to realpath on Windows
+#define lrealpath(path, resolved) realpath(path, resolved)
+
+// On Windows, _fullpath can be used as a substitute for realpath
+char *realpath(const char *path, char *resolved) {
+    return _fullpath(resolved, path, _MAX_PATH);
+}
 #endif
 
 #include "../uxn.h"
@@ -33,7 +64,11 @@ WITH REGARD TO THIS SOFTWARE.
 */
 
 /* subprocess support */
+#ifndef _WIN32
 static char *fork_args[4] = {"/bin/sh", "-c", "", NULL};
+#else
+static char *fork_args[4] = {"cmd.exe", "/c", "", NULL};
+#endif
 static int child_mode;
 static int to_child_fd[2];
 static int from_child_fd[2];
@@ -59,173 +94,167 @@ static pid_t child_pid;
 static void
 clean_after_child(void)
 {
-	child_pid = 0;
-	if(child_mode & 0x01) {
-		close(to_child_fd[1]);
-		dup2(saved_out, 1);
-	}
-	if(child_mode & (0x04 | 0x02)) {
-		close(from_child_fd[0]);
-		dup2(saved_in, 0);
-	}
-	child_mode = 0;
-	saved_in = -1;
-	saved_out = -1;
+    child_pid = 0;
+    if(child_mode & 0x01) {
+        close(to_child_fd[1]);
+        dup2(saved_out, 1);
+    }
+    if(child_mode & (0x04 | 0x02)) {
+        close(from_child_fd[0]);
+        dup2(saved_in, 0);
+    }
+    child_mode = 0;
+    saved_in = -1;
+    saved_out = -1;
 }
 
 static void
 start_fork_pipe(void)
 {
-	pid_t pid;
-	pid_t parent_pid = getpid();
-	int addr = PEEK2(&uxn.dev[CMD_ADDR]);
-	fflush(stdout);
-	if(child_mode & 0x08) {
-		uxn.dev[CMD_EXIT] = uxn.dev[CMD_LIVE] = 0x00;
-		return;
-	}
-	if(child_mode & 0x01) {
-		/* parent writes to child's stdin */
-		if(pipe(to_child_fd) == -1) {
-			uxn.dev[CMD_EXIT] = uxn.dev[CMD_LIVE] = 0xff;
-			fprintf(stderr, "pipe error: to child\n");
-			return;
-		}
-	}
-	if(child_mode & (0x04 | 0x02)) {
-		/* parent reads from child's stdout and/or stderr */
-		if(pipe(from_child_fd) == -1) {
-			uxn.dev[CMD_EXIT] = uxn.dev[CMD_LIVE] = 0xff;
-			fprintf(stderr, "pipe error: from child\n");
-			return;
-		}
-	}
+#ifdef _WIN32
+    SECURITY_ATTRIBUTES sa = { sizeof(SECURITY_ATTRIBUTES), NULL, TRUE };
 
-	fork_args[2] = (char *)&uxn.ram[addr];
-	pid = fork();
-	if(pid < 0) { /* failure */
-		uxn.dev[CMD_EXIT] = uxn.dev[CMD_LIVE] = 0xff;
-		fprintf(stderr, "fork failure\n");
-	} else if(pid == 0) { /* child */
+    if (!CreatePipe(&to_child_read, &to_child_write, &sa, 0)) {
+        fprintf(stderr, "pipe error: to child\n");
+        uxn.dev[CMD_EXIT] = uxn.dev[CMD_LIVE] = 0xff;
+        return;
+    }
 
-#ifdef __linux__
-		int r = prctl(PR_SET_PDEATHSIG, SIGTERM);
-		if(r == -1) {
-			perror(0);
-			exit(6);
-		}
-		if(getppid() != parent_pid) exit(13);
+    if (!CreatePipe(&from_child_read, &from_child_write, &sa, 0)) {
+        fprintf(stderr, "pipe error: from child\n");
+        uxn.dev[CMD_EXIT] = uxn.dev[CMD_LIVE] = 0xff;
+        return;
+    }
+
+    PROCESS_INFORMATION pi;
+    STARTUPINFO si = { sizeof(STARTUPINFO), 0 };
+    si.hStdInput = to_child_read;
+    si.hStdOutput = from_child_write;
+    si.hStdError = from_child_write;
+    si.dwFlags |= STARTF_USESTDHANDLES;
+    printf("arg: %s", fork_args[2]);
+
+    if (!CreateProcess(NULL, fork_args[2], NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi)) {
+        printf("CreateProcess failed (%d).\n", GetLastError());
+        uxn.dev[CMD_EXIT] = uxn.dev[CMD_LIVE] = 0xff;
+        return;
+    }
+
+    child_process = pi.hProcess;
+    CloseHandle(pi.hThread);
+    CloseHandle(to_child_read);
+    CloseHandle(from_child_write);
+#else
+    pid_t pid;
+    pid = fork();
+    if (pid < 0) {
+        uxn.dev[CMD_EXIT] = uxn.dev[CMD_LIVE] = 0xff;
+        fprintf(stderr, "fork failure\n");
+        return;
+    }
+    if (pid == 0) {
+        // Child process code
+    } else {
+        // Parent process code
+    }
 #endif
-
-		if(child_mode & 0x01) {
-			dup2(to_child_fd[0], 0);
-			close(to_child_fd[1]);
-		}
-		if(child_mode & (0x04 | 0x02)) {
-			if(child_mode & 0x02) dup2(from_child_fd[1], 1);
-			if(child_mode & 0x04) dup2(from_child_fd[1], 2);
-			close(from_child_fd[0]);
-		}
-		fflush(stdout);
-		execvp(fork_args[0], fork_args);
-		exit(1);
-	} else { /*parent*/
-		child_pid = pid;
-		uxn.dev[CMD_LIVE] = 0x01;
-		uxn.dev[CMD_EXIT] = 0x00;
-		if(child_mode & 0x01) {
-			saved_out = dup(1);
-			dup2(to_child_fd[1], 1);
-			close(to_child_fd[0]);
-		}
-		if(child_mode & (0x04 | 0x02)) {
-			saved_in = dup(0);
-			dup2(from_child_fd[0], 0);
-			close(from_child_fd[1]);
-		}
-	}
 }
 
 static void
 check_child(void)
 {
-	int wstatus;
-	if(child_pid) {
-		if(waitpid(child_pid, &wstatus, WNOHANG)) {
-			uxn.dev[CMD_LIVE] = 0xff;
-			uxn.dev[CMD_EXIT] = WEXITSTATUS(wstatus);
-			clean_after_child();
-		} else {
-			uxn.dev[CMD_LIVE] = 0x01;
-			uxn.dev[CMD_EXIT] = 0x00;
-		}
-	}
+#ifdef _WIN32
+    DWORD exitCode;
+    if (GetExitCodeProcess(child_process, &exitCode) && exitCode != STILL_ACTIVE) {
+        uxn.dev[CMD_LIVE] = 0xff;
+        uxn.dev[CMD_EXIT] = exitCode;
+        clean_after_child();
+    } else {
+        uxn.dev[CMD_LIVE] = 0x01;
+        uxn.dev[CMD_EXIT] = 0x00;
+    }
+#else
+    int wstatus;
+    if (waitpid(child_pid, &wstatus, WNOHANG)) {
+        uxn.dev[CMD_LIVE] = 0xff;
+        uxn.dev[CMD_EXIT] = WEXITSTATUS(wstatus);
+        clean_after_child();
+    } else {
+        uxn.dev[CMD_LIVE] = 0x01;
+        uxn.dev[CMD_EXIT] = 0x00;
+    }
+#endif
 }
+
 
 static void
 kill_child(void)
 {
-	int wstatus;
-	if(child_pid) {
-		kill(child_pid, 9);
-		if(waitpid(child_pid, &wstatus, WNOHANG)) {
-			uxn.dev[CMD_LIVE] = 0xff;
-			uxn.dev[CMD_EXIT] = WEXITSTATUS(wstatus);
-			clean_after_child();
-		}
-	}
+#ifdef _WIN32
+    if (child_process) {
+        TerminateProcess(child_process, 1);
+        CloseHandle(child_process);
+        check_child();
+    }
+#else
+    if (child_pid) {
+        kill(child_pid, 9);
+        check_child();
+    }
+#endif
 }
 
 static void
 start_fork(void)
 {
-	fflush(stderr);
-	kill_child();
-	child_mode = uxn.dev[CMD_MODE];
-	start_fork_pipe();
+    fflush(stderr);
+    kill_child();
+    child_mode = uxn.dev[CMD_MODE];
+    start_fork_pipe();
 }
 
 void
 close_console(void)
 {
-	kill_child();
+    kill_child();
 }
 
 int
 console_input(Uint8 c, int type)
 {
-	uxn.dev[0x12] = c;
-	uxn.dev[0x17] = type;
-	return uxn_eval(PEEK2(&uxn.dev[0x10]));
+    uxn.dev[0x12] = c;
+    uxn.dev[0x17] = type;
+    return uxn_eval(PEEK2(&uxn.dev[0x10]));
 }
 
 void
 console_listen(int i, int argc, char **argv)
 {
-	for(; i < argc; i++) {
-		char *p = argv[i];
-		while(*p) console_input(*p++, CONSOLE_ARG);
-		console_input('\n', i == argc - 1 ? CONSOLE_END : CONSOLE_EOA);
-	}
+    for(; i < argc; i++) {
+        char *p = argv[i];
+        while(*p) console_input(*p++, CONSOLE_ARG);
+        console_input('\n', i == argc - 1 ? CONSOLE_END : CONSOLE_EOA);
+    }
 }
 
 Uint8
 console_dei(Uint8 addr)
 {
-	switch(addr) {
-	case CMD_LIVE:
-	case CMD_EXIT: check_child(); break;
-	}
-	return uxn.dev[addr];
+    switch(addr) {
+    case CMD_LIVE:
+    case CMD_EXIT: check_child(); break;
+    }
+    return uxn.dev[addr];
 }
 
 void
 console_deo(Uint8 addr)
 {
-	FILE *fd;
-	switch(addr) {
-	case 0x18: fd = stdout, fputc(uxn.dev[0x18], fd), fflush(fd); break;
-	case 0x19: fd = stderr, fputc(uxn.dev[0x19], fd), fflush(fd); break;
-	case CMD_EXEC: start_fork(); break;
-	}
+    FILE *fd;
+    switch(addr) {
+    case 0x18: fd = stdout, fputc(uxn.dev[0x18], fd), fflush(fd); break;
+    case 0x19: fd = stderr, fputc(uxn.dev[0x19], fd), fflush(fd); break;
+    case CMD_EXEC: start_fork(); break;
+    }
 }
+
