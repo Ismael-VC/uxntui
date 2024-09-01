@@ -1,4 +1,4 @@
-# Uxn11
+# UxnTUI
 
 An emulator for the [Uxn stack-machine](https://wiki.xxiivv.com/site/uxn.html), written in ANSI C. The emulator contains a few linux specific utilities in the Console device to allow for it to interface with the unix systems.
 
@@ -20,10 +20,10 @@ $ make PREFIX=/opt/uxn install
 
 ### Graphical
 
-All you need is X11.
+All you need is a tty or pts terminal.
 
 ```sh
-gcc -Os -DNDEBUG -g0 -s src/uxn.c src/devices/system.c src/devices/console.c src/devices/screen.c src/devices/controller.c src/devices/mouse.c src/devices/file.c src/devices/datetime.c src/uxn11.c -o bin/uxn11 -lX11
+gcc -Os -DNDEBUG -g0 -s src/uxn.c src/devices/system.c src/devices/console.c src/devices/screen.c src/devices/controller.c src/devices/mouse.c src/devices/file.c src/devices/datetime.c src/uxntui.c -o bin/uxntui -lX11
 ```
 
 ### Terminal
@@ -34,16 +34,16 @@ If you wish to build the emulator without graphics mode:
 gcc -Os -DNDEBUG -g0 -s src/uxn.c src/devices/system.c src/devices/console.c src/devices/file.c src/devices/datetime.c src/uxncli.c -o bin/uxncli
 ```
 
-If do not wish to build it yourself, you can download linux binaries for [uxnasm](https://rabbits.srht.site/uxn11/bin/uxnasm), [uxncli](https://rabbits.srht.site/uxn11/bin/uxncli) and [uxn11](https://rabbits.srht.site/uxn11/bin/uxn11).
+If do not wish to build it yourself, you can download linux binaries for [uxnasm](https://rabbits.srht.site/uxntui/bin/uxnasm), [uxncli](https://rabbits.srht.site/uxntui/bin/uxncli) and [uxntui](https://rabbits.srht.site/uxntui/bin/uxntui).
 
-[![builds.sr.ht status](https://builds.sr.ht/~rabbits/uxn11.svg)](https://builds.sr.ht/~rabbits/uxn11?)
+[![builds.sr.ht status](https://builds.sr.ht/~rabbits/uxntui.svg)](https://builds.sr.ht/~rabbits/uxntui?)
 
 ## Usage
 
 The first parameter is the rom file, the subsequent arguments will be accessible to the rom, via the [Console vector](https://wiki.xxiivv.com/site/varvara.html#console).
 
 ```sh
-bin/uxnemu bin/polycat.rom arg1 arg2
+bin/uxntui bin/polycat.rom arg1 arg2
 ```
 
 ## Manual
