@@ -11,6 +11,22 @@
 #ifdef _WIN32
 #include <libiberty/libiberty.h>
 #define realpath(s, dummy) lrealpath(s)
+
+char* lrealpath(const char *path) {
+    // Allocate buffer for the path
+    char *resolved_path = (char *)malloc(PATH_MAX);
+    if (resolved_path == NULL) {
+        return NULL;
+    }
+
+    // Use _fullpath to resolve the path
+    if (_fullpath(resolved_path, path, PATH_MAX) == NULL) {
+        free(resolved_path);
+        return NULL;
+    }
+    return resolved_path;
+}
+
 #define DIR_SEP_CHAR '\\'
 #define DIR_SEP_STR "\\"
 #define pathcmp(path1, path2, length) strncasecmp(path1, path2, length) /* strncasecmp provided by libiberty */
@@ -20,6 +36,7 @@
 #define DIR_SEP_STR "/"
 #define pathcmp(path1, path2, length) strncmp(path1, path2, length)
 #define notdriveroot(file_name) (file_name[0] != DIR_SEP_CHAR)
+#define realpath(s, dummy) realpath(s, dummy)
 #endif
 
 #ifndef PATH_MAX

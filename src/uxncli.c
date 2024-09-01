@@ -25,6 +25,7 @@ emu_dei(Uint8 addr)
 {
 	switch(addr & 0xf0) {
 	case 0x00: return system_dei(addr);
+	case 0x10: return console_dei(addr);
 	case 0xc0: return datetime_dei(addr);
 	}
 	return uxn.dev[addr];
@@ -68,7 +69,7 @@ main(int argc, char **argv)
 	int i = 1;
 	char *rom;
 	if(i != argc && argv[i][0] == '-' && argv[i][1] == 'v') {
-		fprintf(stdout, "Uxncli - Console Varvara Emulator, 18 Aug 2024.\n");
+		fprintf(stdout, "Uxncli - Console Varvara Emulator, 29 Aug 2024.\n");
 		exit(0);
 	}
 	rom = i == argc ? "boot.rom" : argv[i++];
