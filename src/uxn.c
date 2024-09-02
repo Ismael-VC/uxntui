@@ -12,31 +12,31 @@ WITH REGARD TO THIS SOFTWARE.
 */
 
 #define OPC(opc, init, body) {\
-	case 0x00|opc: {const int _2=0,_r=0;init body;} break;\
-	case 0x20|opc: {const int _2=1,_r=0;init body;} break;\
-	case 0x40|opc: {const int _2=0,_r=1;init body;} break;\
-	case 0x60|opc: {const int _2=1,_r=1;init body;} break;\
-	case 0x80|opc: {const int _2=0,_r=0;int k=uxn.wst.ptr;init uxn.wst.ptr= k;body;} break;\
-	case 0xa0|opc: {const int _2=1,_r=0;int k=uxn.wst.ptr;init uxn.wst.ptr= k;body;} break;\
-	case 0xc0|opc: {const int _2=0,_r=1;int k=uxn.rst.ptr;init uxn.rst.ptr= k;body;} break;\
-	case 0xe0|opc: {const int _2=1,_r=1;int k=uxn.rst.ptr;init uxn.rst.ptr= k;body;} break;\
+	case 0x00|opc: {enum{_2=0,_r=0};init body;} break;\
+	case 0x20|opc: {enum{_2=1,_r=0};init body;} break;\
+	case 0x40|opc: {enum{_2=0,_r=1};init body;} break;\
+	case 0x60|opc: {enum{_2=1,_r=1};init body;} break;\
+	case 0x80|opc: {enum{_2=0,_r=0};int k=uxn.wst.ptr;init uxn.wst.ptr= k;body;} break;\
+	case 0xa0|opc: {enum{_2=1,_r=0};int k=uxn.wst.ptr;init uxn.wst.ptr= k;body;} break;\
+	case 0xc0|opc: {enum{_2=0,_r=1};int k=uxn.rst.ptr;init uxn.rst.ptr= k;body;} break;\
+	case 0xe0|opc: {enum{_2=1,_r=1};int k=uxn.rst.ptr;init uxn.rst.ptr= k;body;} break;\
 }
 
 /* Microcode */
 
-#define JMI a = uxn.ram[pc ] << 8 | uxn.ram[pc + 1], pc += a + 2;
+#define JMI pc += uxn.ram[pc++] << 8 | uxn.ram[pc++];
 #define JMP(i) if(_2) pc = i; else pc += (Sint8)i;
 #define REM if(_r) uxn.rst.ptr -= 1 + _2; else uxn.wst.ptr -= 1 + _2;
 #define INC(s) uxn.s.dat[uxn.s.ptr++]
 #define DEC(s) uxn.s.dat[--uxn.s.ptr]
 #define POx(o) if(_2) { PO2(o) } else PO1(o)
-#define PO1(o) o = _r ? DEC(rst) : DEC(wst);
-#define PO2(o) PO1(o) o |= (_r ? DEC(rst) : DEC(wst)) << 8;
+#define PO1(o) if(_r) o = DEC(rst); else o = DEC(wst);
+#define PO2(o) if(_r) o = DEC(rst) | (DEC(rst) << 8); else o = DEC(wst) | (DEC(wst) << 8);
 #define PUx(i) if(_2) { c = (i); PU1(c >> 8) PU1(c) } else PU1(i)
 #define PU1(i) if(_r) INC(rst) = i; else INC(wst) = i;
 #define RP1(i) if(_r) INC(wst) = i; else INC(rst) = i;
 #define GET(o) if(_2) PO1(o[1]) PO1(o[0])
-#define PUT(i) PU1(i[0]) if(_2) { PU1(i[1]) }
+#define PUT(i) PU1(i[0]) if(_2) PU1(i[1])
 #define DEI(i,o) o[0] = emu_dei(i); if(_2) o[1] = emu_dei(i + 1); PUT(o)
 #define DEO(i,j) emu_deo(i, j[0]); if(_2) emu_deo(i + 1, j[1]);
 #define PEK(i,o,m) o[0] = uxn.ram[i]; if(_2) o[1] = uxn.ram[(i + 1) & m]; PUT(o)
@@ -58,7 +58,7 @@ uxn_eval(Uint16 pc)
 		/* L2r */ case 0xe0: INC(rst) = uxn.ram[pc++];
 		/* LIr */ case 0xc0: INC(rst) = uxn.ram[pc++]; break;
 		/* INC */ OPC(0x01, POx(a), PUx(a + 1))
-		/* POP */ OPC(0x02, REM, {})
+		/* POP */ OPC(0x02, REM, 0)
 		/* NIP */ OPC(0x03, GET(x) REM,PUT(x))
 		/* SWP */ OPC(0x04, GET(x) GET(y),PUT(x) PUT(y))
 		/* ROT */ OPC(0x05, GET(x) GET(y) GET(z),PUT(y) PUT(x) PUT(z))
@@ -69,9 +69,9 @@ uxn_eval(Uint16 pc)
 		/* GTH */ OPC(0x0a, POx(a) POx(b),PU1(b > a))
 		/* LTH */ OPC(0x0b, POx(a) POx(b),PU1(b < a))
 		/* JMP */ OPC(0x0c, POx(a),JMP(a))
-		/* JCN */ OPC(0x0d, POx(a) PO1(b), if(b) { JMP(a) })
+		/* JCN */ OPC(0x0d, POx(a) PO1(b), if(b) JMP(a))
 		/* JSR */ OPC(0x0e, POx(a),RP1(pc >> 8) RP1(pc) JMP(a))
-		/* STH */ OPC(0x0f, GET(x),RP1(x[0]) if(_2) { RP1(x[1]) })
+		/* STH */ OPC(0x0f, GET(x),RP1(x[0]) if(_2) RP1(x[1]))
 		/* LDZ */ OPC(0x10, PO1(a),PEK(a, x, 0xff))
 		/* STZ */ OPC(0x11, PO1(a) GET(y),POK(a, y, 0xff))
 		/* LDR */ OPC(0x12, PO1(a),PEK(pc + (Sint8)a, x, 0xffff))

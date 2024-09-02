@@ -22,7 +22,7 @@ typedef struct { int line; char *path; } Context;
 typedef struct { char *name, rune, *data; Uint16 addr, refs, line; } Item;
 
 static int ptr, length;
-static char token[0x30], scope[0x40], lambda[0x05];
+static char token[0x40], scope[0x40], lambda[0x05];
 static char dict[0x8000], *dictnext = dict;
 static Uint8 data[0x10000], lambda_stack[0x100], lambda_ptr, lambda_len;
 static Uint16 labels_len, refs_len, macro_len;
@@ -61,7 +61,7 @@ static int parse(char *w, FILE *f, Context *ctx);
 static char *
 push(char *s, char c)
 {
-	char *d;
+	char *d = dict;
 	for(d = dict; d < dictnext; d++) {
 		char *ss = s, *dd = d, a, b;
 		while((a = *dd++) == (b = *ss++))
@@ -123,16 +123,14 @@ static int
 walkmacro(Item *m, Context *ctx)
 {
 	unsigned char c;
-	char *dataptr = m->data, *_token = token;
+	char *dataptr = m->data, *cptr = token;
 	while((c = *dataptr++)) {
 		if(c < 0x21) {
-			*_token = 0x00;
+			*cptr++ = 0x00;
 			if(token[0] && !parse(token, NULL, ctx)) return 0;
-			_token = token;
-		} else if(_token - token < 0x2f)
-			*_token++ = c;
-		else
-			return error_asm("Token size exceeded");
+			cptr = token;
+		} else
+			*cptr++ = c;
 	}
 	return 1;
 }
@@ -141,19 +139,19 @@ static int
 walkfile(FILE *f, Context *ctx)
 {
 	unsigned char c;
-	char *_token = token;
+	char *cptr = token;
 	while(f && fread(&c, 1, 1, f)) {
 		if(c < 0x21) {
-			*_token = 0x00;
+			*cptr++ = 0x00;
 			if(token[0] && !parse(token, f, ctx)) return 0;
 			if(c == 0xa) ctx->line++;
-			_token = token;
-		} else if(_token - token < 0x2f)
-			*_token++ = c;
+			cptr = token;
+		} else if(cptr - token < 0x3f)
+			*cptr++ = c;
 		else
-			return error_asm("Token size exceeded");
+			return error_asm("Token too long");
 	}
-	*_token = 0;
+	*cptr++ = 0;
 	return parse(token, f, ctx);
 }
 
@@ -174,9 +172,8 @@ makemacro(char *name, FILE *f, Context *ctx)
 	char c;
 	Item *m;
 	if(macro_len >= 0x100) return error_asm("Macros limit exceeded");
-	if(isinvalid(name)) return error_asm("Macro invalid");
-	if(findmacro(name)) return error_asm("Macro duplicate");
-	if(findlabel(name)) return error_asm("Label duplicate");
+	if(isinvalid(name)) return error_asm("Macro is invalid");
+	if(findmacro(name)) return error_asm("Macro is duplicate");
 	m = &macros[macro_len++];
 	m->name = push(name, 0);
 	m->data = dictnext;
@@ -204,7 +201,6 @@ makelabel(char *name, int setscope, Context *ctx)
 		name = join(scope, '/', name + 1);
 	if(labels_len >= 0x400) return error_asm("Labels limit exceeded");
 	if(isinvalid(name)) return error_asm("Label invalid");
-	if(findmacro(name)) return error_asm("Label duplicate");
 	if(findlabel(name)) return error_asm("Label duplicate");
 	l = &labels[labels_len++];
 	l->name = push(name, 0);
@@ -223,7 +219,6 @@ makeref(char *label, char rune, Uint16 addr, Context *ctx)
 	if(label[0] == '{') {
 		lambda_stack[lambda_ptr++] = lambda_len;
 		r->name = push(makelambda(lambda_len++), 0);
-		if(label[1]) return error_asm("Label invalid");
 	} else if(label[0] == '&' || label[0] == '/') {
 		r->name = join(scope, '/', label + 1);
 	} else
@@ -293,12 +288,12 @@ static int
 assemble(char *filename)
 {
 	FILE *f;
-	int res;
+	int res = 0;
 	Context ctx;
 	ctx.line = 1;
 	ctx.path = push(filename, 0);
 	if(!(f = fopen(filename, "r")))
-		return error_top("File missing", filename);
+		return error_top("Source missing", filename);
 	res = walkfile(f, &ctx);
 	fclose(f);
 	return res;
@@ -352,7 +347,7 @@ resolve(char *filename)
 		case ',':
 			*rom = rel = l->addr - r->addr - 2;
 			if((Sint8)data[r->addr] != rel)
-				return error_ref("Reference too far");
+				return error_ref("Relative reference too far");
 			break;
 		case '-':
 		case '.':
@@ -385,7 +380,7 @@ build(char *rompath)
 	if(!(dst = fopen(rompath, "wb")))
 		return !error_top("Output file invalid", rompath);
 	for(i = 0; i < labels_len; i++)
-		if(!labels[i].refs && (unsigned char)(labels[i].name[0] - 'A') > 25)
+		if(labels[i].name[0] - 'A' > 25 && !labels[i].refs)
 			printf("-- Unused label: %s\n", labels[i].name);
 	fwrite(data + PAGE, length - PAGE, 1, dst);
 	printf(
@@ -415,7 +410,7 @@ main(int argc, char *argv[])
 {
 	ptr = PAGE;
 	copy("on-reset", scope, 0);
-	if(argc == 2 && scmp(argv[1], "-v", 2)) return !printf("Uxnasm - Uxntal Assembler, 29 Aug 2024.\n");
+	if(argc == 2 && scmp(argv[1], "-v", 2)) return !printf("Uxnasm - Uxntal Assembler, 30 May 2024.\n");
 	if(argc != 3) return error_top("usage", "uxnasm [-v] input.tal output.rom");
 	if(!assemble(argv[1])) return 1;
 	if(!resolve(argv[2])) return 1;
