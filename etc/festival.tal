@@ -1,0 +1,78 @@
+( festival.tal )
+( )
+( sends text from stdin to the festival text-to-speech program )
+( )
+( requires festival: apt install festival )
+
+|00 @System
+    |00 &vector $2
+    |02 &expansion $2
+    |04 &title $2
+    |06 &metadata $2
+    |08 &r $2
+    |0a &g $2
+    |0c &b $2
+    |0e &debug $1
+    |0f &exit $1
+
+@Console
+    |10 &vector $2 ( called when input is ready )
+    |12 &read $1 ( read an input byte, e.g. from stdin )
+    ( 13 - 14 padding )
+    |15 &live $1 ( subprocess: 01 alive, ff dead, 00 not running )
+    |15 &exit $1 ( subprocess: exit code if dead )
+    |17 &type $1 ( input type: 01 stdin, 02 arg, 03 end of arg, 04 end of args )
+    |18 &write $1 ( byte to write to stdout )
+    |19 &error $1 ( byte to write to stderr )
+    ( 1a - 1b padding )
+    |1c &addr $2 ( subprocess: addr of string to run with /bin/sh -c )
+    |1e &mode $1 ( mode bits: 01 write stdin, 02 read stdout, 04 read stderr, 08 kill only )
+    |1f &exec $1 ( subprocess: run command )
+
+@Screen
+    |20 &vector $2
+    |22 &width $2
+    |24 &height $2
+    |26 &auto $1
+    ( 27 padding )
+    |28 &x $2
+    |2a &y $2
+    |2c &addr $2
+    |2e &pixel $1
+    |2f &sprite $1
+
+|0100
+    ( poll child process using the screen vector )
+    ;on-refresh .Screen/vector DEO2
+
+    ( set up festival child proces )
+    ;cmd .Console/addr DEO2
+    #07 .Console/mode DEO
+    #01 .Console/exec DEO
+
+    ( say some things, then quit festival and exit )
+    ;phrase1 print
+    ;phrase2 print
+    ;quit print
+    BRK
+
+( print a string to stdout )
+@print
+    LDAk ?{ POP2 JMP2r } LDAk .Console/write DEO INC2 !print
+
+( exit the ROM once festival exits )
+( we need to wait until it is done talking, which is why we don't exit earlier. )
+@on-refresh
+    .Console/live DEI #ff NEQ ?{ #80 .System/exit DEO } BRK
+
+@cmd
+    "festival 20 "--interactive 00
+
+@phrase1
+    28 "SayText 20 22 "This 20 "is 20 "a 20 "U.X.N 20 "text-to-speech 20 "demo. 22 29 0a 00
+
+@phrase2
+    28 "SayText 20 22 "If 20 "this 20 "were 20 "a 20 "real 20 "program ", 20 "interaction 20 "would 20 "occur. 22 29 0a 00
+
+@quit
+    28 "quit 29 0a 00

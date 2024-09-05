@@ -1,0 +1,44 @@
+( pwd.tal )
+( )
+( reads output of `pwd` and prints it )
+
+|00 @System
+    |00 &vector $2
+    |02 &expansion $2
+    |04 &title $2
+    |06 &metadata $2
+    |08 &r $2
+    |0a &g $2
+    |0c &b $2
+    |0e &debug $1
+    |0f &exit $1
+
+@Console
+    |10 &vector $2 ( called when input is ready )
+    |12 &read $1 ( read an input byte, e.g. from stdin )
+    ( 13 - 14 padding )
+    |15 &live $1 ( subprocess: 01 alive, ff dead, 00 not running )
+    |15 &exit $1 ( subprocess: exit code if dead )
+    |17 &type $1 ( input type: 01 stdin, 02 arg, 03 end of arg, 04 end of args )
+    |18 &write $1 ( byte to write to stdout )
+    |19 &error $1 ( byte to write to stderr )
+    ( 1a - 1b padding )
+    |1c &addr $2 ( subprocess: addr of string to run with /bin/sh -c )
+    |1e &mode $1 ( mode bits: 01 write stdin, 02 read stdout, 04 read stderr, 08 kill only )
+    |1f &exec $1 ( subprocess: run command )
+
+|0100
+    ;on-console .Console/vector DEO2
+    ;cmd .Console/addr DEO2
+    #02 .Console/mode DEO
+    #01 .Console/exec DEO
+    BRK
+
+( read output from pwd until first newline, then exit )
+@on-console
+    .Console/type DEI #01 EQU ?{ BRK }
+    .Console/read DEI DUP #0a EQU ?{ .Console/write DEO BRK }
+    .Console/write DEO
+    #80 .System/exit DEO BRK
+
+@cmd "pwd 00
